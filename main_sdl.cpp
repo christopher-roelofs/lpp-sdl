@@ -122,9 +122,9 @@ int main(int argc, char* args[]) {
     }
 
     // Load the global default font
-    g_defaultFont = TTF_OpenFont("samples/Font/main.ttf", 16); // Default size 16
+    g_defaultFont = TTF_OpenFont("InterVariable.ttf", 16); // Default size 16
     if (!g_defaultFont) {
-        printf("Warning: Failed to load default font 'samples/Font/main.ttf'. Graphics.print will not work. TTF_Error: %s\n", TTF_GetError());
+        printf("Warning: Failed to load default font 'InterVariable.ttf'. Graphics.print will not work. TTF_Error: %s\n", TTF_GetError());
         // Continue without default font, lua_print will handle the NULL case
     }
 

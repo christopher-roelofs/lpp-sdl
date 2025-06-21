@@ -232,6 +232,14 @@ static int64_t parseSRTTimestamp(const std::string& timestamp) {
     return 0;
 }
 
+// Helper function to trim whitespace and carriage returns
+static std::string trim(const std::string& str) {
+    size_t start = str.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = str.find_last_not_of(" \t\r\n");
+    return str.substr(start, end - start + 1);
+}
+
 // Parse VTT subtitle file
 static bool parseVTTFile(const std::string& filepath, std::vector<SubtitleEntry>& subtitles) {
     std::ifstream file(filepath);
@@ -241,22 +249,23 @@ static bool parseVTTFile(const std::string& filepath, std::vector<SubtitleEntry>
     }
     
     std::string line;
-    bool isWebVTT = false;
     
     // Check for WEBVTT header
     if (std::getline(file, line)) {
-        if (line.find("WEBVTT") != std::string::npos) {
-            isWebVTT = true;
-            printf("Parsing WebVTT subtitle file\n");
-        } else {
+        line = trim(line);
+        if (line.rfind("WEBVTT", 0) != 0) { // Check if the line starts with WEBVTT
             printf("Invalid VTT file format\n");
             return false;
         }
+        printf("Parsing WebVTT subtitle file\n");
+    } else {
+        return false;
     }
     
     std::regex timingRegex(R"((\d+:\d+\.\d+)\s*-->\s*(\d+:\d+\.\d+))");
     
     while (std::getline(file, line)) {
+        line = trim(line);
         // Skip empty lines
         if (line.empty()) continue;
         
@@ -271,7 +280,10 @@ static bool parseVTTFile(const std::string& filepath, std::vector<SubtitleEntry>
             
             // Read subtitle text (may be multiple lines)
             std::string subtitleText;
-            while (std::getline(file, line) && !line.empty()) {
+            while (std::getline(file, line)) {
+                line = trim(line);
+                if (line.empty()) break;
+                
                 if (!subtitleText.empty()) {
                     subtitleText += "\n";
                 }
@@ -287,14 +299,6 @@ static bool parseVTTFile(const std::string& filepath, std::vector<SubtitleEntry>
     
     printf("Loaded %zu subtitle entries\n", subtitles.size());
     return true;
-}
-
-// Helper function to trim whitespace and carriage returns
-static std::string trim(const std::string& str) {
-    size_t start = str.find_first_not_of(" \t\r\n");
-    if (start == std::string::npos) return "";
-    size_t end = str.find_last_not_of(" \t\r\n");
-    return str.substr(start, end - start + 1);
 }
 
 // Parse SRT subtitle file

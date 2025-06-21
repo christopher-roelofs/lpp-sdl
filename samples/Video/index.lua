@@ -60,18 +60,29 @@ while true do
 	-- Display subtitles at bottom of screen with proper positioning
 	local subtitle_text = Video.getSubs()
 	if subtitle_text and subtitle_text ~= " " and subtitle_text ~= "" then
-		-- Calculate text width for centering (approximate)
-		local full_text = "Subtitles: " .. subtitle_text
+		local lines = {}
+		for s in string.gmatch(subtitle_text, "[^\n]+") do
+			table.insert(lines, s)
+		end
+
 		local char_width = 8  -- Approximate character width in pixels
-		local text_width = string.len(full_text) * char_width
-		local x_pos = (sw - text_width) / 2
-		
-		-- Ensure subtitle doesn't go off-screen
-		if x_pos < 10 then x_pos = 10 end
-		if x_pos + text_width > sw - 10 then x_pos = sw - text_width - 10 end
-		
-		-- Position subtitles at bottom center of screen
-		Graphics.debugPrint(x_pos, sh - 80, full_text, white)
+		local line_height = 20 -- Approximate line height
+		local num_lines = #lines
+		local total_height = (num_lines - 1) * line_height
+		local start_y = sh - 80 - total_height -- Start from bottom up, keeping last line at sh - 80
+
+		for i, line in ipairs(lines) do
+			-- Calculate text width for centering
+			local text_width = string.len(line) * char_width
+			local x_pos = (sw - text_width) / 2
+			
+			-- Ensure subtitle doesn't go off-screen
+			if x_pos < 10 then x_pos = 10 end
+			
+			-- Position subtitles at bottom center of screen
+			local y_pos = start_y + ((i - 1) * line_height)
+			Graphics.debugPrint(x_pos, y_pos, line, white)
+		end
 	end
 	Graphics.termBlend()
 	Screen.waitVblankStart()
