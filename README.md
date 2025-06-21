@@ -95,7 +95,7 @@ make
 
 # Showcase
 
-The following homebrews were originally developed for the PS Vita using Lua Player Plus. Many of them can be run with `lpp-sdl` thanks to its compatibility layer.
+The following homebrews were originally developed for the PS Vita using Lua Player Plus. Some of them can be run with `lpp-sdl` thanks to its compatibility layer.
 
 ##### Games
 * [VitaSudoku](http://wololo.net/talk/viewtopic.php?f=116&t=46423)
