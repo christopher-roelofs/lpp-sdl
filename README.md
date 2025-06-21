@@ -42,6 +42,42 @@ The interpreter runs on LuaJIT 2.1, providing high-performance execution of Lua 
 *   Timer system.
 *   Advanced arithmetical functions support (math library).
 
+# Vita Compatibility Mode
+
+`lpp-sdl` includes a compatibility mode to simulate the PS Vita's screen resolution and controls. This is useful for testing homebrew applications that were originally designed for the Vita.
+
+## Usage
+
+To enable Vita compatibility mode, run `lpp-sdl` with the `-vitacompat` flag:
+
+```bash
+./lpp-sdl -vitacompat
+```
+
+This will force the application to use a logical resolution of 960x544, matching the Vita's screen.
+
+## Control Mappings
+
+When running in any mode, `lpp-sdl` maps keyboard keys to the PS Vita's buttons as follows:
+
+| Vita Control | Keyboard Key |
+| :--- | :--- |
+| D-Pad Up | Arrow Up |
+| D-Pad Down | Arrow Down |
+| D-Pad Left | Arrow Left |
+| D-Pad Right | Arrow Right |
+| Cross (X) | Spacebar |
+| Circle (O) | Backspace |
+| Square (□) | Z |
+| Triangle (△) | X |
+| L Trigger | Q |
+| R Trigger | E |
+| Start | Enter |
+| Select | Tab |
+| PS Button | H |
+| Volume Up | Page Up |
+| Volume Down | Page Down |
+
 # Compiling the Source (Linux)
 
 To compile `lpp-sdl` on a Debian-based Linux distribution (like Ubuntu), you'll need to install the following dependencies:
