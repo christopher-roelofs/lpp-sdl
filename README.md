@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="https://github.com/gnmmarechal/lpp-vita/raw/master/banner.png?raw=true"/>
+	<img src="https://github.com/christopher-roelofs/lpp-sdl/blob/main/banner.png?raw=true"/>
 </p>
 
 # lpp-sdl: Lua Player Plus for Desktop
