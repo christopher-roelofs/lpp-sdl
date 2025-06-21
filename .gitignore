@@ -1,0 +1,7 @@
+# Build artifacts
+*.o
+lpp_sdl
+
+# OS-specific files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,590 @@
+/*
+* Clean, SDL-compatible implementation of luaSystem
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <time.h>
+#include <SDL.h>
+
+extern "C" {
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+}
+
+#include "luaplayer.h"
+
+// Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
+static std::string translate_vita_path(const char* path) {
+    std::string result(path);
+    
+    // Replace app0:/ with current directory (empty string means relative to current dir)
+    size_t pos = result.find("app0:/");
+    if (pos != std::string::npos) {
+        result.replace(pos, 6, "");  // Remove "app0:/"
+    }
+    
+    // Replace ux0:/ with current directory (user data path)
+    pos = result.find("ux0:/");
+    if (pos != std::string::npos) {
+        result.replace(pos, 5, "");  // Remove "ux0:/"
+    }
+    
+    return result;
+}
+
+// For stat() and mkdir() cross-platform compatibility
+#if defined(_WIN32)
+#include <direct.h>
+#define stat _stat
+#define mkdir(path, mode) _mkdir(path)
+#endif
+
+#define LUA_FILEHANDLE "FILE*"
+
+// --- System wrapper functions ---
+
+// System.doesFileExist(path)
+static int lua_doesFileExist(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    // Translate Vita paths (app0:/ -> current directory)
+    std::string translated_path = translate_vita_path(path);
+    
+    struct stat buffer;
+    lua_pushboolean(L, (stat(translated_path.c_str(), &buffer) == 0));
+    return 1;
+}
+
+// Helper function to create directory recursively
+static bool mkdir_recursive(const std::string& path) {
+    if (path.empty()) return true;
+    
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0) {
+        return true; // Directory already exists
+    }
+    
+    // Find parent directory
+    size_t pos = path.find_last_of('/');
+    if (pos != std::string::npos) {
+        std::string parent = path.substr(0, pos);
+        if (!mkdir_recursive(parent)) {
+            return false;
+        }
+    }
+    
+    // Create this directory
+    return mkdir(path.c_str(), 0777) == 0;
+}
+
+// System.createDirectory(path)
+static int lua_createDirectory(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    // Translate Vita paths
+    std::string translated_path = translate_vita_path(path);
+    bool success = mkdir_recursive(translated_path);
+    lua_pushboolean(L, success);
+    return 1;
+}
+
+// System.exit()
+static int lua_exit(lua_State *L) {
+    exit(0);
+    return 0;
+}
+
+// --- File Handle Operations ---
+
+// System.openFile(path, mode)
+static int lua_openFile(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    // Translate Vita paths (app0:/ -> current directory)  
+    std::string translated_path = translate_vita_path(path);
+    const char *mode_str = NULL;
+
+    if (lua_isstring(L, 2)) {
+        const char* mode_arg = luaL_checkstring(L, 2);
+        
+        // Check if it's a numeric string (FREAD, FWRITE, etc. constants)
+        if (strcmp(mode_arg, "0") == 0) {
+            mode_str = "rb";   // FREAD
+        } else if (strcmp(mode_arg, "1") == 0) {
+            mode_str = "wb";   // FWRITE
+        } else if (strcmp(mode_arg, "2") == 0) {
+            mode_str = "w+b";  // FCREATE
+        } else if (strcmp(mode_arg, "3") == 0) {
+            mode_str = "r+b";  // FRDWR
+        } else {
+            // Assume it's a direct mode string like "rb", "wb", etc.
+            mode_str = mode_arg;
+        }
+    } else {
+        int mode = luaL_checkinteger(L, 2);
+        // Mapping from Vita constants to C standard modes
+        switch (mode) {
+            case 0: mode_str = "rb"; break;   // FREAD
+            case 1: mode_str = "wb"; break;   // FWRITE
+            case 2: mode_str = "w+b"; break;  // FCREATE
+            case 3: mode_str = "r+b"; break;  // FRDWR
+            default: return luaL_error(L, "Invalid file mode integer");
+        }
+    }
+
+    FILE **ud = (FILE **)lua_newuserdata(L, sizeof(FILE *));
+    *ud = fopen(translated_path.c_str(), mode_str);
+
+    if (*ud == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    luaL_getmetatable(L, LUA_FILEHANDLE);
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+// System.closeFile(filehandle)
+static int lua_closeFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (*ud) {
+        fclose(*ud);
+        *ud = NULL;
+    }
+    return 0;
+}
+
+// System.sizeFile(filehandle)
+static int lua_sizeFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (*ud) {
+        long current_pos = ftell(*ud);
+        fseek(*ud, 0, SEEK_END);
+        long size = ftell(*ud);
+        fseek(*ud, current_pos, SEEK_SET);
+        lua_pushinteger(L, size);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+// System.seekFile(filehandle, offset, origin)
+static int lua_seekFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (*ud) {
+        long offset = luaL_checklong(L, 2);
+        int origin = luaL_checkinteger(L, 3);
+        int whence;
+        switch(origin) {
+            case 0: whence = SEEK_SET; break; // SET
+            case 1: whence = SEEK_CUR; break; // CUR
+            case 2: whence = SEEK_END; break; // END
+            default: return luaL_error(L, "Invalid seek origin");
+        }
+        int result = fseek(*ud, offset, whence);
+        lua_pushboolean(L, result == 0);
+    } else {
+        lua_pushboolean(L, 0);
+    }
+    return 1;
+}
+
+// System.readFile(filehandle, num_bytes)
+static int lua_readFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (!*ud) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    // Read all bytes if num_bytes is not provided or is -1
+    long num_bytes_to_read;
+    if (lua_isnoneornil(L, 2) || lua_tointeger(L, 2) == -1) {
+        long current_pos = ftell(*ud);
+        fseek(*ud, 0, SEEK_END);
+        num_bytes_to_read = ftell(*ud) - current_pos;
+        fseek(*ud, current_pos, SEEK_SET);
+    } else {
+        num_bytes_to_read = luaL_checklong(L, 2);
+    }
+
+    if (num_bytes_to_read <= 0) {
+        lua_pushstring(L, "");
+        return 1;
+    }
+
+    char *buffer = (char *)malloc(num_bytes_to_read);
+    if (!buffer) {
+        return luaL_error(L, "malloc failed in readFile");
+    }
+
+    size_t bytes_read = fread(buffer, 1, num_bytes_to_read, *ud);
+    lua_pushlstring(L, buffer, bytes_read);
+    free(buffer);
+    return 1;
+}
+
+// System.writeFile(filehandle, data)
+static int lua_writeFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (!*ud) {
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    size_t len;
+    const char *data = luaL_checklstring(L, 2, &len);
+    size_t bytes_written = fwrite(data, 1, len, *ud);
+    lua_pushboolean(L, bytes_written == len);
+    return 1;
+}
+
+// --- Dummy implementations for compatibility ---
+static int lua_checkInput(lua_State *L) {
+    lua_pushstring(L, "");
+    return 1;
+}
+
+// System.getBatteryPercentage() - Use SDL_PowerState for real battery info
+static int lua_getBatteryPercentage(lua_State *L) {
+    int secs, pct;
+    SDL_PowerState power_state = SDL_GetPowerInfo(&secs, &pct);
+    
+    // If battery percentage is available, return it
+    if (pct >= 0) {
+        lua_pushinteger(L, pct);
+    } else {
+        // If no battery info available (desktop/plugged in), return 100
+        switch (power_state) {
+            case SDL_POWERSTATE_NO_BATTERY:
+            case SDL_POWERSTATE_CHARGING:
+            case SDL_POWERSTATE_CHARGED:
+                lua_pushinteger(L, 100);
+                break;
+            case SDL_POWERSTATE_ON_BATTERY:
+                // Battery exists but percentage unknown, estimate 50%
+                lua_pushinteger(L, 50);
+                break;
+            default:
+                // Unknown power state, return 100 as safe default
+                lua_pushinteger(L, 100);
+                break;
+        }
+    }
+    return 1;
+}
+
+// System.getBatteryInfo() - Extended battery information
+static int lua_getBatteryInfo(lua_State *L) {
+    int secs, pct;
+    SDL_PowerState power_state = SDL_GetPowerInfo(&secs, &pct);
+    
+    lua_newtable(L);
+    
+    // Add battery percentage
+    if (pct >= 0) {
+        lua_pushinteger(L, pct);
+    } else {
+        lua_pushnil(L);
+    }
+    lua_setfield(L, -2, "percentage");
+    
+    // Add time remaining in seconds (if available)
+    if (secs >= 0) {
+        lua_pushinteger(L, secs);
+    } else {
+        lua_pushnil(L);
+    }
+    lua_setfield(L, -2, "secondsLeft");
+    
+    // Add power state as string
+    const char* state_str;
+    switch (power_state) {
+        case SDL_POWERSTATE_UNKNOWN:   state_str = "unknown"; break;
+        case SDL_POWERSTATE_ON_BATTERY: state_str = "battery"; break;
+        case SDL_POWERSTATE_NO_BATTERY: state_str = "no_battery"; break;
+        case SDL_POWERSTATE_CHARGING:   state_str = "charging"; break;
+        case SDL_POWERSTATE_CHARGED:    state_str = "charged"; break;
+        default:                        state_str = "unknown"; break;
+    }
+    lua_pushstring(L, state_str);
+    lua_setfield(L, -2, "state");
+    
+    // Add charging boolean for convenience
+    lua_pushboolean(L, power_state == SDL_POWERSTATE_CHARGING);
+    lua_setfield(L, -2, "charging");
+    
+    return 1;
+}
+
+// System.isBatteryCharging() - Returns true if battery is charging
+static int lua_isBatteryCharging(lua_State *L) {
+    int secs, pct;
+    SDL_PowerState power_state = SDL_GetPowerInfo(&secs, &pct);
+    lua_pushboolean(L, power_state == SDL_POWERSTATE_CHARGING);
+    return 1;
+}
+
+// System.deleteFile(path) - Missing function for tetromino compatibility  
+static int lua_deleteFile(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    bool success = (unlink(translated_path.c_str()) == 0);
+    lua_pushboolean(L, success);
+    return 1;
+}
+
+// System.shouldExit() - Check if ESC was pressed or window closed
+extern bool should_exit; // Defined in main_sdl.cpp
+static int lua_shouldExit(lua_State *L) {
+    lua_pushboolean(L, should_exit);
+    return 1;
+}
+
+// System.getTime() - Get current local time (hour, minute, second)
+static int lua_getTime(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // Get current time using C++ standard library
+    time_t rawtime;
+    struct tm* timeinfo;
+    
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    
+    // Push hour, minute, second to Lua stack
+    lua_pushinteger(L, timeinfo->tm_hour);
+    lua_pushinteger(L, timeinfo->tm_min);
+    lua_pushinteger(L, timeinfo->tm_sec);
+    
+    return 3; // Return 3 values: hour, minute, second
+}
+
+// Power management functions - SDL stubs for Vita compatibility
+static int lua_setCpuSpeed(lua_State *L) {
+    // SDL doesn't have CPU speed control, just return success
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+static int lua_setGpuSpeed(lua_State *L) {
+    // SDL doesn't have GPU speed control, just return success
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+static int lua_setGpuXbarSpeed(lua_State *L) {
+    // SDL doesn't have GPU Xbar speed control, just return success
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+static int lua_setBusSpeed(lua_State *L) {
+    // SDL doesn't have bus speed control, just return success
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.wait() - Sleep function for tetromino compatibility
+static int lua_wait(lua_State *L) {
+    int ms = luaL_checkinteger(L, 1);
+    SDL_Delay(ms);
+    return 0;
+}
+
+// System.doesDirExist() - Check if directory exists
+static int lua_doesDirExist(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+    struct stat buffer;
+    bool exists = (stat(translated_path.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
+    lua_pushboolean(L, exists);
+    return 1;
+}
+
+// System.listDirectory(path) - List files and directories in a path
+static int lua_listDirectory(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "System.listDirectory(path) takes one argument");
+    }
+    
+    const char *path = luaL_checkstring(L, 1);
+    
+    // Translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
+    std::string translated_path = translate_vita_path(path);
+    
+    // Create a table to return
+    lua_newtable(L);
+    
+    // Open directory
+    DIR *dir;
+    struct dirent *entry;
+    
+    dir = opendir(translated_path.c_str());
+    if (dir == NULL) {
+        // Return empty table if directory doesn't exist
+        return 1;
+    }
+    
+    int i = 1;
+    while ((entry = readdir(dir)) != NULL) {
+        // Skip . and .. entries
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        // Create table index (1-based for Lua)
+        lua_pushnumber(L, i++);
+        
+        // Create table for this entry
+        lua_newtable(L);
+        
+        // Add name field
+        lua_pushstring(L, "name");
+        lua_pushstring(L, entry->d_name);
+        lua_settable(L, -3);
+        
+        // Get file stats for size and directory flag
+        std::string full_path = translated_path;
+        if (full_path.back() != '/' && full_path.back() != '\\') {
+            full_path += '/';
+        }
+        full_path += entry->d_name;
+        
+        struct stat st;
+        if (stat(full_path.c_str(), &st) == 0) {
+            // Add size field
+            lua_pushstring(L, "size");
+            lua_pushnumber(L, (lua_Number)st.st_size);
+            lua_settable(L, -3);
+            
+            // Add directory flag
+            lua_pushstring(L, "directory");
+            lua_pushboolean(L, S_ISDIR(st.st_mode));
+            lua_settable(L, -3);
+        } else {
+            // If stat fails, set defaults
+            lua_pushstring(L, "size");
+            lua_pushnumber(L, 0);
+            lua_settable(L, -3);
+            
+            lua_pushstring(L, "directory");
+            lua_pushboolean(L, false);
+            lua_settable(L, -3);
+        }
+        
+        // Add entry to main table
+        lua_settable(L, -3);
+    }
+    
+    closedir(dir);
+    return 1;  // Return the table
+}
+
+// --- Custom dofile with Vita path translation ---
+static int lua_dofile_vita(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+    // Use luaL_dofile with the translated path
+    int status = luaL_dofile(L, translated_path.c_str());
+    if (status) {
+        // If there was an error, the error message is on the top of the stack
+        return lua_error(L);
+    }
+    
+    // If no return values, return nil
+    if (lua_gettop(L) == argc) {
+        lua_pushnil(L);
+        return 1;
+    } else {
+        // Return all return values from the file
+        return lua_gettop(L) - argc;
+    }
+}
+
+// --- Module Registration ---
+
+static const luaL_Reg System_functions[] = {
+    {"doesFileExist",       lua_doesFileExist},
+    {"createDirectory",     lua_createDirectory},
+    {"exit",               lua_exit},
+    {"openFile",           lua_openFile},
+    {"closeFile",          lua_closeFile},
+    {"sizeFile",           lua_sizeFile},
+    {"seekFile",           lua_seekFile},
+    {"readFile",           lua_readFile},
+    {"writeFile",          lua_writeFile},
+    {"checkInput",         lua_checkInput},
+    {"getBatteryPercentage", lua_getBatteryPercentage},
+    {"getBatteryInfo",     lua_getBatteryInfo},
+    {"isBatteryCharging",  lua_isBatteryCharging},
+    {"deleteFile",         lua_deleteFile},
+    {"shouldExit",         lua_shouldExit},
+    {"setCpuSpeed",        lua_setCpuSpeed},
+    {"setGpuSpeed",        lua_setGpuSpeed},
+    {"setGpuXbarSpeed",    lua_setGpuXbarSpeed},
+    {"setBusSpeed",        lua_setBusSpeed},
+    {"wait",               lua_wait},
+    {"doesDirExist",       lua_doesDirExist},
+    {"listDirectory",      lua_listDirectory},
+    {"getTime",            lua_getTime},
+    {NULL, NULL}
+};
+
+static const luaL_Reg FileHandle_methods[] = {
+    {"size",  lua_sizeFile},
+    {"seek",  lua_seekFile},
+    {"read",  lua_readFile},
+    {"write", lua_writeFile},
+    {"__gc",  lua_closeFile},
+    {NULL, NULL}
+};
+
+void luaSystem_init(lua_State *L) {
+    // Create metatable for file handles
+    luaL_newmetatable(L, LUA_FILEHANDLE);
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+    luaL_setfuncs(L, FileHandle_methods, 0);
+    lua_pop(L, 1); // pop metatable
+
+    // Create System table
+    lua_newtable(L);
+    luaL_setfuncs(L, System_functions, 0);
+    lua_setglobal(L, "System");
+    
+    // Set file mode constants
+    lua_pushinteger(L, 0); lua_setglobal(L, "FREAD");
+    lua_pushinteger(L, 1); lua_setglobal(L, "FWRITE");
+    lua_pushinteger(L, 2); lua_setglobal(L, "FCREATE");
+    lua_pushinteger(L, 3); lua_setglobal(L, "FRDWR");
+
+    // Set seek constants
+    lua_pushinteger(L, 0); lua_setglobal(L, "SET");
+    lua_pushinteger(L, 1); lua_setglobal(L, "CUR");
+    lua_pushinteger(L, 2); lua_setglobal(L, "END");
+
+    // Override dofile with Vita path translation (only for vita paths)
+    lua_register(L, "dofile", lua_dofile_vita);
+
+    // Register dummy checkInput
+    lua_register(L, "checkInput", lua_checkInput);
+}
