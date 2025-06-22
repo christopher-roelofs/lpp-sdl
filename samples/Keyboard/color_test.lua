@@ -32,7 +32,7 @@ function setColorTheme(theme_id)
         Keyboard.setKeyboardBorderColor(Color.new(100, 100, 100, 255))
         Keyboard.setKeyBorderColor(Color.new(120, 120, 120, 255))
         -- Reset to default font
-        Keyboard.setFont("main.ttf", 16)
+        Keyboard.setFont("main.ttf", 18)
         
     elseif theme_id == 2 then
         -- Dark theme

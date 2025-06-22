@@ -272,12 +272,22 @@ static int lua_state(lua_State *L) {
         
         // Draw keyboard keys
         auto& current_layout = (osk.shift_mode || osk.caps_lock) ? osk.shift_layout : osk.layout;
-        int key_w = kb_width / 13;
         int key_h = kb_height / 5;
         
         for (int row = 0; row < current_layout.size(); row++) {
+            // Calculate key width dynamically for each row to use available space
+            int keys_in_row = current_layout[row].size();
+            int gap_size = 5; // Space between keys
+            int total_gap_space = (keys_in_row - 1) * gap_size;
+            int available_width = kb_width - total_gap_space;
+            int key_w = available_width / keys_in_row;
+            
+            // Center the row horizontally
+            int row_total_width = (key_w * keys_in_row) + total_gap_space;
+            int row_start_x = kb_x + (kb_width - row_total_width) / 2;
+            
             for (int col = 0; col < current_layout[row].size(); col++) {
-                int key_x = kb_x + (col * key_w);
+                int key_x = row_start_x + (col * (key_w + gap_size));
                 int key_y = keys_y + (row * key_h);
                 
                 // Key background
@@ -316,9 +326,18 @@ static int lua_state(lua_State *L) {
         
         // Render key text
         for (int row = 0; row < current_layout.size(); row++) {
+            // Calculate key width dynamically for each row (same as above)
+            int keys_in_row = current_layout[row].size();
+            int gap_size = 5;
+            int total_gap_space = (keys_in_row - 1) * gap_size;
+            int available_width = kb_width - total_gap_space;
+            int key_w = available_width / keys_in_row;
+            int row_total_width = (key_w * keys_in_row) + total_gap_space;
+            int row_start_x = kb_x + (kb_width - row_total_width) / 2;
+            
             for (int col = 0; col < current_layout[row].size(); col++) {
                 std::string key_text = current_layout[row][col];
-                int key_x = kb_x + (col * key_w);
+                int key_x = row_start_x + (col * (key_w + gap_size));
                 int key_y = keys_y + (row * key_h);
                 
                 // Adjust text scale based on key text length to prevent overflow
