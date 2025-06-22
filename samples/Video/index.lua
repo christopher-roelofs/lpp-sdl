@@ -5,7 +5,7 @@ Video.init()
 
 -- Loading and starting our video file
 Video.open("video.mp4")
-Video.openSubs("video.vtt")
+Video.openSubs("video.srt")
 
 local modes = {
 	NORMAL_MODE,

@@ -10,6 +10,14 @@
 #include <dirent.h>
 #include <time.h>
 #include <SDL.h>
+#include <errno.h>
+
+// Platform-specific includes for disk space
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__linux__) || defined(__APPLE__)
+#include <sys/statvfs.h>
+#endif
 
 extern "C" {
 #include "lua.h"
@@ -520,6 +528,301 @@ static int lua_dofile_vita(lua_State *L) {
     }
 }
 
+// System.statFile(path) - Get file metadata/statistics
+static int lua_statFile(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+    struct stat st;
+    if (stat(translated_path.c_str(), &st) != 0) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    // Create table with file statistics
+    lua_newtable(L);
+    
+    // File size
+    lua_pushstring(L, "size");
+    lua_pushnumber(L, (lua_Number)st.st_size);
+    lua_settable(L, -3);
+    
+    // Is directory
+    lua_pushstring(L, "directory");
+    lua_pushboolean(L, S_ISDIR(st.st_mode));
+    lua_settable(L, -3);
+    
+    // Modification time (Unix timestamp)
+    lua_pushstring(L, "mtime");
+    lua_pushnumber(L, (lua_Number)st.st_mtime);
+    lua_settable(L, -3);
+    
+    // Access time (Unix timestamp)
+    lua_pushstring(L, "atime");
+    lua_pushnumber(L, (lua_Number)st.st_atime);
+    lua_settable(L, -3);
+    
+    // Creation/change time (Unix timestamp)
+    lua_pushstring(L, "ctime");
+    lua_pushnumber(L, (lua_Number)st.st_ctime);
+    lua_settable(L, -3);
+    
+    // File mode/permissions
+    lua_pushstring(L, "mode");
+    lua_pushinteger(L, st.st_mode);
+    lua_settable(L, -3);
+    
+    return 1;
+}
+
+// System.statOpenedFile(filehandle) - Get statistics for open file handles
+static int lua_statOpenedFile(lua_State *L) {
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (!*ud) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    // Get file descriptor and then stat it
+    int fd = fileno(*ud);
+    if (fd == -1) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    struct stat st;
+    if (fstat(fd, &st) != 0) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    // Create table with file statistics (same format as statFile)
+    lua_newtable(L);
+    
+    lua_pushstring(L, "size");
+    lua_pushnumber(L, (lua_Number)st.st_size);
+    lua_settable(L, -3);
+    
+    lua_pushstring(L, "directory");
+    lua_pushboolean(L, S_ISDIR(st.st_mode));
+    lua_settable(L, -3);
+    
+    lua_pushstring(L, "mtime");
+    lua_pushnumber(L, (lua_Number)st.st_mtime);
+    lua_settable(L, -3);
+    
+    lua_pushstring(L, "atime");
+    lua_pushnumber(L, (lua_Number)st.st_atime);
+    lua_settable(L, -3);
+    
+    lua_pushstring(L, "ctime");
+    lua_pushnumber(L, (lua_Number)st.st_ctime);
+    lua_settable(L, -3);
+    
+    lua_pushstring(L, "mode");
+    lua_pushinteger(L, st.st_mode);
+    lua_settable(L, -3);
+    
+    return 1;
+}
+
+// System.copyFile(src, dest) - Copy files
+static int lua_copyFile(lua_State *L) {
+    const char *src_path = luaL_checkstring(L, 1);
+    const char *dest_path = luaL_checkstring(L, 2);
+    
+    std::string translated_src = translate_vita_path(src_path);
+    std::string translated_dest = translate_vita_path(dest_path);
+    
+    FILE *src_file = fopen(translated_src.c_str(), "rb");
+    if (!src_file) {
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Cannot open source file");
+        return 2;
+    }
+    
+    FILE *dest_file = fopen(translated_dest.c_str(), "wb");
+    if (!dest_file) {
+        fclose(src_file);
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Cannot create destination file");
+        return 2;
+    }
+    
+    // Copy in chunks
+    const size_t buffer_size = 8192;
+    char *buffer = (char *)malloc(buffer_size);
+    if (!buffer) {
+        fclose(src_file);
+        fclose(dest_file);
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Memory allocation failed");
+        return 2;
+    }
+    
+    bool success = true;
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, buffer_size, src_file)) > 0) {
+        if (fwrite(buffer, 1, bytes_read, dest_file) != bytes_read) {
+            success = false;
+            break;
+        }
+    }
+    
+    free(buffer);
+    fclose(src_file);
+    fclose(dest_file);
+    
+    if (!success) {
+        // Clean up failed copy
+        unlink(translated_dest.c_str());
+    }
+    
+    lua_pushboolean(L, success);
+    if (!success) {
+        lua_pushstring(L, "Copy operation failed");
+        return 2;
+    }
+    return 1;
+}
+
+// System.rename(oldpath, newpath) - Rename/move files and directories
+static int lua_rename(lua_State *L) {
+    const char *old_path = luaL_checkstring(L, 1);
+    const char *new_path = luaL_checkstring(L, 2);
+    
+    std::string translated_old = translate_vita_path(old_path);
+    std::string translated_new = translate_vita_path(new_path);
+    
+    int result = rename(translated_old.c_str(), translated_new.c_str());
+    lua_pushboolean(L, result == 0);
+    
+    if (result != 0) {
+        lua_pushstring(L, strerror(errno));
+        return 2;
+    }
+    return 1;
+}
+
+// Helper function to remove directory recursively
+static bool remove_directory_recursive(const std::string& path) {
+    DIR *dir = opendir(path.c_str());
+    if (!dir) {
+        return false;
+    }
+    
+    struct dirent *entry;
+    bool success = true;
+    
+    while ((entry = readdir(dir)) != NULL && success) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        std::string full_path = path + "/" + entry->d_name;
+        struct stat st;
+        
+        if (stat(full_path.c_str(), &st) == 0) {
+            if (S_ISDIR(st.st_mode)) {
+                success = remove_directory_recursive(full_path);
+            } else {
+                success = (unlink(full_path.c_str()) == 0);
+            }
+        }
+    }
+    
+    closedir(dir);
+    
+    if (success) {
+        success = (rmdir(path.c_str()) == 0);
+    }
+    
+    return success;
+}
+
+// System.deleteDirectory(path) - Remove directories
+static int lua_deleteDirectory(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+    // Check if it's actually a directory
+    struct stat st;
+    if (stat(translated_path.c_str(), &st) != 0) {
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Directory does not exist");
+        return 2;
+    }
+    
+    if (!S_ISDIR(st.st_mode)) {
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Path is not a directory");
+        return 2;
+    }
+    
+    bool success = remove_directory_recursive(translated_path);
+    lua_pushboolean(L, success);
+    
+    if (!success) {
+        lua_pushstring(L, "Failed to remove directory");
+        return 2;
+    }
+    return 1;
+}
+
+// System.getFreeSpace(path) - Get available storage space
+static int lua_getFreeSpace(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+#if defined(_WIN32)
+    ULARGE_INTEGER free_bytes;
+    if (GetDiskFreeSpaceExA(translated_path.c_str(), &free_bytes, NULL, NULL)) {
+        lua_pushnumber(L, (lua_Number)free_bytes.QuadPart);
+    } else {
+        lua_pushnil(L);
+    }
+#elif defined(__linux__) || defined(__APPLE__)
+    struct statvfs stat_buf;
+    if (statvfs(translated_path.c_str(), &stat_buf) == 0) {
+        uint64_t free_space = (uint64_t)stat_buf.f_bavail * stat_buf.f_frsize;
+        lua_pushnumber(L, (lua_Number)free_space);
+    } else {
+        lua_pushnil(L);
+    }
+#else
+    lua_pushnil(L);
+#endif
+    
+    return 1;
+}
+
+// System.getTotalSpace(path) - Get total storage capacity
+static int lua_getTotalSpace(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    std::string translated_path = translate_vita_path(path);
+    
+#if defined(_WIN32)
+    ULARGE_INTEGER total_bytes;
+    if (GetDiskFreeSpaceExA(translated_path.c_str(), NULL, &total_bytes, NULL)) {
+        lua_pushnumber(L, (lua_Number)total_bytes.QuadPart);
+    } else {
+        lua_pushnil(L);
+    }
+#elif defined(__linux__) || defined(__APPLE__)
+    struct statvfs stat_buf;
+    if (statvfs(translated_path.c_str(), &stat_buf) == 0) {
+        uint64_t total_space = (uint64_t)stat_buf.f_blocks * stat_buf.f_frsize;
+        lua_pushnumber(L, (lua_Number)total_space);
+    } else {
+        lua_pushnil(L);
+    }
+#else
+    lua_pushnil(L);
+#endif
+    
+    return 1;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -546,6 +849,13 @@ static const luaL_Reg System_functions[] = {
     {"doesDirExist",       lua_doesDirExist},
     {"listDirectory",      lua_listDirectory},
     {"getTime",            lua_getTime},
+    {"statFile",           lua_statFile},
+    {"statOpenedFile",     lua_statOpenedFile},
+    {"copyFile",           lua_copyFile},
+    {"rename",             lua_rename},
+    {"deleteDirectory",    lua_deleteDirectory},
+    {"getFreeSpace",       lua_getFreeSpace},
+    {"getTotalSpace",      lua_getTotalSpace},
     {NULL, NULL}
 };
 
@@ -554,6 +864,7 @@ static const luaL_Reg FileHandle_methods[] = {
     {"seek",  lua_seekFile},
     {"read",  lua_readFile},
     {"write", lua_writeFile},
+    {"stat",  lua_statOpenedFile},
     {"__gc",  lua_closeFile},
     {NULL, NULL}
 };

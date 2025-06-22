@@ -258,6 +258,7 @@ int main(int argc, char* args[]) {
 
     // Change working directory to the script's directory so relative asset paths work.
     std::string path_str(lua_file);
+    std::string script_name_str = lua_file;
     const char* script_name = lua_file;
     size_t last_slash = path_str.find_last_of("/\\");
     if (last_slash != std::string::npos) {
@@ -267,7 +268,8 @@ int main(int argc, char* args[]) {
         } else {
             printf("Changed working directory to: %s\n", dir.c_str());
         }
-        script_name = path_str.substr(last_slash + 1).c_str();
+        script_name_str = path_str.substr(last_slash + 1);
+        script_name = script_name_str.c_str();
     }
 
     printf("Attempting to load and run %s...\n", script_name);
