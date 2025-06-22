@@ -75,6 +75,23 @@ struct OnScreenKeyboard {
     int layout_height;
     uint32_t last_pad;
     bool auto_draw;
+    
+    // Color settings
+    SDL_Color bg_color;
+    SDL_Color font_color;
+    SDL_Color selected_bg_color;
+    SDL_Color selected_font_color;
+    SDL_Color key_bg_color;
+    SDL_Color shift_key_color;
+    SDL_Color title_bar_color;
+    SDL_Color input_bg_color;
+    SDL_Color input_border_color;
+    SDL_Color input_text_color;
+    SDL_Color keyboard_border_color;
+    SDL_Color key_border_color;
+    
+    // Font settings
+    TTF_Font* font;  // Custom font for keyboard (NULL = use default)
 } osk;
 
 extern SDL_Renderer* g_renderer;
@@ -88,9 +105,11 @@ void autoDrawKeyboard(lua_State *L);
 
 // Helper function to render text with SDL_ttf
 void renderKeyboardText(const char* text, int x, int y, SDL_Color color, float scale = 1.0f) {
-    if (!g_defaultFont || !g_renderer || !text || strlen(text) == 0) return;
+    // Use keyboard font if set, otherwise use default font
+    TTF_Font* font_to_use = osk.font ? osk.font : g_defaultFont;
+    if (!font_to_use || !g_renderer || !text || strlen(text) == 0) return;
     
-    SDL_Surface* text_surface = TTF_RenderText_Blended(g_defaultFont, text, color);
+    SDL_Surface* text_surface = TTF_RenderText_Blended(font_to_use, text, color);
     if (!text_surface) return;
     
     SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
@@ -208,32 +227,48 @@ static int lua_state(lua_State *L) {
             SDL_GetRendererOutputSize(g_renderer, &screen_width, &screen_height);
         }
         
-        // Keyboard area - scale with screen size
-        int kb_width = (int)(screen_width * 0.95);  // 95% of screen width
-        int kb_height = (int)(screen_height * 0.55); // 55% of screen height  
+        // Keyboard area - scale with screen size but ensure it fits on screen
+        int kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
+        int kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
         int kb_x = (screen_width - kb_width) / 2;   // Center horizontally
-        int kb_y = screen_height - kb_height - (int)(screen_height * 0.02); // 2% margin from bottom
         
-        // Background
-        SDL_SetRenderDrawColor(g_renderer, 40, 40, 40, 220);
-        SDL_Rect bg_rect = {kb_x - 10, kb_y - 60, kb_width + 20, kb_height + 80};
-        SDL_RenderFillRect(g_renderer, &bg_rect);
+        // Calculate total needed height including title bar and input area
+        int title_height = 30;
+        int input_height = 30;
+        int margin = 10;
+        int total_height = title_height + input_height + kb_height + (margin * 2);
         
-        // Border
-        SDL_SetRenderDrawColor(g_renderer, 100, 100, 100, 255);
-        SDL_RenderDrawRect(g_renderer, &bg_rect);
+        // Ensure keyboard doesn't go off screen - adjust position if needed
+        int kb_y = screen_height - total_height - 20; // 20px margin from bottom
+        if (kb_y < 20) { // If too high, adjust size
+            kb_y = 20;
+            total_height = screen_height - 40;
+            kb_height = total_height - title_height - input_height - (margin * 2);
+        }
         
-        // Title area - made bigger
-        SDL_SetRenderDrawColor(g_renderer, 60, 60, 60, 255);
-        SDL_Rect title_rect = {kb_x - 10, kb_y - 80, kb_width + 20, 40}; // Increased height from 30 to 40, moved up
+        // Title area
+        SDL_SetRenderDrawColor(g_renderer, osk.title_bar_color.r, osk.title_bar_color.g, osk.title_bar_color.b, osk.title_bar_color.a);
+        SDL_Rect title_rect = {kb_x, kb_y, kb_width, title_height};
         SDL_RenderFillRect(g_renderer, &title_rect);
         
-        // Input text area - made bigger
-        SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
-        SDL_Rect input_rect = {kb_x, kb_y - 35, kb_width, 35}; // Increased height from 25 to 35, moved up
+        // Input text area
+        int input_y = kb_y + title_height + margin;
+        SDL_SetRenderDrawColor(g_renderer, osk.input_bg_color.r, osk.input_bg_color.g, osk.input_bg_color.b, osk.input_bg_color.a);
+        SDL_Rect input_rect = {kb_x, input_y, kb_width, input_height};
         SDL_RenderFillRect(g_renderer, &input_rect);
-        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(g_renderer, osk.input_border_color.r, osk.input_border_color.g, osk.input_border_color.b, osk.input_border_color.a);
         SDL_RenderDrawRect(g_renderer, &input_rect);
+        
+        // Keyboard background
+        int keys_y = input_y + input_height + margin;
+        SDL_SetRenderDrawColor(g_renderer, osk.bg_color.r, osk.bg_color.g, osk.bg_color.b, osk.bg_color.a);
+        SDL_Rect bg_rect = {kb_x, keys_y, kb_width, kb_height};
+        SDL_RenderFillRect(g_renderer, &bg_rect);
+        
+        // Border around entire keyboard area
+        SDL_SetRenderDrawColor(g_renderer, osk.keyboard_border_color.r, osk.keyboard_border_color.g, osk.keyboard_border_color.b, osk.keyboard_border_color.a);
+        SDL_Rect border_rect = {kb_x - 2, kb_y - 2, kb_width + 4, total_height + 4};
+        SDL_RenderDrawRect(g_renderer, &border_rect);
         
         // Draw keyboard keys
         auto& current_layout = (osk.shift_mode || osk.caps_lock) ? osk.shift_layout : osk.layout;
@@ -243,31 +278,29 @@ static int lua_state(lua_State *L) {
         for (int row = 0; row < current_layout.size(); row++) {
             for (int col = 0; col < current_layout[row].size(); col++) {
                 int key_x = kb_x + (col * key_w);
-                int key_y = kb_y + (row * key_h);
+                int key_y = keys_y + (row * key_h);
                 
                 // Key background
                 bool is_selected = (row == osk.cursor_y && col == osk.cursor_x);
                 if (is_selected) {
-                    SDL_SetRenderDrawColor(g_renderer, 100, 150, 200, 255);
+                    SDL_SetRenderDrawColor(g_renderer, osk.selected_bg_color.r, osk.selected_bg_color.g, osk.selected_bg_color.b, osk.selected_bg_color.a);
                 } else if (current_layout[row][col] == "SHIFT" && (osk.shift_mode || osk.caps_lock)) {
-                    SDL_SetRenderDrawColor(g_renderer, 150, 100, 100, 255);
+                    SDL_SetRenderDrawColor(g_renderer, osk.shift_key_color.r, osk.shift_key_color.g, osk.shift_key_color.b, osk.shift_key_color.a);
                 } else {
-                    SDL_SetRenderDrawColor(g_renderer, 80, 80, 80, 255);
+                    SDL_SetRenderDrawColor(g_renderer, osk.key_bg_color.r, osk.key_bg_color.g, osk.key_bg_color.b, osk.key_bg_color.a);
                 }
                 
                 SDL_Rect key_rect = {key_x + 1, key_y + 1, key_w - 3, key_h - 3};
                 SDL_RenderFillRect(g_renderer, &key_rect);
                 
                 // Key border
-                SDL_SetRenderDrawColor(g_renderer, 120, 120, 120, 255);
+                SDL_SetRenderDrawColor(g_renderer, osk.key_border_color.r, osk.key_border_color.g, osk.key_border_color.b, osk.key_border_color.a);
                 SDL_RenderDrawRect(g_renderer, &key_rect);
             }
         }
         
         // Render keyboard text
-        SDL_Color white_color = {255, 255, 255, 255};
-        SDL_Color black_color = {0, 0, 0, 255};
-        SDL_Color selected_color = {255, 255, 0, 255};
+        SDL_Color selected_color = osk.selected_font_color;
         
         // Calculate text scale based on screen size - increased for better visibility
         float text_scale;
@@ -286,7 +319,7 @@ static int lua_state(lua_State *L) {
             for (int col = 0; col < current_layout[row].size(); col++) {
                 std::string key_text = current_layout[row][col];
                 int key_x = kb_x + (col * key_w);
-                int key_y = kb_y + (row * key_h);
+                int key_y = keys_y + (row * key_h);
                 
                 // Adjust text scale based on key text length to prevent overflow
                 float key_text_scale = text_scale;
@@ -305,22 +338,22 @@ static int lua_state(lua_State *L) {
                 
                 // Use different color for selected key
                 bool is_selected = (row == osk.cursor_y && col == osk.cursor_x);
-                SDL_Color text_color = is_selected ? selected_color : white_color;
+                SDL_Color text_color = is_selected ? selected_color : osk.font_color;
                 
                 renderKeyboardText(key_text.c_str(), text_x, text_y, text_color, key_text_scale);
             }
         }
         
-        // Render title - moved higher to center in bigger area
-        renderKeyboardText(osk.title.c_str(), kb_x, kb_y - 75, white_color, text_scale);
+        // Render title - positioned near top of area 
+        renderKeyboardText(osk.title.c_str(), kb_x + 5, kb_y + 1, osk.font_color, text_scale);
         
-        // Render input text - moved higher to center in bigger area
+        // Render input text - positioned near top of area
         std::string display_text = osk.input_text;
         if (osk.mode == OSK_MODE_PASSWORD) {
             // Show asterisks for password mode
             display_text = std::string(osk.input_text.length(), '*');
         }
-        renderKeyboardText(display_text.c_str(), kb_x + 5, kb_y - 30, black_color, text_scale);
+        renderKeyboardText(display_text.c_str(), kb_x + 5, input_y + 1, osk.input_text_color, text_scale);
         
         // Handle input while keyboard is active
         // Get SDL keyboard state
@@ -515,31 +548,50 @@ static int lua_draw(lua_State *L) {
         SDL_GetRendererOutputSize(g_renderer, &screen_width, &screen_height);
     }
     
-    // Draw keyboard background - scale with screen size
-    int kb_width = (int)(screen_width * 0.95);  // 95% of screen width
-    int kb_height = (int)(screen_height * 0.55); // 55% of screen height  
+    // Draw keyboard background - scale with screen size but ensure it fits on screen
+    int kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
+    int kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
     int kb_x = (screen_width - kb_width) / 2;   // Center horizontally
-    int kb_y = screen_height - kb_height - (int)(screen_height * 0.02); // 2% margin from bottom
     
-    // Background
-    SDL_SetRenderDrawColor(g_renderer, 40, 40, 40, 200);
-    SDL_Rect bg_rect = {kb_x - 10, kb_y - 60, kb_width + 20, kb_height + 80};
-    SDL_RenderFillRect(g_renderer, &bg_rect);
+    // Calculate total needed height including title bar and input area
+    int title_height = 30;
+    int input_height = 30;
+    int margin = 10;
+    int total_height = title_height + input_height + kb_height + (margin * 2);
     
-    // Border
-    SDL_SetRenderDrawColor(g_renderer, 100, 100, 100, 255);
-    SDL_RenderDrawRect(g_renderer, &bg_rect);
+    // Ensure keyboard doesn't go off screen - adjust position if needed
+    int kb_y = screen_height - total_height - 20; // 20px margin from bottom
+    if (kb_y < 20) { // If too high, adjust size
+        kb_y = 20;
+        total_height = screen_height - 40;
+        kb_height = total_height - title_height - input_height - (margin * 2);
+    }
     
-    // Input text area - made bigger
-    SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
-    SDL_Rect input_rect = {kb_x, kb_y - 35, kb_width, 35};
+    // Title area
+    SDL_SetRenderDrawColor(g_renderer, osk.title_bar_color.r, osk.title_bar_color.g, osk.title_bar_color.b, osk.title_bar_color.a);
+    SDL_Rect title_rect = {kb_x, kb_y, kb_width, title_height};
+    SDL_RenderFillRect(g_renderer, &title_rect);
+    
+    // Input text area
+    int input_y = kb_y + title_height + margin;
+    SDL_SetRenderDrawColor(g_renderer, osk.input_bg_color.r, osk.input_bg_color.g, osk.input_bg_color.b, osk.input_bg_color.a);
+    SDL_Rect input_rect = {kb_x, input_y, kb_width, input_height};
     SDL_RenderFillRect(g_renderer, &input_rect);
-    SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(g_renderer, osk.input_border_color.r, osk.input_border_color.g, osk.input_border_color.b, osk.input_border_color.a);
     SDL_RenderDrawRect(g_renderer, &input_rect);
     
+    // Keyboard background
+    int keys_y = input_y + input_height + margin;
+    SDL_SetRenderDrawColor(g_renderer, osk.bg_color.r, osk.bg_color.g, osk.bg_color.b, 200);
+    SDL_Rect bg_rect = {kb_x, keys_y, kb_width, kb_height};
+    SDL_RenderFillRect(g_renderer, &bg_rect);
+    
+    // Border around entire keyboard area
+    SDL_SetRenderDrawColor(g_renderer, osk.keyboard_border_color.r, osk.keyboard_border_color.g, osk.keyboard_border_color.b, osk.keyboard_border_color.a);
+    SDL_Rect border_rect = {kb_x - 2, kb_y - 2, kb_width + 4, total_height + 4};
+    SDL_RenderDrawRect(g_renderer, &border_rect);
+    
     // Add text rendering to draw function as well
-    SDL_Color white_color = {255, 255, 255, 255};
-    SDL_Color black_color = {0, 0, 0, 255};
     
     // Calculate text scale based on screen size - increased for better visibility
     float text_scale;
@@ -553,15 +605,15 @@ static int lua_draw(lua_State *L) {
         if (text_scale > 3.0f) text_scale = 3.0f;
     }
     
-    // Render title - moved higher to center in bigger area
-    renderKeyboardText(osk.title.c_str(), kb_x, kb_y - 75, white_color, text_scale);
+    // Render title - positioned near top of area
+    renderKeyboardText(osk.title.c_str(), kb_x + 5, kb_y + 1, osk.font_color, text_scale);
     
-    // Render input text - moved higher to center in bigger area
+    // Render input text - positioned near top of area
     std::string display_text = osk.input_text;
     if (osk.mode == OSK_MODE_PASSWORD) {
         display_text = std::string(osk.input_text.length(), '*');
     }
-    renderKeyboardText(display_text.c_str(), kb_x + 5, kb_y - 30, black_color, text_scale);
+    renderKeyboardText(display_text.c_str(), kb_x + 5, input_y + 1, osk.input_text_color, text_scale);
     
     return 0;
 }
@@ -672,6 +724,185 @@ static int lua_isActive(lua_State *L) {
     return 1;
 }
 
+// Helper function to extract color from Lua Color object or integer
+SDL_Color extractColor(lua_State *L, int index) {
+    SDL_Color color = {255, 255, 255, 255}; // Default white
+    
+    if (lua_isnumber(L, index)) {
+        // Handle integer color from Color.new(r, g, b, a)
+        // Color.new packs as: r | (g << 8) | (b << 16) | (a << 24)
+        uint32_t packed_color = (uint32_t)lua_tonumber(L, index);
+        color.r = packed_color & 0xFF;
+        color.g = (packed_color >> 8) & 0xFF;
+        color.b = (packed_color >> 16) & 0xFF;
+        color.a = (packed_color >> 24) & 0xFF;
+    }
+    
+    return color;
+}
+
+// Set keyboard background color
+static int lua_setBackgroundColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.bg_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set keyboard font color
+static int lua_setFontColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.font_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set selected key background color
+static int lua_setSelectedBackgroundColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.selected_bg_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set selected key font color
+static int lua_setSelectedFontColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.selected_font_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set normal key background color
+static int lua_setKeyBackgroundColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.key_bg_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set shift key color
+static int lua_setShiftKeyColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.shift_key_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set title bar color
+static int lua_setTitleBarColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.title_bar_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set input area background color
+static int lua_setInputBackgroundColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.input_bg_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set input area border color
+static int lua_setInputBorderColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.input_border_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set input text color
+static int lua_setInputTextColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.input_text_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set keyboard border color
+static int lua_setKeyboardBorderColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.keyboard_border_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set key border color
+static int lua_setKeyBorderColor(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    osk.key_border_color = extractColor(L, 1);
+    return 0;
+}
+
+// Set keyboard font
+static int lua_setFont(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 1 || argc > 2) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    const char* font_path = luaL_checkstring(L, 1);
+    int font_size = (argc == 2) ? luaL_checkinteger(L, 2) : 16; // Default size 16
+    
+    // Close existing custom font if any
+    if (osk.font && osk.font != g_defaultFont) {
+        TTF_CloseFont(osk.font);
+        osk.font = NULL;
+    }
+    
+    // Load new font
+    if (font_path && strlen(font_path) > 0) {
+        osk.font = TTF_OpenFont(font_path, font_size);
+        if (!osk.font) {
+            return luaL_error(L, "Failed to load font: %s", TTF_GetError());
+        }
+    } else {
+        // Empty string or NULL resets to default font
+        osk.font = NULL;
+    }
+    
+    return 0;
+}
+
 
 //Register our Keyboard Functions
 static const luaL_Reg Keyboard_functions[] = {
@@ -684,6 +915,19 @@ static const luaL_Reg Keyboard_functions[] = {
     {"getLayout", lua_getLayout},
     {"update",    lua_update},
     {"isActive",  lua_isActive},
+    {"setBackgroundColor", lua_setBackgroundColor},
+    {"setFontColor", lua_setFontColor},
+    {"setSelectedBackgroundColor", lua_setSelectedBackgroundColor},
+    {"setSelectedFontColor", lua_setSelectedFontColor},
+    {"setKeyBackgroundColor", lua_setKeyBackgroundColor},
+    {"setShiftKeyColor", lua_setShiftKeyColor},
+    {"setTitleBarColor", lua_setTitleBarColor},
+    {"setInputBackgroundColor", lua_setInputBackgroundColor},
+    {"setInputBorderColor", lua_setInputBorderColor},
+    {"setInputTextColor", lua_setInputTextColor},
+    {"setKeyboardBorderColor", lua_setKeyboardBorderColor},
+    {"setKeyBorderColor", lua_setKeyBorderColor},
+    {"setFont", lua_setFont},
     {0, 0}
 };
 
@@ -697,6 +941,23 @@ void luaKeyboard_init(lua_State *L) {
     osk.cursor_y = 0;
     osk.shift_mode = false;
     osk.caps_lock = false;
+    
+    // Initialize default colors (matching original hardcoded values)
+    osk.bg_color = {40, 40, 40, 220};              // Background color
+    osk.font_color = {255, 255, 255, 255};         // Font color (white)
+    osk.selected_bg_color = {100, 150, 200, 255};  // Selected key background
+    osk.selected_font_color = {255, 255, 0, 255};  // Selected key font (yellow)
+    osk.key_bg_color = {80, 80, 80, 255};          // Normal key background
+    osk.shift_key_color = {150, 100, 100, 255};    // Active shift key color
+    osk.title_bar_color = {60, 60, 60, 255};       // Title bar color
+    osk.input_bg_color = {255, 255, 255, 255};     // Input background (white)
+    osk.input_border_color = {0, 0, 0, 255};       // Input border (black)
+    osk.input_text_color = {0, 0, 0, 255};         // Input text (black)
+    osk.keyboard_border_color = {100, 100, 100, 255}; // Main border (gray)
+    osk.key_border_color = {120, 120, 120, 255};   // Key borders (light gray)
+    
+    // Initialize font
+    osk.font = NULL;  // Use default font initially
     
     lua_newtable(L);
     luaL_setfuncs(L, Keyboard_functions, 0);

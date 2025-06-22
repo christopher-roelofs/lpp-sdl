@@ -78,6 +78,80 @@ local active = Keyboard.isActive()
 ```
 Returns `true` if the keyboard is currently active and visible.
 
+#### Color Customization Functions
+
+```lua
+Keyboard.setBackgroundColor(color)
+```
+Sets the keyboard background color.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setFontColor(color)
+```
+Sets the default font color for keyboard text.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setSelectedBackgroundColor(color)
+```
+Sets the background color for the currently selected key.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setSelectedFontColor(color)
+```
+Sets the font color for the currently selected key.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setKeyBackgroundColor(color)
+```
+Sets the background color for normal (unselected) keys.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setShiftKeyColor(color)
+```
+Sets the color for the SHIFT key when it's active (pressed).
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setTitleBarColor(color)
+```
+Sets the background color for the keyboard title bar area.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setInputBackgroundColor(color)
+```
+Sets the background color for the text input area.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setInputBorderColor(color)
+```
+Sets the border color around the text input area.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setInputTextColor(color)
+```
+Sets the color of the text displayed in the input area.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setKeyboardBorderColor(color)
+```
+Sets the color of the main border around the entire keyboard.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
+```lua
+Keyboard.setKeyBorderColor(color)
+```
+Sets the color of the borders around individual keys.
+- `color` - Color object created with `Color.new(r, g, b, a)`
+
 ### Constants
 
 #### Keyboard Types
@@ -140,6 +214,45 @@ while true do
     Graphics.termBlend()
     Screen.flip()
 end
+```
+
+### Color Customization
+
+```lua
+-- Set up a custom blue theme with complete customization
+Keyboard.setBackgroundColor(Color.new(20, 50, 100, 220))        -- Dark blue background
+Keyboard.setFontColor(Color.new(200, 220, 255, 255))            -- Light blue text
+Keyboard.setSelectedBackgroundColor(Color.new(100, 150, 255, 255)) -- Bright blue selection
+Keyboard.setSelectedFontColor(Color.new(255, 255, 255, 255))     -- White selected text
+Keyboard.setKeyBackgroundColor(Color.new(40, 80, 140, 255))      -- Medium blue keys
+Keyboard.setShiftKeyColor(Color.new(60, 100, 180, 255))          -- Darker blue shift
+Keyboard.setTitleBarColor(Color.new(30, 70, 120, 255))           -- Title bar color
+
+-- Customize input area
+Keyboard.setInputBackgroundColor(Color.new(240, 245, 255, 255))  -- Light blue input
+Keyboard.setInputBorderColor(Color.new(50, 100, 150, 255))       -- Medium blue border
+Keyboard.setInputTextColor(Color.new(0, 40, 80, 255))            -- Dark blue text
+
+-- Customize borders
+Keyboard.setKeyboardBorderColor(Color.new(80, 120, 200, 255))    -- Blue main border
+Keyboard.setKeyBorderColor(Color.new(60, 90, 160, 255))          -- Blue key borders
+
+-- Start keyboard with custom colors
+Keyboard.start("Custom Blue Theme", "Type here!")
+
+-- Reset to default colors
+Keyboard.setBackgroundColor(Color.new(40, 40, 40, 220))
+Keyboard.setFontColor(Color.new(255, 255, 255, 255))
+Keyboard.setSelectedBackgroundColor(Color.new(100, 150, 200, 255))
+Keyboard.setSelectedFontColor(Color.new(255, 255, 0, 255))
+Keyboard.setKeyBackgroundColor(Color.new(80, 80, 80, 255))
+Keyboard.setShiftKeyColor(Color.new(150, 100, 100, 255))
+Keyboard.setTitleBarColor(Color.new(60, 60, 60, 255))
+Keyboard.setInputBackgroundColor(Color.new(255, 255, 255, 255))
+Keyboard.setInputBorderColor(Color.new(0, 0, 0, 255))
+Keyboard.setInputTextColor(Color.new(0, 0, 0, 255))
+Keyboard.setKeyboardBorderColor(Color.new(100, 100, 100, 255))
+Keyboard.setKeyBorderColor(Color.new(120, 120, 120, 255))
 ```
 
 ### Password Input
@@ -305,9 +418,8 @@ The on-screen keyboard maintains full compatibility with the original PlayStatio
 
 The following example files demonstrate keyboard functionality:
 
-- `keyboard_onscreen_demo.lua` - Interactive keyboard demo with visual interface
-- `simple_keyboard_test.lua` - Basic API test without UI
-- `Keyboard/index.lua` - Original Vita-compatible example
+- `index.lua` - Original Vita-compatible example
+- `color_test.lua` - Interactive color customization demo with 6 different themes
 
 Run examples with:
 ```bash
