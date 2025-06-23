@@ -257,8 +257,8 @@ static int lua_print(lua_State *L) {
         return 0;
     }
     
-    // Set texture filtering to nearest-neighbor for crisp fonts
-    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
+    // Set texture filtering to linear for smooth scaled fonts
+    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeLinear);
 
     SDL_Rect dest_rect = { x, y, (int)(text_surface->w * scale), (int)(text_surface->h * scale) };
     SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
@@ -334,8 +334,8 @@ static int lua_graphics_printf(lua_State *L) {
         return 0;
     }
     
-    // Set texture filtering to nearest-neighbor for crisp fonts
-    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
+    // Set texture filtering to linear for smooth scaled fonts
+    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeLinear);
 
     SDL_Rect dest_rect = { x, y, text_surface->w, text_surface->h };
     SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
@@ -1193,8 +1193,8 @@ static int lua_fprint(lua_State *L) {
             continue;
         }
         
-        // Set texture filtering to nearest-neighbor for crisp fonts
-        SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
+        // Set texture filtering to linear for smooth scaled fonts
+        SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeLinear);
         
         int scaled_width = (int)(text_surface->w * scale_factor);
         int scaled_height = (int)(text_surface->h * scale_factor);
@@ -1284,8 +1284,8 @@ static int lua_fprint_center(lua_State *L) {
         return 0;
     }
 
-    // Set scale mode to nearest-neighbor for crisp font rendering
-    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
+    // Set scale mode to linear for smooth font rendering
+    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeLinear);
 
     SDL_Rect dest_rect = { actual_x, y, (int)(text_surface->w * scale), (int)(text_surface->h * scale) };
     SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
