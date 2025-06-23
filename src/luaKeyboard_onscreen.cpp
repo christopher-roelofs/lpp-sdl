@@ -220,11 +220,12 @@ static int lua_state(lua_State *L) {
         
         if (g_vita_compat_mode) {
             // In vitacompat mode, use logical Vita resolution
-            screen_width = 960;  // SCREEN_WIDTH
-            screen_height = 544; // SCREEN_HEIGHT
+            screen_width = SCREEN_WIDTH;
+            screen_height = SCREEN_HEIGHT;
         } else {
-            // In native mode, use actual renderer size
-            SDL_GetRendererOutputSize(g_renderer, &screen_width, &screen_height);
+            // In native mode, use logical coordinate system (not physical window size)
+            screen_width = NATIVE_LOGICAL_WIDTH;
+            screen_height = NATIVE_LOGICAL_HEIGHT;
         }
         
         // Keyboard area - scale with screen size but ensure it fits on screen
@@ -318,10 +319,8 @@ static int lua_state(lua_State *L) {
             // In vitacompat mode, use fixed scale for Vita resolution
             text_scale = 1.2f;
         } else {
-            // In native mode, scale relative to screen size
-            text_scale = (float)screen_width / 960.0f * 1.2f; // Scale relative to Vita resolution
-            if (text_scale < 0.8f) text_scale = 0.8f; // Minimum size increased from 0.5f
-            if (text_scale > 3.0f) text_scale = 3.0f; // Maximum size increased from 2.0f
+            // In native mode, scale relative to logical resolution difference
+            text_scale = (float)NATIVE_LOGICAL_WIDTH / (float)SCREEN_WIDTH * 1.2f; // Scale relative to logical coordinate difference (~1.6f)
         }
         
         // Render key text
@@ -560,11 +559,12 @@ static int lua_draw(lua_State *L) {
     
     if (g_vita_compat_mode) {
         // In vitacompat mode, use logical Vita resolution
-        screen_width = 960;  // SCREEN_WIDTH
-        screen_height = 544; // SCREEN_HEIGHT
+        screen_width = SCREEN_WIDTH;
+        screen_height = SCREEN_HEIGHT;
     } else {
-        // In native mode, use actual renderer size
-        SDL_GetRendererOutputSize(g_renderer, &screen_width, &screen_height);
+        // In native mode, use logical coordinate system (not physical window size)
+        screen_width = NATIVE_LOGICAL_WIDTH;
+        screen_height = NATIVE_LOGICAL_HEIGHT;
     }
     
     // Draw keyboard background - scale with screen size but ensure it fits on screen
@@ -618,10 +618,8 @@ static int lua_draw(lua_State *L) {
         // In vitacompat mode, use fixed scale for Vita resolution
         text_scale = 1.2f;
     } else {
-        // In native mode, scale relative to screen size
-        text_scale = (float)screen_width / 960.0f * 1.2f;
-        if (text_scale < 0.8f) text_scale = 0.8f;
-        if (text_scale > 3.0f) text_scale = 3.0f;
+        // In native mode, scale relative to logical resolution difference
+        text_scale = (float)NATIVE_LOGICAL_WIDTH / (float)SCREEN_WIDTH * 1.2f; // Scale relative to logical coordinate difference (~1.6f)
     }
     
     // Render title - positioned near top of area
