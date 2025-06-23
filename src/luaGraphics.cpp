@@ -959,36 +959,61 @@ static int lua_freefont(lua_State *L);
 static int lua_loadFont(lua_State *L) {
     int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-    if (argc != 1 && argc != 2)
+    if (argc != 0 && argc != 1 && argc != 2)
         return luaL_error(L, "wrong number of arguments");
 #endif
     
-    const char* filename = luaL_checkstring(L, 1);
+    const char* filename = NULL;
     int ptsize = 16; // Default size like original Vita implementation
     
-    // If size argument provided, use it
-    if (argc == 2) {
-        ptsize = luaL_checkinteger(L, 2);
+    if (argc == 0) {
+        // No arguments - use default font
+        filename = NULL;
+    } else {
+        // Original behavior - filename required, optional size
+        filename = luaL_checkstring(L, 1);
+        if (argc == 2) {
+            ptsize = luaL_checkinteger(L, 2);
+        }
     }
     
-    // Translate Vita paths (app0:/ -> current directory)
-    std::string translated_path = translate_vita_path(filename);
+    TTF_Font* sdl_font;
     
-    TTF_Font* sdl_font = TTF_OpenFont(translated_path.c_str(), ptsize);
-    if (!sdl_font) {
-        fprintf(stderr, "Failed to load font: '%s' (size %d) - SDL_ttf Error: %s\n", filename, ptsize, TTF_GetError());
+    if (filename == NULL) {
+        // Use default font - check if it's available
+        if (!g_defaultFont) {
 #ifndef SKIP_ERROR_HANDLING
-        return luaL_error(L, "cannot load font file");
+            return luaL_error(L, "default font not available");
 #else
-        lua_pushnil(L);
-        return 1;
+            lua_pushnil(L);
+            return 1;
 #endif
+        }
+        
+        // Use the global default font directly
+        sdl_font = g_defaultFont;
+    } else {
+        // Load specified font file
+        std::string translated_path = translate_vita_path(filename);
+        sdl_font = TTF_OpenFont(translated_path.c_str(), ptsize);
+        if (!sdl_font) {
+            fprintf(stderr, "Failed to load font: '%s' (size %d) - SDL_ttf Error: %s\n", filename, ptsize, TTF_GetError());
+#ifndef SKIP_ERROR_HANDLING
+            return luaL_error(L, "cannot load font file");
+#else
+            lua_pushnil(L);
+            return 1;
+#endif
+        }
     }
 
     // Create a font structure like original implementation
     ttf* result = (ttf*)malloc(sizeof(ttf));
     if (!result) {
-        TTF_CloseFont(sdl_font);
+        // Don't close the global default font
+        if (sdl_font != g_defaultFont) {
+            TTF_CloseFont(sdl_font);
+        }
 #ifndef SKIP_ERROR_HANDLING
         return luaL_error(L, "cannot allocate font memory");
 #else

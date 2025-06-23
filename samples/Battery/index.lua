@@ -5,7 +5,7 @@ red = Color.new(255, 0, 0)
 yellow = Color.new(255, 255, 0)
 blue = Color.new(0, 150, 255)
 
-font = Font.load("InterVariable.ttf")
+font = Font.load()
 Font.setPixelSizes(font, 20)
 
 function formatTime(seconds)

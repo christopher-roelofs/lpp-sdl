@@ -1,5 +1,6 @@
 -- Loading a TTF font
 local fnt = Font.load("main.ttf")
+defaultFont = Font.load()
 
 -- Main loop
 while true do
@@ -11,8 +12,9 @@ while true do
 	Screen.clear()
 	
 	-- Drawing something on screen
-	Font.print(fnt, 5, 45, "Hello World", Color.new(255, 255, 255))
-	Font.print(fnt, 5, 100, "Press TRIANGLE to return to the sample selector.", Color.new(255, 255, 255))
+	Font.print(fnt, 5, 45, "This is a local font", Color.new(255, 255, 255))
+	Font.print(defaultFont, 5, 100, "This is the default font", Color.new(255, 255, 255))
+	Font.print(fnt, 5, 150, "Press ESC to exit.", Color.new(255, 255, 255))
 	
 	-- Terminating GPU rendering
 	Graphics.termBlend()
