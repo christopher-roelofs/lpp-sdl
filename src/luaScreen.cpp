@@ -120,6 +120,31 @@ static int lua_flip(lua_State *L) {
                     g_scale_x = (float)new_window_width / (float)DUAL_SCREEN_WIDTH;
                     g_scale_y = (float)new_window_height / (float)DUAL_SCREEN_HEIGHT;
                     
+                    // Recalculate per-screen scaling factors to maintain proper aspect ratios
+                    // Allocate proportional width space for each screen 
+                    float top_screen_area_width = (float)new_window_width * DS_TOP_SCREEN_WIDTH / DUAL_SCREEN_WIDTH;
+                    float bottom_screen_area_width = (float)new_window_width * DS_BOTTOM_SCREEN_WIDTH / DUAL_SCREEN_WIDTH;
+                    
+                    // For top screen: scale to fit allocated width, constrained by window height
+                    float top_scale_x = top_screen_area_width / DS_TOP_SCREEN_WIDTH;
+                    float top_scale_y = (float)new_window_height / DS_TOP_SCREEN_HEIGHT;
+                    float top_uniform_scale = fminf(top_scale_x, top_scale_y);
+                    
+                    // For bottom screen: scale to fit allocated width, constrained by window height
+                    float bottom_scale_x = bottom_screen_area_width / DS_BOTTOM_SCREEN_WIDTH;
+                    float bottom_scale_y = (float)new_window_height / DS_BOTTOM_SCREEN_HEIGHT;
+                    float bottom_uniform_scale = fminf(bottom_scale_x, bottom_scale_y);
+                    
+                    // Apply maximum height constraint to bottom screen
+                    float max_bottom_height = new_window_height * 0.8f;
+                    float max_bottom_scale_from_height = max_bottom_height / DS_BOTTOM_SCREEN_HEIGHT;
+                    bottom_uniform_scale = fminf(bottom_uniform_scale, max_bottom_scale_from_height);
+                    
+                    g_top_screen_scale_x = top_uniform_scale;
+                    g_top_screen_scale_y = top_uniform_scale;
+                    g_bottom_screen_scale_x = bottom_uniform_scale;
+                    g_bottom_screen_scale_y = bottom_uniform_scale;
+                    
                     // Clear the screen
                     SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
                     SDL_RenderClear(g_renderer);
