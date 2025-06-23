@@ -34,6 +34,7 @@
 #include <cstring>
 #include <SDL.h>
 #include "luaplayer.h"
+#include "include/sdl_renderer.h"
 
 #define stringify(str) #str
 #define VariableRegister(lua, value) do { lua_pushinteger(lua, value); lua_setglobal (lua, stringify(value)); } while(0)
@@ -164,13 +165,34 @@ static int lua_check(lua_State *L){
     return 1;
 }
 
+// Mimic the Vita lerp function for coordinate transformation
+#define lerp(value, from_max, to_max) ((((value*10) * (to_max*10))/(from_max*10))/10)
+
 static int lua_touchpad(lua_State *L){
     int argc = lua_gettop(L);
     if (argc != 0) return luaL_error(L, "wrong number of arguments.");
     update_input_state();
     if (mouse_pressed) {
-        lua_pushinteger(L, mouse_x);
-        lua_pushinteger(L, mouse_y);
+        int logical_x = mouse_x;
+        int logical_y = mouse_y;
+        
+        if (g_renderer) {
+            int logical_w, logical_h;
+            int window_w, window_h;
+            
+            // Get logical and window sizes
+            SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+            SDL_GetWindowSize(g_window, &window_w, &window_h);
+            
+            // Transform like the Vita version: scale from window size to logical size
+            if (logical_w > 0 && logical_h > 0 && window_w > 0 && window_h > 0) {
+                logical_x = lerp(mouse_x, window_w, logical_w);
+                logical_y = lerp(mouse_y, window_h, logical_h);
+            }
+        }
+        
+        lua_pushinteger(L, logical_x);
+        lua_pushinteger(L, logical_y);
         return 2;
     }
     return 0;
