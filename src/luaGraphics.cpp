@@ -397,8 +397,12 @@ static int lua_rect(lua_State *L) {
         // Add bounds checking to prevent drawing outside screen
         if (w <= 0 || h <= 0) return 0; // Invalid dimensions
         
+        // Get appropriate screen boundaries based on mode
+        int screen_width = g_vita_compat_mode ? SCREEN_WIDTH : NATIVE_LOGICAL_WIDTH;
+        int screen_height = g_vita_compat_mode ? SCREEN_HEIGHT : NATIVE_LOGICAL_HEIGHT;
+        
         // Strict clamping to prevent edge artifacts
-        if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT || x + w <= 0 || y + h <= 0) {
+        if (x >= screen_width || y >= screen_height || x + w <= 0 || y + h <= 0) {
             return 0; // Completely outside bounds
         }
         
@@ -411,11 +415,11 @@ static int lua_rect(lua_State *L) {
             h += y; 
             y = 0;
         }
-        if (x + w > SCREEN_WIDTH) {
-            w = SCREEN_WIDTH - x;
+        if (x + w > screen_width) {
+            w = screen_width - x;
         }
-        if (y + h > SCREEN_HEIGHT) {
-            h = SCREEN_HEIGHT - y;
+        if (y + h > screen_height) {
+            h = screen_height - y;
         }
         
         // Final check after clamping
@@ -457,8 +461,12 @@ static int lua_emptyrect(lua_State *L) {
         // Add bounds checking to prevent drawing outside screen
         if (w <= 0 || h <= 0) return 0; // Invalid dimensions
         
+        // Get appropriate screen boundaries based on mode
+        int screen_width = g_vita_compat_mode ? SCREEN_WIDTH : NATIVE_LOGICAL_WIDTH;
+        int screen_height = g_vita_compat_mode ? SCREEN_HEIGHT : NATIVE_LOGICAL_HEIGHT;
+        
         // Strict clamping to prevent edge artifacts
-        if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT || x + w <= 0 || y + h <= 0) {
+        if (x >= screen_width || y >= screen_height || x + w <= 0 || y + h <= 0) {
             return 0; // Completely outside bounds
         }
         
@@ -471,11 +479,11 @@ static int lua_emptyrect(lua_State *L) {
             h += y; 
             y = 0;
         }
-        if (x + w > SCREEN_WIDTH) {
-            w = SCREEN_WIDTH - x;
+        if (x + w > screen_width) {
+            w = screen_width - x;
         }
-        if (y + h > SCREEN_HEIGHT) {
-            h = SCREEN_HEIGHT - y;
+        if (y + h > screen_height) {
+            h = screen_height - y;
         }
         
         // Final check after clamping

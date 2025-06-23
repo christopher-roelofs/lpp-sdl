@@ -107,8 +107,8 @@ static int lua_flip(lua_State *L) {
         }
         // Handle window resize events to maintain proper scaling
         if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
-            // Reapply logical size only in Vita compatibility mode
-            if (g_renderer && g_vita_compat_mode) {
+            // Reapply logical size for both modes
+            if (g_renderer) {
                 // Reset logical size to clear any scaling artifacts
                 SDL_RenderSetLogicalSize(g_renderer, 0, 0);
                 
@@ -117,8 +117,12 @@ static int lua_flip(lua_State *L) {
                 SDL_RenderClear(g_renderer);
                 SDL_RenderPresent(g_renderer);
                 
-                // Now re-establish logical scaling
-                SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+                // Re-establish logical scaling based on mode
+                if (g_vita_compat_mode) {
+                    SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+                } else {
+                    SDL_RenderSetLogicalSize(g_renderer, NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
+                }
                 SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
                 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
                 
@@ -337,32 +341,24 @@ static int lua_waitVblankStart(lua_State *L) {
     return 0;
 }
 
-// Get actual renderer width for native resolution mode
+// Get logical screen width
 static int lua_getScreenWidth(lua_State *L) {
     if (g_vita_compat_mode) {
         lua_pushinteger(L, SCREEN_WIDTH);
     } else {
-        int w, h;
-        if (g_renderer && SDL_GetRendererOutputSize(g_renderer, &w, &h) == 0) {
-            lua_pushinteger(L, w);
-        } else {
-            lua_pushinteger(L, 800); // Fallback
-        }
+        // Native mode: return logical width for consistent coordinate system
+        lua_pushinteger(L, NATIVE_LOGICAL_WIDTH);
     }
     return 1;
 }
 
-// Get actual renderer height for native resolution mode
+// Get logical screen height
 static int lua_getScreenHeight(lua_State *L) {
     if (g_vita_compat_mode) {
         lua_pushinteger(L, SCREEN_HEIGHT);
     } else {
-        int w, h;
-        if (g_renderer && SDL_GetRendererOutputSize(g_renderer, &w, &h) == 0) {
-            lua_pushinteger(L, h);
-        } else {
-            lua_pushinteger(L, 600); // Fallback
-        }
+        // Native mode: return logical height for consistent coordinate system
+        lua_pushinteger(L, NATIVE_LOGICAL_HEIGHT);
     }
     return 1;
 }

@@ -52,6 +52,10 @@ extern bool g_dual_screen_mode; // Global flag for 3DS dual screen mode
 const int SCREEN_WIDTH = 960;
 const int SCREEN_HEIGHT = 544;
 
+// Native mode logical resolution (HD 720p for good scaling)
+const int NATIVE_LOGICAL_WIDTH = 1280;
+const int NATIVE_LOGICAL_HEIGHT = 720;
+
 // 3DS dual screen support
 const int DUAL_SCREEN_HEIGHT = SCREEN_HEIGHT * 2; // Total height for both screens
 const int TOP_SCREEN_Y_OFFSET = 0;                // Top screen starts at Y=0

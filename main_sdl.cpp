@@ -279,8 +279,32 @@ int main(int argc, char* args[]) {
         SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
         printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
     } else {
-        printf("Native resolution mode: Using actual window size %dx%d\n", 
-               window_width, window_height);
+        // Native resolution mode: Apply logical scaling with HD 720p base resolution
+        // Clear renderer first
+        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+        SDL_RenderClear(g_renderer);
+        
+        // Set logical size for native resolution mode
+        if (SDL_RenderSetLogicalSize(g_renderer, NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT) != 0) {
+            printf("Warning: Could not set logical size: %s\n", SDL_GetError());
+        } else {
+            printf("Set logical size to %dx%d (Native HD) in %dx%d window\n", 
+                   NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT, window_width, window_height);
+        }
+        
+        // Disable integer scaling for smooth scaling
+        SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
+        
+        // Set scale quality to linear for smooth scaling
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        
+        // Force SDL to use letterboxing instead of stretching
+        SDL_SetHint(SDL_HINT_RENDER_LOGICAL_SIZE_MODE, "letterbox");
+        
+        // Verify the logical size was set
+        int logical_w, logical_h;
+        SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+        printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
     }
     
     // Set initial render state
