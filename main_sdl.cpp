@@ -4,6 +4,10 @@
 #include <SDL_ttf.h>
 #include <string>
 #include <unistd.h>
+#include <vector>
+#include <algorithm>
+#include <dirent.h>
+#include <sys/stat.h>
 
 bool should_exit = false; // Definition for the global exit flag
 #include <SDL_image.h>
@@ -42,6 +46,263 @@ extern "C" void update_sdl_controls();
 extern "C" void sdl_key_down(int scancode);
 extern "C" void sdl_key_up(int scancode);
 
+// Forward declaration for file browser
+const char* launch_file_browser(lua_State* L);
+
+struct FileEntry {
+    std::string name;
+    std::string full_path;
+    bool is_directory;
+    size_t size;
+};
+
+static std::string current_path = ".";
+static std::vector<FileEntry> file_list;
+static int selected_index = 0;
+static int scroll_offset = 0;
+static const int MAX_VISIBLE_ITEMS = 15;
+static char* selected_file_result = nullptr;
+
+bool is_lua_file(const std::string& filename) {
+    size_t dot_pos = filename.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+        std::string ext = filename.substr(dot_pos);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext == ".lua";
+    }
+    return false;
+}
+
+void scan_directory(const std::string& path) {
+    file_list.clear();
+    
+    DIR* dir = opendir(path.c_str());
+    if (!dir) return;
+    
+    // Add parent directory entry if not at root
+    if (path != "." && path != "/") {
+        FileEntry parent;
+        parent.name = "..";
+        parent.full_path = path + "/..";
+        parent.is_directory = true;
+        parent.size = 0;
+        file_list.push_back(parent);
+    }
+    
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        std::string full_path = path + "/" + entry->d_name;
+        struct stat st;
+        if (stat(full_path.c_str(), &st) == 0) {
+            FileEntry file_entry;
+            file_entry.name = entry->d_name;
+            file_entry.full_path = full_path;
+            file_entry.is_directory = S_ISDIR(st.st_mode);
+            file_entry.size = st.st_size;
+            
+            // Only add directories or .lua files
+            if (file_entry.is_directory || is_lua_file(file_entry.name)) {
+                file_list.push_back(file_entry);
+            }
+        }
+    }
+    closedir(dir);
+    
+    // Sort: directories first, then files, both alphabetically
+    std::sort(file_list.begin(), file_list.end(), [](const FileEntry& a, const FileEntry& b) {
+        if (a.name == "..") return true;
+        if (b.name == "..") return false;
+        if (a.is_directory != b.is_directory) {
+            return a.is_directory;
+        }
+        return a.name < b.name;
+    });
+    
+    selected_index = 0;
+    scroll_offset = 0;
+}
+
+void draw_text(const char* text, int x, int y, Uint8 r, Uint8 g, Uint8 b) {
+    if (!g_defaultFont) return;
+    
+    SDL_Color color = {r, g, b, 255};
+    SDL_Surface* text_surface = TTF_RenderText_Blended(g_defaultFont, text, color);
+    if (!text_surface) return;
+    
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    
+    if (!text_texture) return;
+    
+    int text_w, text_h;
+    SDL_QueryTexture(text_texture, NULL, NULL, &text_w, &text_h);
+    
+    SDL_Rect dest_rect = {x, y, text_w, text_h};
+    SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+    
+    SDL_DestroyTexture(text_texture);
+}
+
+void render_file_browser() {
+    // Clear screen
+    SDL_SetRenderDrawColor(g_renderer, 20, 20, 30, 255);
+    SDL_RenderClear(g_renderer);
+    
+    // Draw title
+    draw_text("Lua File Browser", 20, 20, 255, 255, 255);
+    
+    // Draw current path
+    std::string path_display = "Path: " + current_path;
+    draw_text(path_display.c_str(), 20, 50, 200, 200, 200);
+    
+    // Draw instructions
+    draw_text("Arrow Keys: Navigate | Enter: Select | Escape: Exit", 20, 80, 150, 150, 150);
+    
+    // Draw file list
+    int y_start = 120;
+    int line_height = 25;
+    
+    for (int i = 0; i < MAX_VISIBLE_ITEMS && (scroll_offset + i) < static_cast<int>(file_list.size()); i++) {
+        int file_index = scroll_offset + i;
+        const FileEntry& entry = file_list[file_index];
+        
+        int y = y_start + i * line_height;
+        
+        // Highlight selected item
+        if (file_index == selected_index) {
+            SDL_SetRenderDrawColor(g_renderer, 60, 60, 100, 255);
+            SDL_Rect highlight_rect = {15, y - 2, 800, line_height};
+            SDL_RenderFillRect(g_renderer, &highlight_rect);
+        }
+        
+        // Draw file/folder icon and name
+        std::string display_name;
+        Uint8 r, g, b;
+        
+        if (entry.is_directory) {
+            display_name = "[DIR] " + entry.name;
+            r = 100; g = 200; b = 255; // Blue for directories
+        } else {
+            display_name = entry.name;
+            r = 255; g = 255; b = 100; // Yellow for Lua files
+        }
+        
+        // Highlight selected item text
+        if (file_index == selected_index) {
+            r = 255; g = 255; b = 255; // White for selected
+        }
+        
+        draw_text(display_name.c_str(), 20, y, r, g, b);
+    }
+    
+    // Draw scrollbar if needed
+    if (static_cast<int>(file_list.size()) > MAX_VISIBLE_ITEMS) {
+        int scrollbar_x = 820;
+        int scrollbar_y = y_start;
+        int scrollbar_height = MAX_VISIBLE_ITEMS * line_height;
+        
+        // Scrollbar background
+        SDL_SetRenderDrawColor(g_renderer, 50, 50, 50, 255);
+        SDL_Rect scrollbar_bg = {scrollbar_x, scrollbar_y, 10, scrollbar_height};
+        SDL_RenderFillRect(g_renderer, &scrollbar_bg);
+        
+        // Scrollbar thumb
+        float thumb_ratio = (float)MAX_VISIBLE_ITEMS / static_cast<float>(file_list.size());
+        int thumb_height = (int)(scrollbar_height * thumb_ratio);
+        float scroll_ratio = (float)scroll_offset / (static_cast<float>(file_list.size()) - MAX_VISIBLE_ITEMS);
+        int thumb_y = scrollbar_y + (int)((scrollbar_height - thumb_height) * scroll_ratio);
+        
+        SDL_SetRenderDrawColor(g_renderer, 150, 150, 150, 255);
+        SDL_Rect thumb_rect = {scrollbar_x, thumb_y, 10, thumb_height};
+        SDL_RenderFillRect(g_renderer, &thumb_rect);
+    }
+    
+    SDL_RenderPresent(g_renderer);
+}
+
+const char* launch_file_browser(lua_State* L) {
+    scan_directory(current_path);
+    
+    bool quit = false;
+    SDL_Event e;
+    
+    while (!quit && !should_exit) {
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                quit = true;
+            }
+            
+            if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_ESCAPE:
+                        quit = true;
+                        break;
+                        
+                    case SDLK_UP:
+                        if (selected_index > 0) {
+                            selected_index--;
+                            if (selected_index < scroll_offset) {
+                                scroll_offset = selected_index;
+                            }
+                        }
+                        break;
+                        
+                    case SDLK_DOWN:
+                        if (selected_index < static_cast<int>(file_list.size()) - 1) {
+                            selected_index++;
+                            if (selected_index >= scroll_offset + MAX_VISIBLE_ITEMS) {
+                                scroll_offset = selected_index - MAX_VISIBLE_ITEMS + 1;
+                            }
+                        }
+                        break;
+                        
+                    case SDLK_RETURN:
+                    case SDLK_KP_ENTER:
+                        if (selected_index < static_cast<int>(file_list.size())) {
+                            const FileEntry& selected = file_list[selected_index];
+                            
+                            if (selected.is_directory) {
+                                // Enter directory
+                                if (selected.name == "..") {
+                                    // Go to parent directory
+                                    size_t last_slash = current_path.find_last_of('/');
+                                    if (last_slash != std::string::npos && last_slash > 0) {
+                                        current_path = current_path.substr(0, last_slash);
+                                    } else if (current_path != ".") {
+                                        current_path = ".";
+                                    }
+                                } else {
+                                    // Enter subdirectory
+                                    if (current_path == ".") {
+                                        current_path = selected.name;
+                                    } else {
+                                        current_path += "/" + selected.name;
+                                    }
+                                }
+                                scan_directory(current_path);
+                            } else {
+                                // Select Lua file
+                                selected_file_result = new char[selected.full_path.length() + 1];
+                                strcpy(selected_file_result, selected.full_path.c_str());
+                                return selected_file_result;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+        
+        render_file_browser();
+        SDL_Delay(16); // ~60 FPS
+    }
+    
+    return nullptr;
+}
+
 int main(int argc, char* args[]) {
     lua_State* L = NULL;
     bool vita_compat_mode = false; // Temporarily disable to test if logical scaling is the issue
@@ -70,15 +331,15 @@ int main(int argc, char* args[]) {
 
     // Check for Lua file argument
     if (lua_file == NULL) {
-        printf("Usage: %s [options] <lua_file>\n", args[0]);
-        printf("Options:\n");
-        printf("  -vitacompat    Force Vita resolution scaling (960x544 logical size) [DEFAULT]\n");
-        printf("  -3dscompat     Enable 3DS dual screen mode (960x1088 logical size)\n");
-        printf("  -native        Use native window resolution (no scaling)\n");
-        printf("Example: %s hello_test.lua\n", args[0]);
-        printf("Example: %s -3dscompat \"tests/games/3ds/blackjack-3ds/index.lua\"\n", args[0]);
-        printf("Example: %s -native \"samples/Vita Hangman - Touhou Edition/index.lua\"\n", args[0]);
-        return 1;
+        // Check for index.lua in current directory
+        if (access("index.lua", F_OK) == 0) {
+            lua_file = "index.lua";
+            printf("Found index.lua in current directory, loading it...\n");
+        } else {
+            // No file specified and no index.lua found - launch file browser
+            printf("No Lua file specified and no index.lua found. Launching file browser...\n");
+            lua_file = "__file_browser__";
+        }
     }
 
     printf("Loading Lua file: %s\n", lua_file);
@@ -312,6 +573,25 @@ int main(int argc, char* args[]) {
     SDL_RenderClear(g_renderer);
     SDL_RenderPresent(g_renderer);
 
+    // Handle file browser mode
+    if (strcmp(lua_file, "__file_browser__") == 0) {
+        // Launch file browser
+        const char* selected_file = launch_file_browser(L);
+        if (selected_file == NULL) {
+            printf("File browser exited without selection.\n");
+            // Cleanup and exit
+            SDL_DestroyRenderer(g_renderer);
+            SDL_DestroyWindow(g_window);
+            IMG_Quit();
+            if (g_defaultFont) TTF_CloseFont(g_defaultFont);
+            TTF_Quit();
+            SDL_Quit();
+            if (L) lua_close(L);
+            return 0;
+        }
+        lua_file = selected_file;
+    }
+
     // Change working directory to the script's directory so relative asset paths work.
     std::string path_str(lua_file);
     std::string script_name_str = lua_file;
@@ -432,6 +712,12 @@ int main(int argc, char* args[]) {
     // Close LuaJIT state
     if (L) {
         lua_close(L);
+    }
+
+    // Clean up allocated memory
+    if (selected_file_result) {
+        delete[] selected_file_result;
+        selected_file_result = nullptr;
     }
 
     return 0;
