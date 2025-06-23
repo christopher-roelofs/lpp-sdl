@@ -47,6 +47,16 @@ extern TTF_Font* g_defaultFont; // Global default font for Graphics.print
 extern bool should_exit; // Global flag to signal application exit
 extern bool g_vita_compat_mode; // Global flag for Vita compatibility mode
 extern bool g_dual_screen_mode; // Global flag for 3DS dual screen mode
+extern float g_scale_x; // Manual scaling factor for dual screen X
+extern float g_scale_y; // Manual scaling factor for dual screen Y
+extern float g_top_screen_scale_x; // Top screen X scaling factor
+extern float g_top_screen_scale_y; // Top screen Y scaling factor  
+extern float g_bottom_screen_scale_x; // Bottom screen X scaling factor
+extern float g_bottom_screen_scale_y; // Bottom screen Y scaling factor
+
+// Helper functions for per-screen scaling and viewport management
+void getScreenScaling(int screen_id, float* scale_x, float* scale_y);
+void setScreenViewport(int screen_id);
 
 // Screen dimensions - defined here for global access (Vita resolution)
 const int SCREEN_WIDTH = 960;
@@ -56,10 +66,19 @@ const int SCREEN_HEIGHT = 544;
 const int NATIVE_LOGICAL_WIDTH = 1280;
 const int NATIVE_LOGICAL_HEIGHT = 720;
 
-// 3DS dual screen support
-const int DUAL_SCREEN_HEIGHT = SCREEN_HEIGHT * 2; // Total height for both screens
-const int TOP_SCREEN_Y_OFFSET = 0;                // Top screen starts at Y=0
-const int BOTTOM_SCREEN_Y_OFFSET = SCREEN_HEIGHT; // Bottom screen starts at Y=544
+// 3DS dual screen support - SIDE BY SIDE layout
+// 3DS screen dimensions: Top screen 400x240, Bottom screen 320x240
+const int DS_TOP_SCREEN_WIDTH = 400;
+const int DS_TOP_SCREEN_HEIGHT = 240;
+const int DS_BOTTOM_SCREEN_WIDTH = 320;
+const int DS_BOTTOM_SCREEN_HEIGHT = 240;
+
+const int DUAL_SCREEN_WIDTH = DS_TOP_SCREEN_WIDTH + DS_BOTTOM_SCREEN_WIDTH;  // Total width: 400 + 320 = 720
+const int DUAL_SCREEN_HEIGHT = DS_TOP_SCREEN_HEIGHT;                         // Height: 240 (top screen height)
+const int TOP_SCREEN_X_OFFSET = 0;                                          // Top screen starts at X=0 
+const int TOP_SCREEN_Y_OFFSET = 0;                                          // Top screen starts at Y=0
+const int BOTTOM_SCREEN_X_OFFSET = DS_TOP_SCREEN_WIDTH;                     // Bottom screen starts after top screen (X=400)
+const int BOTTOM_SCREEN_Y_OFFSET = 0;                                       // Bottom screen aligned with top screen (Y=0)
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(val, min, max) ((val)>(max)?(max):((val)<(min)?(min):(val)))

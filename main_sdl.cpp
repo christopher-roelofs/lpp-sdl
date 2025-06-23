@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <cmath>
 
 bool should_exit = false; // Definition for the global exit flag
 #include <SDL_image.h>
@@ -28,6 +29,12 @@ SDL_Window* g_window = NULL;
 SDL_Renderer* g_renderer = NULL;
 bool g_vita_compat_mode = false; // Global flag for Vita compatibility mode
 bool g_dual_screen_mode = false; // Global flag for 3DS dual screen mode
+float g_scale_x = 1.0f; // Manual scaling factor for dual screen X
+float g_scale_y = 1.0f; // Manual scaling factor for dual screen Y
+float g_top_screen_scale_x = 1.0f; // Top screen X scaling factor
+float g_top_screen_scale_y = 1.0f; // Top screen Y scaling factor  
+float g_bottom_screen_scale_x = 1.0f; // Bottom screen X scaling factor
+float g_bottom_screen_scale_y = 1.0f; // Bottom screen Y scaling factor
 
 // Global variables required by LPP modules
 int clr_color = 0;
@@ -418,8 +425,8 @@ int main(int argc, char* args[]) {
         int logical_height;
         
         if (threeds_compat_mode) {
-            // 3DS dual screen mode: 960x1088 (two 960x544 screens stacked)
-            aspect_ratio = (float)SCREEN_WIDTH / (float)DUAL_SCREEN_HEIGHT;
+            // 3DS dual screen mode: 1280x544 (screens side-by-side)
+            aspect_ratio = (float)DUAL_SCREEN_WIDTH / (float)DUAL_SCREEN_HEIGHT;
             logical_height = DUAL_SCREEN_HEIGHT;
         } else {
             // Vita single screen mode: 960x544
@@ -448,14 +455,24 @@ int main(int argc, char* args[]) {
         }
         
         // Ensure window is at least the logical resolution (maintain aspect ratio)
-        if (window_width < SCREEN_WIDTH || window_height < logical_height) {
-            window_width = SCREEN_WIDTH;
+        int min_logical_width = threeds_compat_mode ? DUAL_SCREEN_WIDTH : SCREEN_WIDTH;
+        if (window_width < min_logical_width || window_height < logical_height) {
+            window_width = min_logical_width;
             window_height = logical_height;
+        }
+        
+        // For 3DS mode, ensure we have a large enough window to see both screens clearly
+        if (threeds_compat_mode) {
+            // Make window at least 1.5x the logical size for better visibility
+            int min_width = (DUAL_SCREEN_WIDTH * 3) / 2;
+            int min_height = (DUAL_SCREEN_HEIGHT * 3) / 2;
+            if (window_width < min_width) window_width = min_width;
+            if (window_height < min_height) window_height = min_height;
         }
         
         if (threeds_compat_mode) {
             printf("3DS compatibility mode: Window size %dx%d for logical size %dx%d\n", 
-                   window_width, window_height, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+                   window_width, window_height, DUAL_SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
         } else {
             printf("Vita compatibility mode: Window size %dx%d for logical size %dx%d\n", 
                    window_width, window_height, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -512,18 +529,65 @@ int main(int argc, char* args[]) {
         SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
         SDL_RenderClear(g_renderer);
         
-        // Use SDL's logical scaling (the original approach that mostly worked)
-        int logical_height = threeds_compat_mode ? DUAL_SCREEN_HEIGHT : SCREEN_HEIGHT;
-        if (SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, logical_height) != 0) {
-            printf("Warning: Could not set logical size: %s\n", SDL_GetError());
+        // For 3DS dual screen, we need special handling to ensure both screens are visible
+        if (threeds_compat_mode) {
+            // Don't use SDL logical scaling for dual screen - causes letterboxing issues
+            // Instead, we'll handle scaling manually in the drawing functions
+            printf("3DS dual screen mode: Using manual scaling (window: %dx%d, logical: %dx%d)\n", 
+                   window_width, window_height, DUAL_SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+            
+            // Store scale factors for manual scaling
+            extern float g_scale_x, g_scale_y;
+            g_scale_x = (float)window_width / (float)DUAL_SCREEN_WIDTH;
+            g_scale_y = (float)window_height / (float)DUAL_SCREEN_HEIGHT;
+            printf("Scale factors: X=%.2f, Y=%.2f\n", g_scale_x, g_scale_y);
+            
+            // Calculate per-screen scaling factors to maintain proper aspect ratios
+            // The key insight: each screen should scale to fit its allocated area while maintaining aspect ratio
+            
+            // Allocate proportional width space for each screen 
+            float top_screen_area_width = (float)window_width * DS_TOP_SCREEN_WIDTH / DUAL_SCREEN_WIDTH;    // 600px for top
+            float bottom_screen_area_width = (float)window_width * DS_BOTTOM_SCREEN_WIDTH / DUAL_SCREEN_WIDTH; // 480px for bottom
+            
+            // For top screen: scale to fit allocated width, constrained by window height
+            float top_scale_x = top_screen_area_width / DS_TOP_SCREEN_WIDTH;         // Scale to fit allocated width
+            float top_scale_y = (float)window_height / DS_TOP_SCREEN_HEIGHT;         // Scale to fit window height  
+            float top_uniform_scale = fminf(top_scale_x, top_scale_y);              // Use smaller to maintain aspect ratio
+            
+            // For bottom screen: scale to fit allocated width, constrained by window height
+            float bottom_scale_x = bottom_screen_area_width / DS_BOTTOM_SCREEN_WIDTH; // Scale to fit allocated width
+            float bottom_scale_y = (float)window_height / DS_BOTTOM_SCREEN_HEIGHT;   // Scale to fit window height
+            float bottom_uniform_scale = fminf(bottom_scale_x, bottom_scale_y);     // Use smaller to maintain aspect ratio
+            
+            // Apply a maximum height constraint to ensure bottom screen doesn't exceed reasonable size
+            // Bottom screen should not be taller than 80% of window height to leave space
+            float max_bottom_height = window_height * 0.8f;
+            float max_bottom_scale_from_height = max_bottom_height / DS_BOTTOM_SCREEN_HEIGHT;
+            bottom_uniform_scale = fminf(bottom_uniform_scale, max_bottom_scale_from_height);
+            
+            g_top_screen_scale_x = top_uniform_scale;
+            g_top_screen_scale_y = top_uniform_scale;
+            g_bottom_screen_scale_x = bottom_uniform_scale;
+            g_bottom_screen_scale_y = bottom_uniform_scale;
+            
+            printf("DEBUG: Top area width=%.1f, Bottom area width=%.1f\n", top_screen_area_width, bottom_screen_area_width);
+            printf("DEBUG: Top scale X=%.3f, Y=%.3f, uniform=%.3f\n", top_scale_x, top_scale_y, top_uniform_scale);
+            printf("DEBUG: Bottom scale X=%.3f, Y=%.3f, uniform=%.3f\n", bottom_scale_x, bottom_scale_y, bottom_uniform_scale);
+            printf("Per-screen scale factors - Top: X=%.3f, Y=%.3f | Bottom: X=%.3f, Y=%.3f\n", 
+                   g_top_screen_scale_x, g_top_screen_scale_y, g_bottom_screen_scale_x, g_bottom_screen_scale_y);
         } else {
-            if (threeds_compat_mode) {
-                printf("Set logical size to %dx%d (3DS dual screen) in %dx%d window\n", 
-                       SCREEN_WIDTH, logical_height, window_width, window_height);
+            // Use SDL's logical scaling for single screen Vita mode
+            if (SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT) != 0) {
+                printf("Warning: Could not set logical size: %s\n", SDL_GetError());
             } else {
                 printf("Set logical size to %dx%d (Vita resolution) in %dx%d window\n", 
-                       SCREEN_WIDTH, logical_height, window_width, window_height);
+                       SCREEN_WIDTH, SCREEN_HEIGHT, window_width, window_height);
             }
+            
+            // Verify the logical size was set
+            int logical_w, logical_h;
+            SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+            printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
         }
         
         // Disable integer scaling for smooth scaling
@@ -534,11 +598,6 @@ int main(int argc, char* args[]) {
         
         // Force SDL to use letterboxing instead of stretching - this should prevent edge artifacts
         SDL_SetHint(SDL_HINT_RENDER_LOGICAL_SIZE_MODE, "letterbox");
-        
-        // Verify the logical size was set
-        int logical_w, logical_h;
-        SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
-        printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
     } else {
         // Native resolution mode: Apply logical scaling with HD 720p base resolution
         // Clear renderer first
@@ -666,11 +725,49 @@ int main(int argc, char* args[]) {
             }
             // Handle window resize events to maintain proper scaling
             if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
-                // Reapply logical size only in Vita compatibility mode
                 if (g_renderer && vita_compat_mode) {
-                    // Ensure logical size is maintained and letterboxing is correct
-                    SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-                    SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
+                    if (threeds_compat_mode) {
+                        // 3DS dual screen mode: recalculate manual scaling factors
+                        int new_window_width, new_window_height;
+                        SDL_GetWindowSize(g_window, &new_window_width, &new_window_height);
+                        
+                        // Recalculate scaling factors for manual scaling
+                        g_scale_x = (float)new_window_width / (float)DUAL_SCREEN_WIDTH;
+                        g_scale_y = (float)new_window_height / (float)DUAL_SCREEN_HEIGHT;
+                        
+                        // Recalculate per-screen scaling factors to maintain proper aspect ratios
+                        // Allocate proportional width space for each screen 
+                        float top_screen_area_width = (float)new_window_width * DS_TOP_SCREEN_WIDTH / DUAL_SCREEN_WIDTH;
+                        float bottom_screen_area_width = (float)new_window_width * DS_BOTTOM_SCREEN_WIDTH / DUAL_SCREEN_WIDTH;
+                        
+                        // For top screen: scale to fit allocated width, constrained by window height
+                        float top_scale_x = top_screen_area_width / DS_TOP_SCREEN_WIDTH;
+                        float top_scale_y = (float)new_window_height / DS_TOP_SCREEN_HEIGHT;
+                        float top_uniform_scale = fminf(top_scale_x, top_scale_y);
+                        
+                        // For bottom screen: scale to fit allocated width, constrained by window height
+                        float bottom_scale_x = bottom_screen_area_width / DS_BOTTOM_SCREEN_WIDTH;
+                        float bottom_scale_y = (float)new_window_height / DS_BOTTOM_SCREEN_HEIGHT;
+                        float bottom_uniform_scale = fminf(bottom_scale_x, bottom_scale_y);
+                        
+                        // Apply maximum height constraint to bottom screen
+                        float max_bottom_height = new_window_height * 0.8f;
+                        float max_bottom_scale_from_height = max_bottom_height / DS_BOTTOM_SCREEN_HEIGHT;
+                        bottom_uniform_scale = fminf(bottom_uniform_scale, max_bottom_scale_from_height);
+                        
+                        g_top_screen_scale_x = top_uniform_scale;
+                        g_top_screen_scale_y = top_uniform_scale;
+                        g_bottom_screen_scale_x = bottom_uniform_scale;
+                        g_bottom_screen_scale_y = bottom_uniform_scale;
+                        
+                        printf("Window resized: New scale factors: X=%.3f, Y=%.3f\n", g_scale_x, g_scale_y);
+                        printf("Per-screen scale factors - Top: X=%.3f, Y=%.3f | Bottom: X=%.3f, Y=%.3f\n", 
+                               g_top_screen_scale_x, g_top_screen_scale_y, g_bottom_screen_scale_x, g_bottom_screen_scale_y);
+                    } else {
+                        // Vita compatibility mode: reapply SDL logical scaling
+                        SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+                        SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
+                    }
                     
                     // Clear any potential artifacts
                     SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);

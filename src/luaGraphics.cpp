@@ -74,19 +74,87 @@ typedef int SceUID;
 #include "utils.h"
 #include "luaplayer.h"
 
-// Helper function to calculate Y offset for dual screen mode
+// Helper functions to calculate screen offsets for dual screen mode
+extern int getScreenXOffset(int screen_id);
+int getScreenXOffset(int screen_id) {
+    if (!g_dual_screen_mode) {
+        return 0; // Single screen mode: no offset
+    }
+    
+    // In dual screen mode (side-by-side):
+    // TOP_SCREEN (0) -> X offset = 0
+    // BOTTOM_SCREEN (1) -> X offset = SCREEN_WIDTH
+    if (screen_id == 1) {
+        printf("DEBUG: getScreenXOffset(1) returning BOTTOM_SCREEN_X_OFFSET=%d\n", BOTTOM_SCREEN_X_OFFSET);
+        return BOTTOM_SCREEN_X_OFFSET;
+    }
+    printf("DEBUG: getScreenXOffset(%d) returning TOP_SCREEN_X_OFFSET=%d\n", screen_id, TOP_SCREEN_X_OFFSET);
+    return TOP_SCREEN_X_OFFSET;
+}
+
 int getScreenYOffset(int screen_id) {
     if (!g_dual_screen_mode) {
         return 0; // Single screen mode: no offset
     }
     
-    // In dual screen mode:
+    // In dual screen mode (side-by-side):
     // TOP_SCREEN (0) -> Y offset = 0
-    // BOTTOM_SCREEN (1) -> Y offset = SCREEN_HEIGHT
+    // BOTTOM_SCREEN (1) -> Y offset = centered
     if (screen_id == 1) {
         return BOTTOM_SCREEN_Y_OFFSET;
     }
     return TOP_SCREEN_Y_OFFSET;
+}
+
+// Get per-screen scaling factors for proper aspect ratio rendering
+void getScreenScaling(int screen_id, float* scale_x, float* scale_y) {
+    if (!g_dual_screen_mode || !g_vita_compat_mode) {
+        *scale_x = 1.0f;
+        *scale_y = 1.0f;
+        return;
+    }
+    
+    if (screen_id == 1) { // BOTTOM_SCREEN
+        *scale_x = g_bottom_screen_scale_x;
+        *scale_y = g_bottom_screen_scale_y;
+    } else { // TOP_SCREEN (0) or default
+        *scale_x = g_top_screen_scale_x;
+        *scale_y = g_top_screen_scale_y;
+    }
+}
+
+// Set viewport clipping for a specific screen to maintain aspect ratios
+void setScreenViewport(int screen_id) {
+    extern SDL_Renderer* g_renderer;
+    
+    if (!g_dual_screen_mode || !g_vita_compat_mode || !g_renderer) {
+        // Clear any clipping for non-dual screen modes
+        SDL_RenderSetClipRect(g_renderer, NULL);
+        return;
+    }
+    
+    // For now, disable clipping until we fix the coordinate calculation
+    SDL_RenderSetClipRect(g_renderer, NULL);
+    return;
+    
+    SDL_Rect viewport;
+    int x_offset = getScreenXOffset(screen_id);
+    int y_offset = getScreenYOffset(screen_id);
+    
+    if (screen_id == 1) { // BOTTOM_SCREEN
+        viewport.x = (int)(x_offset * g_bottom_screen_scale_x);
+        viewport.y = (int)(y_offset * g_bottom_screen_scale_y);
+        viewport.w = (int)(DS_BOTTOM_SCREEN_WIDTH * g_bottom_screen_scale_x);
+        viewport.h = (int)(DS_BOTTOM_SCREEN_HEIGHT * g_bottom_screen_scale_y);
+    } else { // TOP_SCREEN (0) or default
+        viewport.x = (int)(x_offset * g_top_screen_scale_x);
+        viewport.y = (int)(y_offset * g_top_screen_scale_y);
+        viewport.w = (int)(DS_TOP_SCREEN_WIDTH * g_top_screen_scale_x);
+        viewport.h = (int)(DS_TOP_SCREEN_HEIGHT * g_top_screen_scale_y);
+    }
+    
+    printf("DEBUG: setScreenViewport(%d) - viewport=(%d,%d,%d,%d)\n", screen_id, viewport.x, viewport.y, viewport.w, viewport.h);
+    SDL_RenderSetClipRect(g_renderer, &viewport);
 }
 
 extern "C"{
@@ -261,6 +329,34 @@ static int lua_print(lua_State *L) {
     SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeLinear);
 
     SDL_Rect dest_rect = { x, y, (int)(text_surface->w * scale), (int)(text_surface->h * scale) };
+    
+    // Apply per-screen scaling and positioning for dual screen mode
+    if (g_dual_screen_mode && g_vita_compat_mode) {
+        // For now, assume TOP_SCREEN (screen=0) since this function doesn't have screen parameter
+        // TODO: Add screen parameter support to Graphics.debugPrint
+        int screen = 0;
+        
+        // Get per-screen scaling factors
+        float scale_x, scale_y;
+        getScreenScaling(screen, &scale_x, &scale_y);
+        
+        // First: Apply scaling to local coordinates
+        dest_rect.x = (int)(dest_rect.x * scale_x);
+        dest_rect.y = (int)(dest_rect.y * scale_y);
+        dest_rect.w = (int)(dest_rect.w * scale_x);
+        dest_rect.h = (int)(dest_rect.h * scale_y);
+        
+        // Second: Add properly calculated screen offset to position the screen in the window
+        if (screen == 1) { // BOTTOM_SCREEN
+            // Bottom screen should be positioned after the scaled top screen area
+            float top_screen_scale_x, top_screen_scale_y;
+            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
+            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
+            dest_rect.x += bottom_screen_x_pos;
+        }
+        // Top screen starts at window origin (no additional offset needed)
+    }
+    
     SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
 
     SDL_DestroyTexture(text_texture);
@@ -1097,11 +1193,18 @@ static int lua_fprint(lua_State *L) {
 #endif
     
     // Get arguments - compatible with both Vita (5 args) and 3DS (6-7 args) versions
-    // Arguments 6 (screen) and 7 (eye) are ignored in SDL implementation
     ttf *font = (ttf *)(luaL_checkinteger(L, 1));
     float x = luaL_checknumber(L, 2);
     float y = luaL_checknumber(L, 3);
     const char *text = luaL_checkstring(L, 4);
+    
+    // Handle screen parameter for dual screen support
+    int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    // int eye = (argc == 7) ? luaL_checkinteger(L, 7) : 0; // 3D eye (ignored in SDL port)
+    
+    // Calculate screen offsets for dual screen support
+    int x_offset = getScreenXOffset(screen);
+    int y_offset = getScreenYOffset(screen);
     
     uint32_t color_val;
     // Handle both Color objects (tables) and integer colors for compatibility
@@ -1199,13 +1302,40 @@ static int lua_fprint(lua_State *L) {
         int scaled_width = (int)(text_surface->w * scale_factor);
         int scaled_height = (int)(text_surface->h * scale_factor);
         
-        // Render at specified position with proper scaling and line spacing
+        // Render at specified position with proper scaling and line spacing - start with local coordinates
         SDL_Rect dest_rect = { 
             (int)x, 
-            (int)y + (int)(i * scaled_line_height), // Add line spacing
+            (int)y + (int)(i * scaled_line_height), // Local coordinates with line spacing
             scaled_width, 
             scaled_height 
         };
+
+        // Apply per-screen scaling and positioning for dual screen mode
+        if (g_dual_screen_mode && g_vita_compat_mode) {
+            // Get per-screen scaling factors
+            float scale_x, scale_y;
+            getScreenScaling(screen, &scale_x, &scale_y);
+            
+            // First: Apply scaling to local coordinates
+            dest_rect.x = (int)(dest_rect.x * scale_x);
+            dest_rect.y = (int)(dest_rect.y * scale_y);
+            dest_rect.w = (int)(dest_rect.w * scale_x);
+            dest_rect.h = (int)(dest_rect.h * scale_y);
+            
+            // Second: Add properly calculated screen offset to position the screen in the window
+            if (screen == 1) { // BOTTOM_SCREEN
+                // Bottom screen should be positioned after the scaled top screen area
+                float top_screen_scale_x, top_screen_scale_y;
+                getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
+                int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
+                dest_rect.x += bottom_screen_x_pos;
+            }
+            // Top screen starts at window origin (no additional offset needed)
+        } else {
+            // Non-dual screen mode: just add the offset
+            dest_rect.x += x_offset;
+            dest_rect.y += y_offset;
+        }
 
         SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
 
