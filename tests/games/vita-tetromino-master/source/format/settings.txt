@@ -1,4 +1,0 @@
-description of settings file format;
-- file is stored in /data/tetrinomi/tetromino.conf
-- only key=value based keys are available
-- every key=value is seperated by line breaks

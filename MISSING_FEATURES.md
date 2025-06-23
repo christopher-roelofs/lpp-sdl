@@ -1,8 +1,9 @@
 # lpp-sdl Missing Features Comparison
 
-Based on analysis comparing SDL port with original Vita version, the SDL port is missing **45 out of 75 functions** (60% of functionality).
+Based on analysis comparing SDL port with original Vita version, the SDL port is missing **56 out of 86 functions** (65% of functionality).
 
 **UPDATE: 7 file operation functions have been implemented! ✅**
+**UPDATE: Graphics API `drawImageExtended()` texture parameter bug fixed! ✅**
 
 ## **Critical Missing Features**
 
@@ -134,6 +135,19 @@ Based on analysis comparing SDL port with original Vita version, the SDL port is
 - [ ] Opus/AIFF support
 - [ ] Audio metadata extraction
 
+### **Graphics API Gaps** (11 missing)
+- [ ] `createImage()` - Create blank textures/images in memory
+- [ ] `getPixel()` - Read pixel color values from images  
+- [ ] `initBlend()` - Initialize rendering/blending state
+- [ ] `termBlend()` - Terminate rendering state
+- [ ] `loadImageAsync()` - Asynchronous image loading
+- [ ] `loadAnimatedImage()` - Load animated/multi-frame images
+- [ ] `getImageFramesNum()` - Get frame count for animated images
+- [ ] `setImageFrame()` - Set current frame for animated images
+- [ ] `setImageFilters()` - Configure texture filtering modes
+- [ ] `initRescaler()` - Initialize image scaling system (partial implementation)
+- [ ] `termRescaler()` - Terminate scaling system
+
 ### **Graphics Limitations**
 - [ ] Animated GIF support
 - [ ] Extended font formats (PGF/PVF/OTF)
@@ -142,18 +156,20 @@ Based on analysis comparing SDL port with original Vita version, the SDL port is
 ## **Implementation Priority**
 
 ### **High Priority** (Essential for basic functionality)
-1. File operations: `statFile()`, `copyFile()`, `rename()`, `deleteDirectory()`
-2. Archive support: `extractZip()`, `compressZip()`
-3. GUI Module implementation
-4. Touch simulation system
-5. System information: `getDate()`, `getTitleID()`
+1. ~~File operations: `statFile()`, `copyFile()`, `rename()`, `deleteDirectory()`~~ ✅ **COMPLETED**
+2. Graphics functions: `createImage()`, `getPixel()`, `initBlend()`, `termBlend()`
+3. Archive support: `extractZip()`, `compressZip()`
+4. GUI Module implementation
+5. Touch simulation system
+6. System information: `getDate()`, `getTitleID()`
 
 ### **Medium Priority** (Enhanced compatibility)
-1. Advanced battery info functions
-2. Message dialog system
-3. Screenshot capture
-4. Audio format extensions (MP3, MIDI)
-5. Font system improvements
+1. Animated image support: `loadAnimatedImage()`, `getImageFramesNum()`, `setImageFrame()`
+2. Advanced battery info functions
+3. Message dialog system
+4. Screenshot capture
+5. Audio format extensions (MP3, MIDI)
+6. Font system improvements
 
 ### **Low Priority** (Vita-specific features)
 1. Application management functions

@@ -254,6 +254,71 @@ static int lua_writeFile(lua_State *L) {
     return 1;
 }
 
+// Compatibility wrapper for 3DS-style io.write(filehandle, offset, data, length)
+static int lua_iowrite_3ds(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 4) {
+        return luaL_error(L, "io.write(filehandle, offset, data, length): wrong number of arguments");
+    }
+    
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (!*ud) {
+        return luaL_error(L, "Attempt to use a closed file");
+    }
+    
+    // For now, ignore the offset (argument 2) - 3DS might use this differently
+    // int offset = luaL_checkinteger(L, 2);
+    
+    size_t len;
+    const char *data = luaL_checklstring(L, 3, &len);
+    int specified_length = luaL_checkinteger(L, 4);
+    
+    // Use the minimum of the string length and specified length
+    size_t write_len = (specified_length < (int)len) ? specified_length : len;
+    
+    size_t bytes_written = fwrite(data, 1, write_len, *ud);
+    lua_pushboolean(L, bytes_written == write_len);
+    return 1;
+}
+
+// Compatibility wrapper for 3DS-style io.read(filehandle, offset, length)
+static int lua_ioread_3ds(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 3) {
+        return luaL_error(L, "io.read(filehandle, offset, length): wrong number of arguments");
+    }
+    
+    FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+    if (!*ud) {
+        return luaL_error(L, "Attempt to use a closed file");
+    }
+    
+    int offset = luaL_checkinteger(L, 2);
+    int length = luaL_checkinteger(L, 3);
+    
+    // Seek to the specified offset
+    if (fseek(*ud, offset, SEEK_SET) != 0) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    // Allocate buffer for reading
+    char *buffer = (char *)malloc(length + 1);
+    if (!buffer) {
+        return luaL_error(L, "Memory allocation failed");
+    }
+    
+    // Read the data
+    size_t bytes_read = fread(buffer, 1, length, *ud);
+    buffer[bytes_read] = '\0'; // Null-terminate
+    
+    // Push the result as a string
+    lua_pushlstring(L, buffer, bytes_read);
+    free(buffer);
+    
+    return 1;
+}
+
 // --- Dummy implementations for compatibility ---
 static int lua_checkInput(lua_State *L) {
     lua_pushstring(L, "");
@@ -898,4 +963,35 @@ void luaSystem_init(lua_State *L) {
 
     // Register dummy checkInput
     lua_register(L, "checkInput", lua_checkInput);
+    
+    // Create io table for 3DS compatibility (aliases to System functions)
+    lua_newtable(L);
+    
+    // io.open = System.openFile
+    lua_getglobal(L, "System");
+    lua_getfield(L, -1, "openFile");
+    lua_setfield(L, -3, "open");
+    lua_pop(L, 1); // pop System table
+    
+    // io.close = System.closeFile  
+    lua_getglobal(L, "System");
+    lua_getfield(L, -1, "closeFile");
+    lua_setfield(L, -3, "close");
+    lua_pop(L, 1); // pop System table
+    
+    // io.read = lua_ioread_3ds (3DS-compatible version)
+    lua_pushcfunction(L, lua_ioread_3ds);
+    lua_setfield(L, -2, "read");
+    
+    // io.write = lua_iowrite_3ds (3DS-compatible version)
+    lua_pushcfunction(L, lua_iowrite_3ds);
+    lua_setfield(L, -2, "write");
+    
+    // io.size = System.sizeFile
+    lua_getglobal(L, "System");
+    lua_getfield(L, -1, "sizeFile");
+    lua_setfield(L, -3, "size");
+    lua_pop(L, 1); // pop System table
+    
+    lua_setglobal(L, "io");
 }

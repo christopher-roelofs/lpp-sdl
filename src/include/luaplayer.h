@@ -46,10 +46,16 @@ extern void luaC_collectgarbage (lua_State *L);
 extern TTF_Font* g_defaultFont; // Global default font for Graphics.print
 extern bool should_exit; // Global flag to signal application exit
 extern bool g_vita_compat_mode; // Global flag for Vita compatibility mode
+extern bool g_dual_screen_mode; // Global flag for 3DS dual screen mode
 
 // Screen dimensions - defined here for global access (Vita resolution)
 const int SCREEN_WIDTH = 960;
 const int SCREEN_HEIGHT = 544;
+
+// 3DS dual screen support
+const int DUAL_SCREEN_HEIGHT = SCREEN_HEIGHT * 2; // Total height for both screens
+const int TOP_SCREEN_Y_OFFSET = 0;                // Top screen starts at Y=0
+const int BOTTOM_SCREEN_Y_OFFSET = SCREEN_HEIGHT; // Bottom screen starts at Y=544
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(val, min, max) ((val)>(max)?(max):((val)<(min)?(min):(val)))

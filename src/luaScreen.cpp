@@ -32,9 +32,35 @@
 
 #include "sdl_renderer.h"
 #include "luaplayer.h"
+#include <SDL_image.h>
+#include <string>
 
 // Forward declaration
 extern "C" void update_sdl_controls();
+
+// Helper function from Graphics module
+extern int getScreenYOffset(int screen_id);
+
+// LPP texture structure is already defined in luaplayer.h
+
+// Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
+static std::string translate_vita_path(const char* path) {
+    std::string result(path);
+    
+    // Replace app0:/ with current directory (empty string means relative to current dir)
+    size_t pos = result.find("app0:/");
+    if (pos != std::string::npos) {
+        result.replace(pos, 6, "");  // Remove "app0:/"
+    }
+    
+    // Replace ux0:/ with current directory (user data path)
+    pos = result.find("ux0:/");
+    if (pos != std::string::npos) {
+        result.replace(pos, 5, "");  // Remove "ux0:/"
+    }
+    
+    return result;
+}
 
 static int lua_flip(lua_State *L) {
     int argc = lua_gettop(L);
@@ -133,16 +159,71 @@ static int lua_clear(lua_State *L) {
 	if ((argc != 1) && (argc != 0))
 		return luaL_error(L, "wrong number of arguments.");
 #endif
+	
 	if (argc == 1) {
-		int color = luaL_checkinteger(L,1);
-		if (color != clr_color) {
-			SDL_SetRenderDrawColor(g_renderer, (color) & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF, (color >> 24) & 0xFF);
-			clr_color = color;
+		int arg = luaL_checkinteger(L,1);
+		
+		// Check if this is a 3DS screen constant (0=TOP_SCREEN, 1=BOTTOM_SCREEN)
+		if (arg == 0 || arg == 1) {
+			// Auto-enable dual screen mode when 3DS screen constants are used
+			if (!g_dual_screen_mode) {
+				g_dual_screen_mode = true;
+				printf("Auto-enabling dual screen mode\n");
+				
+				// Adjust logical size for dual screen
+				if (g_renderer && g_vita_compat_mode) {
+					SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+					printf("Set logical size to %dx%d for dual screen\n", SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+				} else {
+					// In native mode, we need to resize the window to fit both screens
+					extern SDL_Window* g_window;
+					if (g_window) {
+						int current_w, current_h;
+						SDL_GetWindowSize(g_window, &current_w, &current_h);
+						if (current_h < DUAL_SCREEN_HEIGHT) {
+							SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+							printf("Resized window to %dx%d for dual screen in native mode\n", current_w, DUAL_SCREEN_HEIGHT);
+						}
+					}
+				}
+			}
+			
+			// 3DS dual screen mode: clear specific screen area
+			SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+			
+			if (g_dual_screen_mode) {
+				// Clear only the specified screen area
+				SDL_Rect screen_rect;
+				screen_rect.x = 0;
+				screen_rect.w = SCREEN_WIDTH;
+				screen_rect.h = SCREEN_HEIGHT;
+				
+				if (arg == 0) {
+					// TOP_SCREEN
+					screen_rect.y = TOP_SCREEN_Y_OFFSET;
+				} else {
+					// BOTTOM_SCREEN
+					screen_rect.y = BOTTOM_SCREEN_Y_OFFSET;
+				}
+				
+				SDL_RenderFillRect(g_renderer, &screen_rect);
+			} else {
+				// Single screen mode: clear entire screen
+				SDL_RenderClear(g_renderer);
+			}
+		} else {
+			// Treat as color value
+			if (arg != clr_color) {
+				SDL_SetRenderDrawColor(g_renderer, (arg) & 0xFF, (arg >> 8) & 0xFF, (arg >> 16) & 0xFF, (arg >> 24) & 0xFF);
+				clr_color = arg;
+			}
+			SDL_RenderClear(g_renderer);
 		}
 	} else {
+		// No arguments: clear entire screen with black
 		SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+		SDL_RenderClear(g_renderer);
 	}
-	SDL_RenderClear(g_renderer);
 	return 0;
 }
 
@@ -152,8 +233,10 @@ static int lua_getP(lua_State *L) {
 	if (argc != 2)
 		return luaL_error(L, "wrong number of arguments");
 #endif
-	int x = luaL_checkinteger(L, 1);
-	int y = luaL_checkinteger(L, 2);
+	// Parameters are validated but not used in placeholder implementation
+	luaL_checkinteger(L, 1); // x coordinate
+	luaL_checkinteger(L, 2); // y coordinate
+	
 	// SDL doesn't provide direct framebuffer access like Vita2D
 	// This would require reading pixels from renderer which is expensive
 	// For now, return 0 (black) as placeholder
@@ -284,14 +367,377 @@ static int lua_getScreenHeight(lua_State *L) {
     return 1;
 }
 
+// Dual screen mode control
+static int lua_enableDualScreen(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    g_dual_screen_mode = true;
+    
+    // Adjust logical size for dual screen
+    if (g_renderer && g_vita_compat_mode) {
+        SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+    }
+    
+    return 0;
+}
+
+static int lua_disableDualScreen(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    g_dual_screen_mode = false;
+    
+    // Reset logical size for single screen
+    if (g_renderer && g_vita_compat_mode) {
+        SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+    
+    return 0;
+}
+
+// 3DS-specific 3D functions for compatibility
+static int lua_get3DLevel(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // For SDL port, always return 0 (3D disabled)
+    lua_pushinteger(L, 0);
+    return 1;
+}
+
+static int lua_enable3D(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // For SDL port, this is a no-op
+    return 0;
+}
+
+static int lua_disable3D(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // For SDL port, this is a no-op
+    return 0;
+}
+
+// 3DS Screen drawing functions
+static int lua_screen_fillRect(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 5 || argc > 7) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int x1 = luaL_checkinteger(L, 1);
+    int x2 = luaL_checkinteger(L, 2);
+    int y1 = luaL_checkinteger(L, 3);
+    int y2 = luaL_checkinteger(L, 4);
+    int color = luaL_checkinteger(L, 5);
+    int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    // int eye = (argc == 7) ? luaL_checkinteger(L, 7) : 0; // 3D eye (ignored in SDL port)
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        
+        if (g_renderer && g_vita_compat_mode) {
+            SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+    
+    // Calculate screen Y offset
+    int y_offset = getScreenYOffset(screen);
+    
+    // Set color
+    SDL_SetRenderDrawColor(g_renderer, 
+                          (color) & 0xFF, 
+                          (color >> 8) & 0xFF, 
+                          (color >> 16) & 0xFF, 
+                          (color >> 24) & 0xFF);
+    
+    // Create rectangle (ensure proper ordering)
+    SDL_Rect rect;
+    rect.x = (x1 < x2) ? x1 : x2;
+    rect.y = ((y1 < y2) ? y1 : y2) + y_offset;
+    rect.w = abs(x2 - x1);
+    rect.h = abs(y2 - y1);
+    
+    SDL_RenderFillRect(g_renderer, &rect);
+    return 0;
+}
+
+static int lua_screen_fillEmptyRect(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 5 || argc > 7) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int x1 = luaL_checkinteger(L, 1);
+    int x2 = luaL_checkinteger(L, 2);
+    int y1 = luaL_checkinteger(L, 3);
+    int y2 = luaL_checkinteger(L, 4);
+    int color = luaL_checkinteger(L, 5);
+    int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        
+        if (g_renderer && g_vita_compat_mode) {
+            SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+    
+    // Calculate screen Y offset
+    int y_offset = getScreenYOffset(screen);
+    
+    // Set color
+    SDL_SetRenderDrawColor(g_renderer, 
+                          (color) & 0xFF, 
+                          (color >> 8) & 0xFF, 
+                          (color >> 16) & 0xFF, 
+                          (color >> 24) & 0xFF);
+    
+    // Create rectangle (ensure proper ordering)
+    SDL_Rect rect;
+    rect.x = (x1 < x2) ? x1 : x2;
+    rect.y = ((y1 < y2) ? y1 : y2) + y_offset;
+    rect.w = abs(x2 - x1);
+    rect.h = abs(y2 - y1);
+    
+    SDL_RenderDrawRect(g_renderer, &rect);
+    return 0;
+}
+
+static int lua_screen_drawLine(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 5 || argc > 7) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int x1 = luaL_checkinteger(L, 1);
+    int x2 = luaL_checkinteger(L, 2);
+    int y1 = luaL_checkinteger(L, 3);
+    int y2 = luaL_checkinteger(L, 4);
+    int color = luaL_checkinteger(L, 5);
+    int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        
+        if (g_renderer && g_vita_compat_mode) {
+            SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+    
+    // Calculate screen Y offset
+    int y_offset = getScreenYOffset(screen);
+    
+    // Set color
+    SDL_SetRenderDrawColor(g_renderer, 
+                          (color) & 0xFF, 
+                          (color >> 8) & 0xFF, 
+                          (color >> 16) & 0xFF, 
+                          (color >> 24) & 0xFF);
+    
+    SDL_RenderDrawLine(g_renderer, x1, y1 + y_offset, x2, y2 + y_offset);
+    return 0;
+}
+
+static int lua_screen_drawImage(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 3 || argc > 5) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    void* texture_ptr = lua_touserdata(L, 3);
+    int screen = (argc >= 4) ? luaL_checkinteger(L, 4) : 0; // Default to TOP_SCREEN
+    
+    if (!texture_ptr) {
+        return luaL_error(L, "Invalid texture provided");
+    }
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        
+        if (g_renderer && g_vita_compat_mode) {
+            SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+    
+    // Calculate screen Y offset
+    int y_offset = getScreenYOffset(screen);
+    
+    // Cast to lpp_texture
+    lpp_texture* tex = (lpp_texture*)texture_ptr;
+    
+    // Get texture dimensions from stored values
+    int tex_w = tex->w;
+    int tex_h = tex->h;
+    
+    // Create destination rectangle
+    SDL_Rect dest_rect = {x, y + y_offset, tex_w, tex_h};
+    
+    SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect);
+    return 0;
+}
+
+static int lua_screen_drawPartialImage(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 7 || argc > 9) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int dest_x = luaL_checkinteger(L, 1);
+    int dest_y = luaL_checkinteger(L, 2);
+    int src_x = luaL_checkinteger(L, 3);
+    int src_y = luaL_checkinteger(L, 4);
+    int src_w = luaL_checkinteger(L, 5);
+    int src_h = luaL_checkinteger(L, 6);
+    void* texture_ptr = lua_touserdata(L, 7);
+    int screen = (argc >= 8) ? luaL_checkinteger(L, 8) : 0; // Default to TOP_SCREEN
+    
+    if (!texture_ptr) {
+        return luaL_error(L, "Invalid texture provided");
+    }
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        
+        if (g_renderer && g_vita_compat_mode) {
+            SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+    
+    // Calculate screen Y offset
+    int y_offset = getScreenYOffset(screen);
+    
+    // Cast to lpp_texture
+    lpp_texture* tex = (lpp_texture*)texture_ptr;
+    
+    // Create source and destination rectangles
+    SDL_Rect src_rect = {src_x, src_y, src_w, src_h};
+    SDL_Rect dest_rect = {dest_x, dest_y + y_offset, src_w, src_h};
+    
+    SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, &src_rect, &dest_rect);
+    return 0;
+}
+
+// Screen refresh function for 3DS compatibility
+static int lua_refresh(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // For SDL port, refresh is essentially a no-op
+    // The actual screen refresh happens in flip()
+    return 0;
+}
+
+// Screen.loadImage function for 3DS compatibility (same as Graphics.loadImage)
+static int lua_screen_loadimg(lua_State *L) {
+    const char* path = luaL_checkstring(L, 1);
+    
+    // Translate Vita paths (app0:/ -> current directory)
+    std::string translated_path = translate_vita_path(path);
+    
+    SDL_Texture* sdl_texture = IMG_LoadTexture(g_renderer, translated_path.c_str());
+    if (!sdl_texture) {
+        return luaL_error(L, "Error loading image: %s", IMG_GetError());
+    }
+
+    lpp_texture* tex = (lpp_texture*)malloc(sizeof(lpp_texture));
+    tex->magic = 0xABADBEEF;
+    tex->texture = (void*)sdl_texture;
+    SDL_QueryTexture(sdl_texture, NULL, NULL, &tex->w, &tex->h);
+    tex->data = NULL;
+
+    lua_pushlightuserdata(L, tex);
+    return 1;
+}
+
 static const luaL_Reg Screen_functions[] = {
 	{"clear",            lua_clear},
 	{"flip",             lua_flip},
+	{"refresh",          lua_refresh},
     {"waitVblankStart",  lua_waitVblankStart},
+    {"waitVblank",       lua_vblank},
 	{"getPixel",         lua_getP},
-	{"waitVblankStart",  lua_vblank},
     {"getWidth",         lua_getScreenWidth},
     {"getHeight",        lua_getScreenHeight},
+    {"loadImage",        lua_screen_loadimg},
+    {"get3DLevel",       lua_get3DLevel},
+    {"enable3D",         lua_enable3D},
+    {"disable3D",        lua_disable3D},
+    {"enableDualScreen", lua_enableDualScreen},
+    {"disableDualScreen", lua_disableDualScreen},
+    {"fillRect",         lua_screen_fillRect},
+    {"fillEmptyRect",    lua_screen_fillEmptyRect},
+    {"drawLine",         lua_screen_drawLine},
+    {"drawImage",        lua_screen_drawImage},
+    {"drawPartialImage", lua_screen_drawPartialImage},
 	{0, 0}
 };
 
@@ -299,6 +745,18 @@ void luaScreen_init(lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, Screen_functions, 0);
 	lua_setglobal(L, "Screen");
+	
+	// Add 3DS screen constants for compatibility
+	lua_pushinteger(L, 0);
+	lua_setglobal(L, "TOP_SCREEN");
+	lua_pushinteger(L, 1);
+	lua_setglobal(L, "BOTTOM_SCREEN");
+	
+	// Add 3DS eye constants (for 3D stereoscopic functions)
+	lua_pushinteger(L, 0);
+	lua_setglobal(L, "LEFT_EYE");
+	lua_pushinteger(L, 1);
+	lua_setglobal(L, "RIGHT_EYE");
 	lua_newtable(L);
 	luaL_setfuncs(L, Color_functions, 0);
 	lua_setglobal(L, "Color");

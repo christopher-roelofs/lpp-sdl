@@ -42,6 +42,7 @@
 // External globals from main_sdl.cpp
 extern SDL_Window* g_window;
 extern SDL_Renderer* g_renderer;
+extern bool g_dual_screen_mode;
 
 // SDL Porting Placeholders
 typedef void vita2d_pgf;
@@ -71,6 +72,21 @@ typedef int SceUID;
 
 #include "utils.h"
 #include "luaplayer.h"
+
+// Helper function to calculate Y offset for dual screen mode
+int getScreenYOffset(int screen_id) {
+    if (!g_dual_screen_mode) {
+        return 0; // Single screen mode: no offset
+    }
+    
+    // In dual screen mode:
+    // TOP_SCREEN (0) -> Y offset = 0
+    // BOTTOM_SCREEN (1) -> Y offset = SCREEN_HEIGHT
+    if (screen_id == 1) {
+        return BOTTOM_SCREEN_Y_OFFSET;
+    }
+    return TOP_SCREEN_Y_OFFSET;
+}
 
 extern "C"{
 //#include <png.h>      // Missing dependency - TODO: install libpng-dev  
@@ -732,8 +748,8 @@ static int lua_drawimg_rotate(lua_State *L) {
 #endif
     float x = luaL_checknumber(L, 1);
     float y = luaL_checknumber(L, 2);
-    float angle = luaL_checknumber(L, 3);
-    lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 4);
+    lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 3);
+    float angle = luaL_checknumber(L, 4);
 
     if (tex && tex->magic == 0xABADBEEF && g_renderer) {
         SDL_Rect dest_rect = { (int)x, (int)y, tex->w, tex->h };
@@ -808,31 +824,60 @@ static int lua_drawimg_full(lua_State *L) {
 		return luaL_error(L, "drawImageExtended can't be called outside a blending phase.");
 #endif
 	float x = luaL_checknumber(L, 1);
-	(void)x;
 	float y = luaL_checknumber(L, 2);
-	(void)y;
-	lpp_texture* text = (lpp_texture*)(luaL_checkinteger(L, 3));
+	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 3);
 	int st_x = luaL_checkinteger(L, 4);
-	(void)st_x;
 	int st_y = luaL_checkinteger(L, 5);
-	(void)st_y;
 	float width = luaL_checknumber(L, 6);
-	(void)width;
 	float height = luaL_checknumber(L, 7);
-	(void)height;
 	float radius = luaL_checknumber(L, 8);
-	(void)radius;
 	float x_scale = luaL_checknumber(L, 9);
-	(void)x_scale;
-	float y_scale;
-	if (argc == 11) y_scale = luaL_checknumber(L, 10);
-	else y_scale = x_scale;
-	(void)y_scale;
+	float y_scale = luaL_checknumber(L, 10);
 #ifndef SKIP_ERROR_HANDLING
 	if (text->magic != 0xABADBEEF)
 		return luaL_error(L, "attempt to access wrong memory block type.");
 #endif
-	// Porting to SDL
+	
+	// Handle color tinting if provided
+	if (argc == 11) {
+		uint32_t color = luaL_checkinteger(L, 11);
+		uint8_t r = (color) & 0xFF;
+		uint8_t g = (color >> 8) & 0xFF;
+		uint8_t b = (color >> 16) & 0xFF;
+		uint8_t a = (color >> 24) & 0xFF;
+		SDL_SetTextureColorMod((SDL_Texture*)text->texture, r, g, b);
+		SDL_SetTextureAlphaMod((SDL_Texture*)text->texture, a);
+	} else {
+		SDL_SetTextureColorMod((SDL_Texture*)text->texture, 255, 255, 255);
+		SDL_SetTextureAlphaMod((SDL_Texture*)text->texture, 255);
+	}
+	
+	// Source rectangle (part of texture to draw)
+	SDL_Rect src_rect;
+	src_rect.x = st_x;
+	src_rect.y = st_y;
+	src_rect.w = (int)width;
+	src_rect.h = (int)height;
+	
+	// Destination rectangle (where to draw, with scaling)
+	SDL_Rect dest_rect;
+	dest_rect.x = (int)x;
+	dest_rect.y = (int)y;
+	dest_rect.w = (int)(width * x_scale);
+	dest_rect.h = (int)(height * y_scale);
+	
+	// Center point for rotation
+	SDL_Point center;
+	center.x = dest_rect.w / 2;
+	center.y = dest_rect.h / 2;
+	
+	// Convert radians to degrees for SDL
+	double angle_degrees = radius * (180.0 / M_PI);
+	
+	// Render the texture with rotation, scaling, and optional tinting
+	SDL_RenderCopyEx(g_renderer, (SDL_Texture*)text->texture, &src_rect, &dest_rect, 
+					 angle_degrees, &center, SDL_FLIP_NONE);
+	
 	return 0;
 }
 
@@ -1013,11 +1058,12 @@ static int lua_freefont(lua_State *L) {
 static int lua_fprint(lua_State *L) {
     int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-    if (argc != 5)
-        return luaL_error(L, "wrong number of arguments");
+    if (argc < 5 || argc > 7)
+        return luaL_error(L, "Font.print(font, x, y, text, color, [screen], [eye]): wrong number of arguments");
 #endif
     
-    // Get arguments like original Vita implementation
+    // Get arguments - compatible with both Vita (5 args) and 3DS (6-7 args) versions
+    // Arguments 6 (screen) and 7 (eye) are ignored in SDL implementation
     ttf *font = (ttf *)(luaL_checkinteger(L, 1));
     float x = luaL_checknumber(L, 2);
     float y = luaL_checknumber(L, 3);

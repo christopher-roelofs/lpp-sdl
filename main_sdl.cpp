@@ -23,6 +23,7 @@ extern "C" {
 SDL_Window* g_window = NULL;
 SDL_Renderer* g_renderer = NULL;
 bool g_vita_compat_mode = false; // Global flag for Vita compatibility mode
+bool g_dual_screen_mode = false; // Global flag for 3DS dual screen mode
 
 // Global variables required by LPP modules
 int clr_color = 0;
@@ -44,6 +45,7 @@ extern "C" void sdl_key_up(int scancode);
 int main(int argc, char* args[]) {
     lua_State* L = NULL;
     bool vita_compat_mode = false; // Temporarily disable to test if logical scaling is the issue
+    bool threeds_compat_mode = false; // 3DS dual screen compatibility mode
     const char* lua_file = NULL;
 
     // Parse command line arguments
@@ -51,8 +53,13 @@ int main(int argc, char* args[]) {
         if (strcmp(args[i], "-vitacompat") == 0) {
             vita_compat_mode = true;
             printf("Vita compatibility mode enabled\n");
+        } else if (strcmp(args[i], "-3dscompat") == 0) {
+            threeds_compat_mode = true;
+            vita_compat_mode = true; // 3DS mode implies vita compat for scaling
+            printf("3DS compatibility mode enabled (dual screen)\n");
         } else if (strcmp(args[i], "-native") == 0) {
             vita_compat_mode = false;
+            threeds_compat_mode = false;
             printf("Native resolution mode enabled\n");
         } else if (lua_file == NULL) {
             lua_file = args[i];
@@ -66,8 +73,10 @@ int main(int argc, char* args[]) {
         printf("Usage: %s [options] <lua_file>\n", args[0]);
         printf("Options:\n");
         printf("  -vitacompat    Force Vita resolution scaling (960x544 logical size) [DEFAULT]\n");
+        printf("  -3dscompat     Enable 3DS dual screen mode (960x1088 logical size)\n");
         printf("  -native        Use native window resolution (no scaling)\n");
         printf("Example: %s hello_test.lua\n", args[0]);
+        printf("Example: %s -3dscompat \"tests/games/3ds/blackjack-3ds/index.lua\"\n", args[0]);
         printf("Example: %s -native \"samples/Vita Hangman - Touhou Edition/index.lua\"\n", args[0]);
         return 1;
     }
@@ -140,39 +149,56 @@ int main(int argc, char* args[]) {
     int window_width, window_height;
     
     g_vita_compat_mode = vita_compat_mode; // Store globally for other modules to access
+    g_dual_screen_mode = threeds_compat_mode; // Store globally for 3DS dual screen support
     
     if (vita_compat_mode) {
-        // Vita compatibility mode: Calculate window size maintaining Vita aspect ratio (960:544 ≈ 1.765:1)
-        float vita_aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+        // Vita/3DS compatibility mode: Calculate window size maintaining aspect ratio
+        float aspect_ratio;
+        int logical_height;
+        
+        if (threeds_compat_mode) {
+            // 3DS dual screen mode: 960x1088 (two 960x544 screens stacked)
+            aspect_ratio = (float)SCREEN_WIDTH / (float)DUAL_SCREEN_HEIGHT;
+            logical_height = DUAL_SCREEN_HEIGHT;
+        } else {
+            // Vita single screen mode: 960x544
+            aspect_ratio = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+            logical_height = SCREEN_HEIGHT;
+        }
         
         // Start with 70% of screen height, then calculate width to maintain aspect ratio
         window_height = (display_mode.h * 7) / 10;
-        window_width = (int)(window_height * vita_aspect);
+        window_width = (int)(window_height * aspect_ratio);
         
         // If calculated width is too wide for display, scale based on width instead
         if (window_width > (display_mode.w * 7) / 10) {
             window_width = (display_mode.w * 7) / 10;
-            window_height = (int)(window_width / vita_aspect);
+            window_height = (int)(window_width / aspect_ratio);
         }
         
-        // Ensure window is not larger than Vita resolution scaled up by 2x
+        // Ensure window is not larger than logical resolution scaled up by 2x
         if (window_width > SCREEN_WIDTH * 2) {
             window_width = SCREEN_WIDTH * 2;
-            window_height = (int)(window_width / vita_aspect);
+            window_height = (int)(window_width / aspect_ratio);
         }
-        if (window_height > SCREEN_HEIGHT * 2) {
-            window_height = SCREEN_HEIGHT * 2;
-            window_width = (int)(window_height * vita_aspect);
+        if (window_height > logical_height * 2) {
+            window_height = logical_height * 2;
+            window_width = (int)(window_height * aspect_ratio);
         }
         
-        // Ensure window is at least Vita resolution (maintain aspect ratio)
-        if (window_width < SCREEN_WIDTH || window_height < SCREEN_HEIGHT) {
+        // Ensure window is at least the logical resolution (maintain aspect ratio)
+        if (window_width < SCREEN_WIDTH || window_height < logical_height) {
             window_width = SCREEN_WIDTH;
-            window_height = SCREEN_HEIGHT;
+            window_height = logical_height;
         }
         
-        printf("Vita compatibility mode: Window size %dx%d for logical size %dx%d\n", 
-               window_width, window_height, SCREEN_WIDTH, SCREEN_HEIGHT);
+        if (threeds_compat_mode) {
+            printf("3DS compatibility mode: Window size %dx%d for logical size %dx%d\n", 
+                   window_width, window_height, SCREEN_WIDTH, DUAL_SCREEN_HEIGHT);
+        } else {
+            printf("Vita compatibility mode: Window size %dx%d for logical size %dx%d\n", 
+                   window_width, window_height, SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
     } else {
         // Native resolution mode: Use 80% of screen size for comfortable windowed experience
         window_width = (display_mode.w * 4) / 5;  // 80% of screen width
@@ -226,11 +252,17 @@ int main(int argc, char* args[]) {
         SDL_RenderClear(g_renderer);
         
         // Use SDL's logical scaling (the original approach that mostly worked)
-        if (SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT) != 0) {
+        int logical_height = threeds_compat_mode ? DUAL_SCREEN_HEIGHT : SCREEN_HEIGHT;
+        if (SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, logical_height) != 0) {
             printf("Warning: Could not set logical size: %s\n", SDL_GetError());
         } else {
-            printf("Set logical size to %dx%d (Vita resolution) in %dx%d window\n", 
-                   SCREEN_WIDTH, SCREEN_HEIGHT, window_width, window_height);
+            if (threeds_compat_mode) {
+                printf("Set logical size to %dx%d (3DS dual screen) in %dx%d window\n", 
+                       SCREEN_WIDTH, logical_height, window_width, window_height);
+            } else {
+                printf("Set logical size to %dx%d (Vita resolution) in %dx%d window\n", 
+                       SCREEN_WIDTH, logical_height, window_width, window_height);
+            }
         }
         
         // Disable integer scaling for smooth scaling
