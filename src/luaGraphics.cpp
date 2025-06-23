@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <string>
+#include <vector>
 #include <stdlib.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -1131,41 +1132,61 @@ static int lua_fprint(lua_State *L) {
         return 0;
     }
 
-    SDL_Surface* text_surface = TTF_RenderText_Blended(sdl_font, text, sdl_color);
-    if (!text_surface) {
-        fprintf(stderr, "TTF_RenderText_Blended Error: %s\n", TTF_GetError());
-        return 0;
-    }
-
-    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
-    if (!text_texture) {
-        fprintf(stderr, "SDL_CreateTextureFromSurface Error: %s\n", SDL_GetError());
-        SDL_FreeSurface(text_surface);
-        return 0;
-    }
+    // Handle multiline text by splitting on \n characters
+    std::string text_str(text);
+    std::vector<std::string> lines;
     
-    // Set texture filtering to nearest-neighbor for crisp fonts
-    SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
-
-    // Calculate scaling factor based on desired font size vs loaded size
-    // Fonts are loaded at 16px by default, then scaled via Font.setPixelSizes()
+    // Split text by newlines
+    size_t start = 0;
+    size_t end = text_str.find('\n');
+    while (end != std::string::npos) {
+        lines.push_back(text_str.substr(start, end - start));
+        start = end + 1;
+        end = text_str.find('\n', start);
+    }
+    lines.push_back(text_str.substr(start)); // Add the last line
+    
+    // Get line height for spacing
+    int line_height = TTF_FontHeight(sdl_font);
     float scale_factor = (float)font->size / 16.0f;
+    int scaled_line_height = (int)(line_height * scale_factor);
     
-    int scaled_width = (int)(text_surface->w * scale_factor);
-    int scaled_height = (int)(text_surface->h * scale_factor);
-    
-    // Render at specified position with proper scaling and baseline adjustment
-    SDL_Rect dest_rect = { 
-        (int)x, 
-        (int)y, // Keep Y as specified by game
-        scaled_width, 
-        scaled_height 
-    };
+    // Render each line
+    for (size_t i = 0; i < lines.size(); i++) {
+        if (lines[i].empty()) continue; // Skip empty lines
+        
+        SDL_Surface* text_surface = TTF_RenderText_Blended(sdl_font, lines[i].c_str(), sdl_color);
+        if (!text_surface) {
+            fprintf(stderr, "TTF_RenderText_Blended Error: %s\n", TTF_GetError());
+            continue;
+        }
 
-    SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+        SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
+        if (!text_texture) {
+            fprintf(stderr, "SDL_CreateTextureFromSurface Error: %s\n", SDL_GetError());
+            SDL_FreeSurface(text_surface);
+            continue;
+        }
+        
+        // Set texture filtering to nearest-neighbor for crisp fonts
+        SDL_SetTextureScaleMode(text_texture, SDL_ScaleModeNearest);
+        
+        int scaled_width = (int)(text_surface->w * scale_factor);
+        int scaled_height = (int)(text_surface->h * scale_factor);
+        
+        // Render at specified position with proper scaling and line spacing
+        SDL_Rect dest_rect = { 
+            (int)x, 
+            (int)y + (int)(i * scaled_line_height), // Add line spacing
+            scaled_width, 
+            scaled_height 
+        };
 
-    SDL_DestroyTexture(text_texture);
-    SDL_FreeSurface(text_surface);
+        SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+
+        SDL_DestroyTexture(text_texture);
+        SDL_FreeSurface(text_surface);
+    }
 
     return 0;
 }
@@ -1405,8 +1426,60 @@ static int lua_color_new(lua_State *L) {
     return 1;
 }
 
+static int lua_getR(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1)
+        return luaL_error(L, "wrong number of arguments");
+#endif
+    int color = luaL_checkinteger(L, 1);
+    int colour = color & 0xFF;
+    lua_pushinteger(L, colour);
+    return 1;
+}
+
+static int lua_getG(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1)
+        return luaL_error(L, "wrong number of arguments");
+#endif
+    int color = luaL_checkinteger(L, 1);
+    int colour = (color >> 8) & 0xFF;
+    lua_pushinteger(L, colour);
+    return 1;
+}
+
+static int lua_getB(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1)
+        return luaL_error(L, "wrong number of arguments");
+#endif
+    int color = luaL_checkinteger(L, 1);
+    int colour = (color >> 16) & 0xFF;
+    lua_pushinteger(L, colour);
+    return 1;
+}
+
+static int lua_getA(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1)
+        return luaL_error(L, "wrong number of arguments");
+#endif
+    int color = luaL_checkinteger(L, 1);
+    int colour = (color >> 24) & 0xFF;
+    lua_pushinteger(L, colour);
+    return 1;
+}
+
 static const luaL_Reg Color_functions[] = {
     {"new", lua_color_new},
+    {"getR", lua_getR},
+    {"getG", lua_getG},
+    {"getB", lua_getB},
+    {"getA", lua_getA},
     {NULL, NULL}
 };
 

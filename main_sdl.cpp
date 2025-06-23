@@ -212,7 +212,7 @@ int main(int argc, char* args[]) {
     }
     
     // Create window
-    g_window = SDL_CreateWindow("LPP-Vita SDL Port", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    g_window = SDL_CreateWindow("Lua Player Plus SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (g_window == NULL) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         if (g_defaultFont) TTF_CloseFont(g_defaultFont);
