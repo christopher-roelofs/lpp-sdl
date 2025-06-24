@@ -13,9 +13,11 @@
 
 #include "ioapi.h"
 
-#include <psp2/io/fcntl.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 voidpf call_zopen64(const zlib_filefunc64_32_def* pfilefunc, const void* filename, int mode)
 {
@@ -81,13 +83,13 @@ static int ZCALLBACK ferror_file_func OF((voidpf opaque, voidpf stream));
 
 typedef struct
 {
-    SceUID fd;
+    int fd;
     int error;
     int filenameLength;
     void* filename;
 } FILE_IOPOSIX;
 
-static voidpf file_build_ioposix(SceUID fd, const char* filename)
+static voidpf file_build_ioposix(int fd, const char* filename)
 {
     FILE_IOPOSIX* ioposix = NULL;
     if (fd < 0)
@@ -103,18 +105,22 @@ static voidpf file_build_ioposix(SceUID fd, const char* filename)
 
 static voidpf ZCALLBACK fopen_file_func(voidpf opaque, const char* filename, int mode)
 {
-    SceUID fd = -1;
+    int fd = -1;
     int mode_fopen = 0;
+    
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ)
-        mode_fopen = SCE_O_RDONLY;
+        mode_fopen = O_RDONLY;
     else if (mode & ZLIB_FILEFUNC_MODE_EXISTING)
-        mode_fopen = SCE_O_RDWR;
+        mode_fopen = O_RDWR;
     else if (mode & ZLIB_FILEFUNC_MODE_CREATE)
-        mode_fopen = SCE_O_WRONLY | SCE_O_CREAT;
+        mode_fopen = O_WRONLY | O_CREAT;
 
-    if ((filename != NULL) && (mode_fopen != 0))
+    if (filename != NULL)
     {
-        fd = sceIoOpen(filename, mode_fopen, 0777);
+        fd = open(filename, mode_fopen, 0777);
+        if (fd < 0) {
+            return NULL;
+        }
         return file_build_ioposix(fd, filename);
     }
 
@@ -153,8 +159,11 @@ static uLong ZCALLBACK fread_file_func(voidpf opaque, voidpf stream, void* buf, 
     if (stream == NULL)
         return -1;
     ioposix = (FILE_IOPOSIX*)stream;
-    ret = (uLong)sceIoRead(ioposix->fd, buf, (size_t)size);
-    ioposix->error = (int)ret;
+    ret = (uLong)read(ioposix->fd, buf, (size_t)size);
+    if (ret == (uLong)-1)
+        ioposix->error = errno;
+    else
+        ioposix->error = 0;
     return ret;
 }
 
@@ -165,8 +174,11 @@ static uLong ZCALLBACK fwrite_file_func(voidpf opaque, voidpf stream, const void
     if (stream == NULL)
         return -1;
     ioposix = (FILE_IOPOSIX*)stream;
-    ret = (uLong)sceIoWrite(ioposix->fd, buf, (size_t)size);
-    ioposix->error = (int)ret;
+    ret = (uLong)write(ioposix->fd, buf, (size_t)size);
+    if (ret == (uLong)-1)
+        ioposix->error = errno;
+    else
+        ioposix->error = 0;
     return ret;
 }
 
@@ -177,8 +189,11 @@ static long ZCALLBACK ftell_file_func(voidpf opaque, voidpf stream)
     if (stream == NULL)
         return ret;
     ioposix = (FILE_IOPOSIX*)stream;
-    ret = (long)sceIoLseek32(ioposix->fd, 0, SCE_SEEK_CUR);
-    ioposix->error = (int)ret;
+    ret = (long)lseek(ioposix->fd, 0, SEEK_CUR);
+    if (ret == -1)
+        ioposix->error = errno;
+    else
+        ioposix->error = 0;
     return ret;
 }
 
@@ -189,8 +204,11 @@ static ZPOS64_T ZCALLBACK ftell64_file_func(voidpf opaque, voidpf stream)
     if (stream == NULL)
         return ret;
     ioposix = (FILE_IOPOSIX*)stream;
-    ret = (ZPOS64_T)sceIoLseek(ioposix->fd, 0, SCE_SEEK_CUR);
-    ioposix->error = (int)ret;
+    ret = (ZPOS64_T)lseek(ioposix->fd, 0, SEEK_CUR);
+    if (ret == (ZPOS64_T)-1)
+        ioposix->error = errno;
+    else
+        ioposix->error = 0;
     return ret;
 }
 
@@ -207,19 +225,23 @@ static long ZCALLBACK fseek_file_func(voidpf opaque, voidpf stream, uLong offset
     switch (origin)
     {
         case ZLIB_FILEFUNC_SEEK_CUR:
-            fseek_origin = SCE_SEEK_CUR;
+            fseek_origin = SEEK_CUR;
             break;
         case ZLIB_FILEFUNC_SEEK_END:
-            fseek_origin = SCE_SEEK_END;
+            fseek_origin = SEEK_END;
             break;
         case ZLIB_FILEFUNC_SEEK_SET:
-            fseek_origin = SCE_SEEK_SET;
+            fseek_origin = SEEK_SET;
             break;
         default:
             return -1;
     }
-    if (sceIoLseek32(ioposix->fd, offset, fseek_origin) < 0)
+    if (lseek(ioposix->fd, offset, fseek_origin) < 0) {
         ret = -1;
+        ioposix->error = errno;
+    } else {
+        ioposix->error = 0;
+    }
     return ret;
 }
 
@@ -236,19 +258,23 @@ static long ZCALLBACK fseek64_file_func(voidpf opaque, voidpf stream, ZPOS64_T o
     switch (origin)
     {
         case ZLIB_FILEFUNC_SEEK_CUR:
-            fseek_origin = SCE_SEEK_CUR;
+            fseek_origin = SEEK_CUR;
             break;
         case ZLIB_FILEFUNC_SEEK_END:
-            fseek_origin = SCE_SEEK_END;
+            fseek_origin = SEEK_END;
             break;
         case ZLIB_FILEFUNC_SEEK_SET:
-            fseek_origin = SCE_SEEK_SET;
+            fseek_origin = SEEK_SET;
             break;
         default:
             return -1;
     }
-    if (sceIoLseek(ioposix->fd, offset, fseek_origin) < 0)
+    if (lseek(ioposix->fd, offset, fseek_origin) < 0) {
         ret = -1;
+        ioposix->error = errno;
+    } else {
+        ioposix->error = 0;
+    }
     return ret;
 }
 
@@ -261,7 +287,7 @@ static int ZCALLBACK fclose_file_func(voidpf opaque, voidpf stream)
     ioposix = (FILE_IOPOSIX*)stream;
     if (ioposix->filename != NULL)
         free(ioposix->filename);
-    ret = sceIoClose(ioposix->fd);
+    ret = close(ioposix->fd);
     ioposix->error = ret;
     free(ioposix);
     return ret;
@@ -274,9 +300,7 @@ static int ZCALLBACK ferror_file_func(voidpf opaque, voidpf stream)
     if (stream == NULL)
         return ret;
     ioposix = (FILE_IOPOSIX*)stream;
-    ret = 0;
-    if (ioposix->error < 0)
-        ret = ioposix->error & 0xFF;
+    ret = ioposix->error;
     return ret;
 }
 

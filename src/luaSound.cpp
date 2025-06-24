@@ -246,9 +246,9 @@ static bool extractMP3Metadata(const char* filepath, std::string& title, std::st
 
 // Extract metadata using FFmpeg (works for OGG, FLAC, MP4, etc.)
 static bool extractFFmpegMetadata(const char* filepath, std::string& title, std::string& artist) {
+	// av_register_all() is deprecated and not needed in newer FFmpeg versions
 	static bool ffmpeg_initialized = false;
 	if (!ffmpeg_initialized) {
-		av_register_all();
 		ffmpeg_initialized = true;
 	}
 	

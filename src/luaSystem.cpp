@@ -11,6 +11,14 @@
 #include <time.h>
 #include <SDL.h>
 #include <errno.h>
+#include <thread>
+#include <atomic>
+
+// Zip support
+extern "C" {
+#include "include/zip.h"
+#include "include/unzip.h"
+}
 
 // Platform-specific includes for disk space
 #if defined(_WIN32)
@@ -26,6 +34,30 @@ extern "C" {
 }
 
 #include "luaplayer.h"
+
+// External declarations for async variables defined in main_sdl.cpp
+extern volatile int asyncResult;
+extern uint8_t async_task_num;
+extern unsigned char* asyncStrRes;
+extern uint32_t asyncResSize;
+
+// Zip-related globals
+static char fname[512];
+static char ext_fname[512];
+static char read_buffer[8192];
+static char asyncDest[512];
+static char asyncName[512];
+static unzFile asyncHandle;
+static int asyncMode = 0;
+
+// Async modes
+enum {
+    FULL_EXTRACT = 0,
+    FILE_EXTRACT = 1
+};
+
+// Maximum async tasks
+#define ASYNC_TASKS_MAX 1
 
 // Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
 static std::string translate_vita_path(const char* path) {
@@ -52,6 +84,74 @@ static std::string translate_vita_path(const char* path) {
 #define stat _stat
 #define mkdir(path, mode) _mkdir(path)
 #endif
+
+// Helper function to add a file to zip archive
+static void addFileToZip(zipFile zf, const char* parent_path, const char* file_path, int compression_level) {
+    std::string zip_path;
+    const char* base_name = strrchr(file_path, '/');
+    std::string filename = base_name ? (base_name + 1) : file_path;
+    
+    if (parent_path && strlen(parent_path) > 0) {
+        zip_path = std::string(parent_path) + "/" + filename;
+    } else {
+        zip_path = filename;
+    }
+    
+    FILE* f = fopen(translate_vita_path(file_path).c_str(), "rb");
+    if (!f) return;
+    
+    zip_fileinfo zi = {};
+    zipOpenNewFileInZip(zf, zip_path.c_str(), &zi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, compression_level);
+    
+    char buffer[8192];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+        zipWriteInFileInZip(zf, buffer, bytes_read);
+    }
+    
+    fclose(f);
+    zipCloseFileInZip(zf);
+}
+
+// Helper function to add a directory to zip archive recursively
+static void addDirToZip(zipFile zf, const char* parent_path, const char* dir_path, int compression_level) {
+    std::string translated_path = translate_vita_path(dir_path);
+    DIR* dir = opendir(translated_path.c_str());
+    if (!dir) return;
+    
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        std::string full_path = translated_path + "/" + entry->d_name;
+        
+        struct stat st;
+        if (stat(full_path.c_str(), &st) == 0) {
+            std::string zip_parent_path;
+            
+            if (parent_path && strlen(parent_path) > 0) {
+                // We're in a subdirectory, use the current parent path
+                zip_parent_path = parent_path;
+            } else {
+                // First level - use the directory name as the parent
+                const char* base_name = strrchr(dir_path, '/');
+                zip_parent_path = base_name ? (base_name + 1) : dir_path;
+            }
+            
+            if (S_ISDIR(st.st_mode)) {
+                // For subdirectories, include the subdirectory name in the path
+                std::string subdir_zip_path = zip_parent_path + "/" + entry->d_name;
+                addDirToZip(zf, subdir_zip_path.c_str(), full_path.c_str(), compression_level);
+            } else {
+                addFileToZip(zf, zip_parent_path.c_str(), full_path.c_str(), compression_level);
+            }
+        }
+    }
+    
+    closedir(dir);
+}
 
 #define LUA_FILEHANDLE "FILE*"
 
@@ -89,6 +189,94 @@ static bool mkdir_recursive(const std::string& path) {
     
     // Create this directory
     return mkdir(path.c_str(), 0777) == 0;
+}
+
+// Helper function for recursive directory creation for zip extraction  
+static void recursive_mkdir(const char* path) {
+    std::string path_str(path);
+    size_t pos = path_str.find_last_of('/');
+    if (pos != std::string::npos) {
+        std::string parent = path_str.substr(0, pos);
+        mkdir_recursive(parent);
+    }
+}
+
+// Async zip thread function
+static void zipThread() {
+    if (asyncMode == FULL_EXTRACT) {
+        // Full zip extraction
+        unz_global_info global_info;
+        unz_file_info file_info;
+        unzGetGlobalInfo(asyncHandle, &global_info);
+        unzGoToFirstFile(asyncHandle);
+        uint64_t curr_file_bytes = 0;
+        int num_files = global_info.number_entry;
+        
+        for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
+            unzGetCurrentFileInfo(asyncHandle, &file_info, fname, 512, NULL, 0, NULL, 0);
+            sprintf(ext_fname, "%s%s", asyncDest, fname);
+            const size_t filename_length = strlen(ext_fname);
+            
+            if (ext_fname[filename_length - 1] != '/') {
+                curr_file_bytes = 0;
+                unzOpenCurrentFile(asyncHandle);
+                recursive_mkdir(ext_fname);
+                FILE *f = fopen(ext_fname, "wb");
+                if (f) {
+                    while (curr_file_bytes < file_info.uncompressed_size) {
+                        int rbytes = unzReadCurrentFile(asyncHandle, read_buffer, 8192);
+                        if (rbytes > 0) {
+                            fwrite(read_buffer, 1, rbytes, f);
+                            curr_file_bytes += rbytes;
+                        }
+                    }
+                    fclose(f);
+                }
+                unzCloseCurrentFile(asyncHandle);
+            }
+            
+            if ((zip_idx + 1) < num_files)
+                unzGoToNextFile(asyncHandle);
+        }
+        
+        asyncResult = 1; // Success
+    } else if (asyncMode == FILE_EXTRACT) {
+        // Single file extraction
+        unz_global_info global_info;
+        unz_file_info file_info;
+        unzGetGlobalInfo(asyncHandle, &global_info);
+        unzGoToFirstFile(asyncHandle);
+        uint64_t curr_file_bytes = 0;
+        int num_files = global_info.number_entry;
+        
+        for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
+            unzGetCurrentFileInfo(asyncHandle, &file_info, fname, 512, NULL, 0, NULL, 0);
+            if (!strcmp(fname, asyncName)) {
+                curr_file_bytes = 0;
+                unzOpenCurrentFile(asyncHandle);
+                FILE *f = fopen(asyncDest, "wb");
+                if (f) {
+                    while (curr_file_bytes < file_info.uncompressed_size) {
+                        int rbytes = unzReadCurrentFile(asyncHandle, read_buffer, 8192);
+                        if (rbytes > 0) {
+                            fwrite(read_buffer, 1, rbytes, f);
+                            curr_file_bytes += rbytes;
+                        }
+                    }
+                    fclose(f);
+                }
+                unzCloseCurrentFile(asyncHandle);
+                break;
+            }
+            if ((zip_idx + 1) < num_files)
+                unzGoToNextFile(asyncHandle);
+        }
+        
+        asyncResult = 1; // Success
+    }
+    
+    unzClose(asyncHandle);
+    async_task_num--;
 }
 
 // System.createDirectory(path)
@@ -888,6 +1076,275 @@ static int lua_getTotalSpace(lua_State *L) {
     return 1;
 }
 
+// --- Zip Functions ---
+
+// System.extractZip(filename, dirname)
+static int lua_extractZip(lua_State *L) {
+    const char* file_to_extract = luaL_checkstring(L, 1);
+    const char* dir_to_extract = luaL_checkstring(L, 2);
+    
+    std::string translated_file = translate_vita_path(file_to_extract);
+    std::string dest_dir = translate_vita_path(dir_to_extract);
+    
+    // Ensure destination directory ends with /
+    if (dest_dir.back() != '/') {
+        dest_dir += '/';
+    }
+    
+    mkdir_recursive(dest_dir);
+    
+    unz_global_info global_info;
+    unz_file_info file_info;
+    unzFile zipfile = unzOpen(translated_file.c_str());
+    if (!zipfile) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    unzGetGlobalInfo(zipfile, &global_info);
+    unzGoToFirstFile(zipfile);
+    uint64_t curr_file_bytes = 0;
+    int num_files = global_info.number_entry;
+    
+    
+    for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
+        unzGetCurrentFileInfo(zipfile, &file_info, fname, 512, NULL, 0, NULL, 0);
+        std::string extract_path = dest_dir + fname;
+        printf("Processing file: %s -> %s\n", fname, extract_path.c_str());
+        
+        if (fname[strlen(fname) - 1] != '/') {
+            curr_file_bytes = 0;
+            unzOpenCurrentFile(zipfile);
+            recursive_mkdir(extract_path.c_str());
+            FILE *f = fopen(extract_path.c_str(), "wb");
+            if (f) {
+                while (curr_file_bytes < file_info.uncompressed_size) {
+                    int rbytes = unzReadCurrentFile(zipfile, read_buffer, 8192);
+                    if (rbytes > 0) {
+                        fwrite(read_buffer, 1, rbytes, f);
+                        curr_file_bytes += rbytes;
+                    }
+                }
+                fclose(f);
+            }
+            unzCloseCurrentFile(zipfile);
+        }
+        
+        if ((zip_idx + 1) < num_files)
+            unzGoToNextFile(zipfile);
+    }
+    
+    unzClose(zipfile);
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.extractZipAsync(filename, dirname)
+static int lua_extractZipAsync(lua_State *L) {
+    if (async_task_num >= ASYNC_TASKS_MAX) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    const char* file_to_extract = luaL_checkstring(L, 1);
+    const char* dir_to_extract = luaL_checkstring(L, 2);
+    
+    std::string translated_file = translate_vita_path(file_to_extract);
+    std::string dest_dir = translate_vita_path(dir_to_extract);
+    
+    // Ensure destination directory ends with /
+    if (dest_dir.back() != '/') {
+        dest_dir += '/';
+    }
+    strcpy(asyncDest, dest_dir.c_str());
+    
+    mkdir_recursive(dest_dir);
+    asyncHandle = unzOpen(translated_file.c_str());
+    if (!asyncHandle) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    asyncMode = FULL_EXTRACT;
+    async_task_num++;
+    asyncResult = 0;
+    
+    std::thread(zipThread).detach();
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.extractFromZip(zipfile, filename, destination)
+static int lua_extractFromZip(lua_State *L) {
+    const char* zip_file = luaL_checkstring(L, 1);
+    const char* filename = luaL_checkstring(L, 2);
+    const char* destination = luaL_checkstring(L, 3);
+    
+    std::string translated_zip = translate_vita_path(zip_file);
+    std::string translated_dest = translate_vita_path(destination);
+    
+    unz_global_info global_info;
+    unz_file_info file_info;
+    unzFile zipfile = unzOpen(translated_zip.c_str());
+    if (!zipfile) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    unzGetGlobalInfo(zipfile, &global_info);
+    unzGoToFirstFile(zipfile);
+    uint64_t curr_file_bytes = 0;
+    int num_files = global_info.number_entry;
+    bool found = false;
+    
+    for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
+        unzGetCurrentFileInfo(zipfile, &file_info, fname, 512, NULL, 0, NULL, 0);
+        if (!strcmp(fname, filename)) {
+            curr_file_bytes = 0;
+            unzOpenCurrentFile(zipfile);
+            FILE *f = fopen(translated_dest.c_str(), "wb");
+            if (f) {
+                while (curr_file_bytes < file_info.uncompressed_size) {
+                    int rbytes = unzReadCurrentFile(zipfile, read_buffer, 8192);
+                    if (rbytes > 0) {
+                        fwrite(read_buffer, 1, rbytes, f);
+                        curr_file_bytes += rbytes;
+                    }
+                }
+                fclose(f);
+                found = true;
+            }
+            unzCloseCurrentFile(zipfile);
+            break;
+        }
+        if ((zip_idx + 1) < num_files)
+            unzGoToNextFile(zipfile);
+    }
+    
+    unzClose(zipfile);
+    lua_pushboolean(L, found);
+    return 1;
+}
+
+// System.extractFromZipAsync(zipfile, filename, destination)
+static int lua_extractFromZipAsync(lua_State *L) {
+    if (async_task_num >= ASYNC_TASKS_MAX) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    const char* zip_file = luaL_checkstring(L, 1);
+    const char* filename = luaL_checkstring(L, 2);
+    const char* destination = luaL_checkstring(L, 3);
+    
+    std::string translated_zip = translate_vita_path(zip_file);
+    std::string translated_dest = translate_vita_path(destination);
+    
+    asyncHandle = unzOpen(translated_zip.c_str());
+    if (!asyncHandle) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    asyncMode = FILE_EXTRACT;
+    strcpy(asyncDest, translated_dest.c_str());
+    strcpy(asyncName, filename);
+    async_task_num++;
+    asyncResult = 0;
+    
+    std::thread(zipThread).detach();
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.compressZip(path, filename, ratio)
+static int lua_compressZip(lua_State *L) {
+    const char* path_to_compress = luaL_checkstring(L, 1);
+    const char* zip_filename = luaL_checkstring(L, 2);
+    int compression_level = Z_DEFAULT_COMPRESSION;
+    if (lua_gettop(L) >= 3) {
+        compression_level = luaL_checkinteger(L, 3);
+    }
+    
+    std::string translated_path = translate_vita_path(path_to_compress);
+    std::string translated_zip = translate_vita_path(zip_filename);
+    
+    zipFile zf = zipOpen(translated_zip.c_str(), APPEND_STATUS_CREATE);
+    if (!zf) {
+        printf("Failed to create zip file: %s\n", translated_zip.c_str());
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    // Check if it's a file or directory
+    struct stat st;
+    if (stat(translated_path.c_str(), &st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+            addDirToZip(zf, "", translated_path.c_str(), compression_level);
+        } else {
+            addFileToZip(zf, "", translated_path.c_str(), compression_level);
+        }
+    }
+    
+    zipClose(zf, nullptr);
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.addToZip(path, filename, parent, ratio)
+static int lua_addToZip(lua_State *L) {
+    const char* path_to_add = luaL_checkstring(L, 1);
+    const char* zip_filename = luaL_checkstring(L, 2);
+    const char* parent_path = luaL_checkstring(L, 3);
+    int compression_level = Z_DEFAULT_COMPRESSION;
+    if (lua_gettop(L) >= 4) {
+        compression_level = luaL_checkinteger(L, 4);
+    }
+    
+    std::string translated_path = translate_vita_path(path_to_add);
+    std::string translated_zip = translate_vita_path(zip_filename);
+    
+    zipFile zf = zipOpen(translated_zip.c_str(), APPEND_STATUS_ADDINZIP);
+    if (!zf) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    
+    // Check if it's a file or directory
+    struct stat st;
+    if (stat(translated_path.c_str(), &st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+            addDirToZip(zf, parent_path, translated_path.c_str(), compression_level);
+        } else {
+            addFileToZip(zf, parent_path, translated_path.c_str(), compression_level);
+        }
+        zipClose(zf, nullptr);
+        lua_pushboolean(L, true);
+        return 1;
+    } else {
+        // File/directory doesn't exist
+        zipClose(zf, nullptr);
+        lua_pushboolean(L, false);
+        return 1;
+    }
+}
+
+// System.getAsyncState()
+static int lua_getAsyncState(lua_State *L) {
+    lua_pushinteger(L, asyncResult);
+    return 1;
+}
+
+// System.getAsyncResult()
+static int lua_getAsyncResult(lua_State *L) {
+    if (asyncStrRes != nullptr) {
+        lua_pushlstring(L, (const char*)asyncStrRes, asyncResSize);
+        free(asyncStrRes);
+        asyncStrRes = nullptr;
+        return 1;
+    }
+    return 0;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -921,6 +1378,14 @@ static const luaL_Reg System_functions[] = {
     {"deleteDirectory",    lua_deleteDirectory},
     {"getFreeSpace",       lua_getFreeSpace},
     {"getTotalSpace",      lua_getTotalSpace},
+    {"extractZip",         lua_extractZip},
+    {"extractZipAsync",    lua_extractZipAsync},
+    {"extractFromZip",     lua_extractFromZip},
+    {"extractFromZipAsync", lua_extractFromZipAsync},
+    {"compressZip",        lua_compressZip},
+    {"addToZip",           lua_addToZip},
+    {"getAsyncState",      lua_getAsyncState},
+    {"getAsyncResult",     lua_getAsyncResult},
     {NULL, NULL}
 };
 

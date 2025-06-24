@@ -381,30 +381,18 @@ void luaControls_init(lua_State *L) {
     lua_setglobal(L, "Controls");
     
     // Add 3DS key constants (mapped to SDL scancodes)
-    lua_pushinteger(L, SDL_SCANCODE_RETURN);
-    lua_setglobal(L, "KEY_A");
-    lua_pushinteger(L, SDL_SCANCODE_BACKSPACE);
-    lua_setglobal(L, "KEY_B");
-    lua_pushinteger(L, SDL_SCANCODE_SPACE);
-    lua_setglobal(L, "KEY_X");
-    lua_pushinteger(L, SDL_SCANCODE_LSHIFT);
-    lua_setglobal(L, "KEY_Y");
-    lua_pushinteger(L, SDL_SCANCODE_TAB);
-    lua_setglobal(L, "KEY_L");
-    lua_pushinteger(L, SDL_SCANCODE_ESCAPE);
-    lua_setglobal(L, "KEY_R");
-    lua_pushinteger(L, SDL_SCANCODE_GRAVE);
-    lua_setglobal(L, "KEY_START");
-    lua_pushinteger(L, SDL_SCANCODE_LCTRL);
-    lua_setglobal(L, "KEY_SELECT");
-    lua_pushinteger(L, SDL_SCANCODE_UP);
-    lua_setglobal(L, "KEY_DUP");
-    lua_pushinteger(L, SDL_SCANCODE_DOWN);
-    lua_setglobal(L, "KEY_DDOWN");
-    lua_pushinteger(L, SDL_SCANCODE_LEFT);
-    lua_setglobal(L, "KEY_DLEFT");
-    lua_pushinteger(L, SDL_SCANCODE_RIGHT);
-    lua_setglobal(L, "KEY_DRIGHT");
+    lua_pushinteger(L, SDL_SCANCODE_RETURN);lua_setglobal(L, "KEY_A");
+    lua_pushinteger(L, SDL_SCANCODE_BACKSPACE);lua_setglobal(L, "KEY_B");
+    lua_pushinteger(L, SDL_SCANCODE_SPACE);lua_setglobal(L, "KEY_X");
+    lua_pushinteger(L, SDL_SCANCODE_LSHIFT);lua_setglobal(L, "KEY_Y");
+    lua_pushinteger(L, SDL_SCANCODE_PAGEUP);lua_setglobal(L, "KEY_L");
+    lua_pushinteger(L, SDL_SCANCODE_PAGEDOWN);lua_setglobal(L, "KEY_R");
+    lua_pushinteger(L, SDL_SCANCODE_TAB);lua_setglobal(L, "KEY_START");
+    lua_pushinteger(L, SDL_SCANCODE_LCTRL);lua_setglobal(L, "KEY_SELECT");
+    lua_pushinteger(L, SDL_SCANCODE_UP);lua_setglobal(L, "KEY_DUP");
+    lua_pushinteger(L, SDL_SCANCODE_DOWN);lua_setglobal(L, "KEY_DDOWN");
+    lua_pushinteger(L, SDL_SCANCODE_LEFT);lua_setglobal(L, "KEY_DLEFT");
+    lua_pushinteger(L, SDL_SCANCODE_RIGHT);lua_setglobal(L, "KEY_DRIGHT");
     
     // Initialize game controllers
     for (int i = 0; i < 4; i++) {

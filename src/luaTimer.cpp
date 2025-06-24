@@ -150,6 +150,13 @@ static int lua_timer_destroy(lua_State *L) {
     return 0;
 }
 
+// Timer.sleep(milliseconds) - Sleep function for async compatibility
+static int lua_timer_sleep(lua_State *L) {
+    int ms = luaL_checkinteger(L, 1);
+    SDL_Delay(ms);
+    return 0;
+}
+
 static const luaL_Reg Timer_functions[] = {
     {"new", lua_timer_new},
     {"time", lua_timer_time},        // Keep original simple API
@@ -160,6 +167,7 @@ static const luaL_Reg Timer_functions[] = {
     {"setTime", lua_timer_setTime},  // Vita API compatibility
     {"isPlaying", lua_timer_isPlaying}, // Vita API compatibility
     {"destroy", lua_timer_destroy},  // Vita API compatibility
+    {"sleep", lua_timer_sleep},      // Sleep function for async compatibility
     {NULL, NULL}
 };
 

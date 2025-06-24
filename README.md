@@ -121,17 +121,6 @@ The following homebrews were originally developed for the PS Vita using Lua Play
 * [vita-chain](https://vitadb.rinnegatamante.it/#/info/339)
 * [ViTanks](https://vitadb.rinnegatamante.it/#/info/472)
 
-##### Utilities
-* [Moon Whitelister](https://github.com/gnmmarechal/moon-whitelister)
-* [luaIrc](http://wololo.net/talk/viewtopic.php?f=116&t=47107)
-* [Simple Text Editor](http://wololo.net/talk/viewtopic.php?f=116&t=47018)
-* [Vita Object Loader](http://wololo.net/talk/viewtopic.php?f=116&t=47982)
-* [Voice Recorder Vita](http://wololo.net/talk/viewtopic.php?f=116&t=48444)
-* [Pro Camera Vita](http://wololo.net/talk/viewtopic.php?f=116&t=48379)
-* [Notepad Vita](http://wololo.net/talk/viewtopic.php?f=116&t=48500)
-* [Video Bubbles Creator](http://wololo.net/talk/viewtopic.php?f=116&t=48581)
-* [VitaGraphs](https://vitadb.rinnegatamante.it/#/info/363)
-* [SwitchView UI](https://vitadb.rinnegatamante.it/#/info/338)
 
 ##### Emulators
 * [MicroCHIP](http://wololo.net/talk/viewtopic.php?f=116&t=48620)
