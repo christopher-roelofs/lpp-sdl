@@ -52,6 +52,8 @@ float video_audio_tick = 0.0f;
 extern "C" void update_sdl_controls();
 extern "C" void sdl_key_down(int scancode);
 extern "C" void sdl_key_up(int scancode);
+extern "C" void sdl_mouse_button_down();
+extern "C" void sdl_mouse_button_up();
 
 // Forward declaration for file browser
 const char* launch_file_browser(lua_State* L);
@@ -315,6 +317,16 @@ int main(int argc, char* args[]) {
     bool vita_compat_mode = false; // Temporarily disable to test if logical scaling is the issue
     bool threeds_compat_mode = false; // 3DS dual screen compatibility mode
     const char* lua_file = NULL;
+    
+    // Store the executable directory for font loading
+    std::string exe_dir = ".";
+    if (argc > 0 && args[0]) {
+        std::string exe_path(args[0]);
+        size_t last_slash = exe_path.find_last_of("/\\");
+        if (last_slash != std::string::npos) {
+            exe_dir = exe_path.substr(0, last_slash);
+        }
+    }
 
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
@@ -398,10 +410,11 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
-    // Load the global default font
-    g_defaultFont = TTF_OpenFont("InterVariable.ttf", 16); // Default size 16
+    // Load the global default font from executable directory
+    std::string font_path = exe_dir + "/InterVariable.ttf";
+    g_defaultFont = TTF_OpenFont(font_path.c_str(), 16); // Default size 16
     if (!g_defaultFont) {
-        printf("Warning: Failed to load default font 'InterVariable.ttf'. Graphics.print will not work. TTF_Error: %s\n", TTF_GetError());
+        printf("Warning: Failed to load default font '%s'. Graphics.print will not work. TTF_Error: %s\n", font_path.c_str(), TTF_GetError());
         // Continue without default font, lua_print will handle the NULL case
     }
 
@@ -722,6 +735,17 @@ int main(int argc, char* args[]) {
             }
             if (e.type == SDL_KEYUP) {
                 sdl_key_up(e.key.keysym.scancode);
+            }
+            // Handle mouse button events
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                if (e.button.button == SDL_BUTTON_LEFT) {
+                    sdl_mouse_button_down();
+                }
+            }
+            if (e.type == SDL_MOUSEBUTTONUP) {
+                if (e.button.button == SDL_BUTTON_LEFT) {
+                    sdl_mouse_button_up();
+                }
             }
             // Handle window resize events to maintain proper scaling
             if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {

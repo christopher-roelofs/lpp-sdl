@@ -41,6 +41,11 @@ extern "C" void update_sdl_controls();
 // Helper functions from Graphics module
 extern int getScreenXOffset(int screen_id);
 extern int getScreenYOffset(int screen_id);
+extern void getScreenScaling(int screen_id, float* scale_x, float* scale_y);
+extern void setScreenViewport(int screen_id);
+extern SDL_Renderer* g_renderer;
+extern TTF_Font* g_defaultFont;
+extern bool g_vita_compat_mode;
 
 // LPP texture structure is already defined in luaplayer.h
 
@@ -275,17 +280,48 @@ static int lua_clear(lua_State *L) {
 static int lua_getP(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 2)
-		return luaL_error(L, "wrong number of arguments");
+	if (argc != 3)
+		return luaL_error(L, "Screen.getPixel(x, y, texture): wrong number of arguments");
 #endif
-	// Parameters are validated but not used in placeholder implementation
-	luaL_checkinteger(L, 1); // x coordinate
-	luaL_checkinteger(L, 2); // y coordinate
 	
-	// SDL doesn't provide direct framebuffer access like Vita2D
-	// This would require reading pixels from renderer which is expensive
-	// For now, return 0 (black) as placeholder
-	lua_pushinteger(L, 0);
+	int x = luaL_checkinteger(L, 1);
+	int y = luaL_checkinteger(L, 2);
+	void* texture_ptr = lua_touserdata(L, 3);
+	
+	if (!texture_ptr) {
+		lua_pushinteger(L, 0); // Return black for invalid texture
+		return 1;
+	}
+	
+	// Cast to lpp_texture
+	lpp_texture* tex = (lpp_texture*)texture_ptr;
+	
+	if (!tex->data) {
+		lua_pushinteger(L, 0); // Return black if no pixel data
+		return 1;
+	}
+	
+	// Check bounds
+	if (x < 0 || y < 0 || x >= tex->w || y >= tex->h) {
+		lua_pushinteger(L, 0); // Return black for out of bounds
+		return 1;
+	}
+	
+	// Get pixel from stored RGBA data
+	Uint32* pixels = (Uint32*)tex->data;
+	Uint32 pixel = pixels[y * tex->w + x];
+	
+	// Extract RGBA components (RGBA32 format: R=bits 0-7, G=bits 8-15, B=bits 16-23, A=bits 24-31)
+	Uint8 r = (pixel >> 0) & 0xFF;
+	Uint8 g = (pixel >> 8) & 0xFF;
+	Uint8 b = (pixel >> 16) & 0xFF;
+	Uint8 a = (pixel >> 24) & 0xFF;
+	
+	// Pack into RGB format that matches game expectations (RGB: R=bits 16-23, G=bits 8-15, B=bits 0-7)
+	// Pure green (0,255,0) should be 65280 = 0x00FF00
+	Uint32 color = (r << 16) | (g << 8) | b;
+	
+	lua_pushinteger(L, color);
 	return 1;
 }
 
@@ -938,19 +974,269 @@ static int lua_screen_loadimg(lua_State *L) {
     // Translate Vita paths (app0:/ -> current directory)
     std::string translated_path = translate_vita_path(path);
     
-    SDL_Texture* sdl_texture = IMG_LoadTexture(g_renderer, translated_path.c_str());
-    if (!sdl_texture) {
+    // Load surface first to get pixel data
+    SDL_Surface* surface = IMG_Load(translated_path.c_str());
+    if (!surface) {
         return luaL_error(L, "Error loading image: %s", IMG_GetError());
+    }
+    
+    // Create texture from surface
+    SDL_Texture* sdl_texture = SDL_CreateTextureFromSurface(g_renderer, surface);
+    if (!sdl_texture) {
+        SDL_FreeSurface(surface);
+        return luaL_error(L, "Error creating texture: %s", SDL_GetError());
     }
 
     lpp_texture* tex = (lpp_texture*)malloc(sizeof(lpp_texture));
     tex->magic = 0xABADBEEF;
     tex->texture = (void*)sdl_texture;
-    SDL_QueryTexture(sdl_texture, NULL, NULL, &tex->w, &tex->h);
-    tex->data = NULL;
+    tex->w = surface->w;
+    tex->h = surface->h;
+    
+    // Store pixel data for getPixel functionality
+    int size = surface->w * surface->h * 4; // RGBA
+    tex->data = malloc(size);
+    
+    // Convert surface to RGBA format for consistent pixel access
+    SDL_Surface* rgba_surface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    if (rgba_surface) {
+        memcpy(tex->data, rgba_surface->pixels, size);
+        SDL_FreeSurface(rgba_surface);
+    } else {
+        // Fallback: copy original surface data
+        memcpy(tex->data, surface->pixels, size);
+    }
+    
+    SDL_FreeSurface(surface);
 
     lua_pushlightuserdata(L, tex);
     return 1;
+}
+
+static int lua_screen_debugPrint(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc < 5 || argc > 6)
+        return luaL_error(L, "Screen.debugPrint(x, y, text, color, screen, [eye]): wrong number of arguments.");
+#endif
+
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    const char* text = luaL_checkstring(L, 3);
+    
+    uint32_t color_val;
+    // Handle both Color objects (tables) and integer colors
+    if (lua_istable(L, 4)) {
+        // Color object - extract r, g, b, a from table
+        lua_getfield(L, 4, "r");
+        uint8_t r = (uint8_t)luaL_checkinteger(L, -1);
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 4, "g");
+        uint8_t g = (uint8_t)luaL_checkinteger(L, -1);
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 4, "b");
+        uint8_t b = (uint8_t)luaL_checkinteger(L, -1);
+        lua_pop(L, 1);
+        
+        lua_getfield(L, 4, "a");
+        uint8_t a = 255;
+        if (!lua_isnil(L, -1)) {
+            a = (uint8_t)luaL_checkinteger(L, -1);
+        }
+        lua_pop(L, 1);
+        
+        // Pack into RGBA format
+        color_val = (a << 24) | (b << 16) | (g << 8) | r;
+    } else {
+        // Integer color
+        color_val = luaL_checkinteger(L, 4);
+    }
+    
+    int screen = luaL_checkinteger(L, 5);
+    // int eye = (argc == 6) ? luaL_checkinteger(L, 6) : 0; // 3D eye ignored in SDL port
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        printf("Auto-enabling dual screen mode\n");
+        
+        // Only resize window in native mode - 3DS compat mode already has correct size
+        if (!g_vita_compat_mode) {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                    printf("Resized window to %dx%d for dual screen in native mode\n", current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+
+    if (!g_defaultFont) {
+        fprintf(stderr, "Error: g_defaultFont not loaded. Cannot render text with Screen.debugPrint.\n");
+        return 0; // Don't cause Lua error, just don't render
+    }
+
+    if (!g_renderer) {
+        fprintf(stderr, "Error: g_renderer not initialized. Cannot render text with Screen.debugPrint.\n");
+        return 0;
+    }
+
+    // Extract color components
+    SDL_Color sdl_color = {
+        (Uint8)(color_val & 0xFF),         // r
+        (Uint8)((color_val >> 8) & 0xFF),  // g
+        (Uint8)((color_val >> 16) & 0xFF), // b
+        (Uint8)((color_val >> 24) & 0xFF)  // a (though TTF ignores alpha)
+    };
+
+    // Create text surface
+    SDL_Surface* text_surface = TTF_RenderText_Solid(g_defaultFont, text, sdl_color);
+    if (!text_surface) {
+        fprintf(stderr, "Error creating text surface: %s\n", TTF_GetError());
+        return 0;
+    }
+
+    // Create texture from surface
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
+    if (!text_texture) {
+        fprintf(stderr, "Error creating text texture: %s\n", SDL_GetError());
+        SDL_FreeSurface(text_surface);
+        return 0;
+    }
+
+    // Get text dimensions
+    int text_w = text_surface->w;
+    int text_h = text_surface->h;
+    SDL_FreeSurface(text_surface);
+
+    // Calculate screen offsets
+    int x_offset = getScreenXOffset(screen);
+    int y_offset = getScreenYOffset(screen);
+    
+    // Create destination rectangle - start with local coordinates
+    SDL_Rect dest_rect = {x, y, text_w, text_h};
+    
+    // Apply per-screen scaling and positioning for dual screen mode
+    if (g_dual_screen_mode && g_vita_compat_mode) {
+        // Get per-screen scaling factors
+        float scale_x, scale_y;
+        getScreenScaling(screen, &scale_x, &scale_y);
+        
+        // First: Apply scaling to local coordinates
+        dest_rect.x = (int)(dest_rect.x * scale_x);
+        dest_rect.y = (int)(dest_rect.y * scale_y);
+        dest_rect.w = (int)(dest_rect.w * scale_x);
+        dest_rect.h = (int)(dest_rect.h * scale_y);
+        
+        // Second: Add properly calculated screen offset to position the screen in the window
+        if (screen == 1) { // BOTTOM_SCREEN
+            // Bottom screen should be positioned after the scaled top screen area
+            float top_screen_scale_x, top_screen_scale_y;
+            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
+            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
+            dest_rect.x += bottom_screen_x_pos;
+        }
+        // Top screen starts at window origin (no additional offset needed)
+    } else {
+        // Non-dual screen mode: just add the offset
+        dest_rect.x += x_offset;
+        dest_rect.y += y_offset;
+    }
+
+    // Render the text
+    SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+    
+    // Cleanup
+    SDL_DestroyTexture(text_texture);
+    
+    return 0;
+}
+
+// Screen.drawPixel function for 3DS compatibility
+static int lua_screen_drawPixel(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc < 3 || argc > 5)
+        return luaL_error(L, "Screen.drawPixel(x, y, color, screen, [eye]): wrong number of arguments");
+#endif
+
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    uint32_t color = luaL_checkinteger(L, 3);
+    int screen = (argc >= 4) ? luaL_checkinteger(L, 4) : 0; // Default to TOP_SCREEN
+    // int eye = (argc == 5) ? luaL_checkinteger(L, 5) : 0; // 3D eye ignored in SDL port
+    
+    // Auto-enable dual screen mode if using screen constants
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+        g_dual_screen_mode = true;
+        printf("Auto-enabling dual screen mode\n");
+        
+        // Only resize window in native mode - 3DS compat mode already has correct size
+        if (!g_vita_compat_mode) {
+            extern SDL_Window* g_window;
+            if (g_window) {
+                int current_w, current_h;
+                SDL_GetWindowSize(g_window, &current_w, &current_h);
+                if (current_h < DUAL_SCREEN_HEIGHT) {
+                    SDL_SetWindowSize(g_window, current_w, DUAL_SCREEN_HEIGHT);
+                    printf("Resized window to %dx%d for dual screen in native mode\n", current_w, DUAL_SCREEN_HEIGHT);
+                }
+            }
+        }
+    }
+
+    if (!g_renderer) {
+        return 0; // Silently fail if no renderer
+    }
+
+    // Calculate screen offsets
+    int x_offset = getScreenXOffset(screen);
+    int y_offset = getScreenYOffset(screen);
+    
+    // Apply screen scaling and positioning
+    int final_x = x;
+    int final_y = y;
+    
+    if (g_dual_screen_mode && g_vita_compat_mode) {
+        // Get per-screen scaling factors
+        float scale_x, scale_y;
+        getScreenScaling(screen, &scale_x, &scale_y);
+        
+        // Apply scaling to coordinates
+        final_x = (int)(x * scale_x);
+        final_y = (int)(y * scale_y);
+        
+        // Add screen offset
+        if (screen == 1) { // BOTTOM_SCREEN
+            // Bottom screen should be positioned after the scaled top screen area
+            float top_screen_scale_x, top_screen_scale_y;
+            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
+            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
+            final_x += bottom_screen_x_pos;
+        }
+        // Top screen starts at window origin (no additional offset needed)
+    } else {
+        // Non-dual screen mode: just add the offset
+        final_x += x_offset;
+        final_y += y_offset;
+    }
+
+    // Extract color components
+    Uint8 r = color & 0xFF;
+    Uint8 g = (color >> 8) & 0xFF;
+    Uint8 b = (color >> 16) & 0xFF;
+    Uint8 a = (color >> 24) & 0xFF;
+
+    // Set color and draw pixel
+    SDL_SetRenderDrawColor(g_renderer, r, g, b, a);
+    SDL_RenderDrawPoint(g_renderer, final_x, final_y);
+
+    return 0;
 }
 
 static const luaL_Reg Screen_functions[] = {
@@ -963,6 +1249,7 @@ static const luaL_Reg Screen_functions[] = {
     {"getWidth",         lua_getScreenWidth},
     {"getHeight",        lua_getScreenHeight},
     {"loadImage",        lua_screen_loadimg},
+    {"loadBitmap",       lua_screen_loadimg},
     {"get3DLevel",       lua_get3DLevel},
     {"enable3D",         lua_enable3D},
     {"disable3D",        lua_disable3D},
@@ -973,6 +1260,8 @@ static const luaL_Reg Screen_functions[] = {
     {"drawLine",         lua_screen_drawLine},
     {"drawImage",        lua_screen_drawImage},
     {"drawPartialImage", lua_screen_drawPartialImage},
+    {"debugPrint",       lua_screen_debugPrint},
+    {"drawPixel",        lua_screen_drawPixel},
 	{0, 0}
 };
 

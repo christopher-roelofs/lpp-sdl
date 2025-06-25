@@ -85,10 +85,10 @@ int getScreenXOffset(int screen_id) {
     // TOP_SCREEN (0) -> X offset = 0
     // BOTTOM_SCREEN (1) -> X offset = SCREEN_WIDTH
     if (screen_id == 1) {
-        printf("DEBUG: getScreenXOffset(1) returning BOTTOM_SCREEN_X_OFFSET=%d\n", BOTTOM_SCREEN_X_OFFSET);
+        // printf("DEBUG: getScreenXOffset(1) returning BOTTOM_SCREEN_X_OFFSET=%d\n", BOTTOM_SCREEN_X_OFFSET);
         return BOTTOM_SCREEN_X_OFFSET;
     }
-    printf("DEBUG: getScreenXOffset(%d) returning TOP_SCREEN_X_OFFSET=%d\n", screen_id, TOP_SCREEN_X_OFFSET);
+    // printf("DEBUG: getScreenXOffset(%d) returning TOP_SCREEN_X_OFFSET=%d\n", screen_id, TOP_SCREEN_X_OFFSET);
     return TOP_SCREEN_X_OFFSET;
 }
 

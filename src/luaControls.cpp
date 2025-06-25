@@ -45,6 +45,8 @@ static Sint16 left_analog_x = 0, left_analog_y = 0;
 static Sint16 right_analog_x = 0, right_analog_y = 0;
 static int mouse_x = 0, mouse_y = 0;
 static bool mouse_pressed = false;
+static bool current_mouse_pressed = false;
+static bool previous_mouse_pressed = false;
 static const Uint8* keyboard_state = NULL;
 
 // Store current and previous keyboard state for edge detection
@@ -71,6 +73,7 @@ static void update_input_state() {
     // Update mouse state
     Uint32 mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y);
     mouse_pressed = (mouse_state & SDL_BUTTON_LMASK) != 0;
+    
 }
 
 static int lua_readC(lua_State *L){
@@ -89,6 +92,9 @@ static int lua_readC(lua_State *L){
     // Copy current keys to previous keys
     memcpy(previous_keys, current_keys, sizeof(current_keys));
     
+    // Copy current mouse state to previous mouse state
+    previous_mouse_pressed = current_mouse_pressed;
+    
     update_input_state();
     
     // Update current keys from SDL keyboard state
@@ -97,6 +103,9 @@ static int lua_readC(lua_State *L){
             current_keys[i] = keyboard_state[i] != 0;
         }
     }
+    
+    // Update current mouse state
+    current_mouse_pressed = mouse_pressed;
     
     // Return frame counter for edge detection (different value each frame)
     frame_counter++;
@@ -150,7 +159,15 @@ static int lua_check(lua_State *L){
     
     // Check if the scancode key is pressed
     bool is_pressed = false;
-    if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+    if (scancode == 1000) { // KEY_TOUCH special case
+        // For touch, use frame-based state like keyboard keys
+        if (pad == frame_counter) {
+            is_pressed = current_mouse_pressed;
+        } else if (pad == frame_counter - 1) {
+            is_pressed = previous_mouse_pressed;
+        }
+        // For any other frame, return false (not pressed)
+    } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
         // If this is the current frame (pad == frame_counter), use current_keys
         // If this is the previous frame (pad == frame_counter - 1), use previous_keys
         if (pad == frame_counter) {
@@ -180,14 +197,28 @@ static int lua_touchpad(lua_State *L){
             int logical_w, logical_h;
             int window_w, window_h;
             
-            // Get logical and window sizes
-            SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
-            SDL_GetWindowSize(g_window, &window_w, &window_h);
+            // Check if we're in 3DS dual screen mode with manual scaling
+            extern bool g_dual_screen_mode;
+            extern bool g_vita_compat_mode;
             
-            // Transform like the Vita version: scale from window size to logical size
-            if (logical_w > 0 && logical_h > 0 && window_w > 0 && window_h > 0) {
-                logical_x = lerp(mouse_x, window_w, logical_w);
-                logical_y = lerp(mouse_y, window_h, logical_h);
+            if (g_dual_screen_mode && g_vita_compat_mode) {
+                // In 3DS mode, coordinates need to be mapped to bottom screen coordinate space
+                SDL_GetWindowSize(g_window, &window_w, &window_h);
+                
+                // For now, just scale to bottom screen dimensions (320x240 in the bitmap)
+                // The bottom screen in the level is 320x240 pixels
+                logical_x = (mouse_x * 320) / window_w;
+                logical_y = (mouse_y * 240) / window_h;
+            } else {
+                // Get logical and window sizes for normal scaling
+                SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+                SDL_GetWindowSize(g_window, &window_w, &window_h);
+                
+                // Transform like the Vita version: scale from window size to logical size
+                if (logical_w > 0 && logical_h > 0 && window_w > 0 && window_h > 0) {
+                    logical_x = lerp(mouse_x, window_w, logical_w);
+                    logical_y = lerp(mouse_y, window_h, logical_h);
+                }
             }
         }
         
@@ -334,6 +365,14 @@ static int lua_getenter(lua_State *L) {
     return 1;
 }
 
+static int lua_init(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 0) return luaL_error(L, "wrong number of arguments");
+#endif
+    return 0;
+}
+
 static const luaL_Reg Controls_functions[] = {
   {"read",             lua_readC},    
   {"readLeftAnalog",   lua_readleft},      
@@ -353,7 +392,8 @@ static const luaL_Reg Controls_functions[] = {
   {"enableAccel",      lua_enablesensors},    
   {"disableGyro",      lua_disablesensors},    
   {"disableAccel",     lua_disablesensors},
-  {"getEnterButton",   lua_getenter}, 
+  {"getEnterButton",   lua_getenter},
+  {"init",             lua_init}, 
   {0, 0}
 };
 
@@ -375,6 +415,15 @@ extern "C" void update_sdl_controls() {
     update_input_state();
 }
 
+// External functions for mouse button event handling
+extern "C" void sdl_mouse_button_down() {
+    mouse_pressed = true;
+}
+
+extern "C" void sdl_mouse_button_up() {
+    mouse_pressed = false;
+}
+
 void luaControls_init(lua_State *L) {
     lua_newtable(L);
     luaL_setfuncs(L, Controls_functions, 0);
@@ -393,6 +442,9 @@ void luaControls_init(lua_State *L) {
     lua_pushinteger(L, SDL_SCANCODE_DOWN);lua_setglobal(L, "KEY_DDOWN");
     lua_pushinteger(L, SDL_SCANCODE_LEFT);lua_setglobal(L, "KEY_DLEFT");
     lua_pushinteger(L, SDL_SCANCODE_RIGHT);lua_setglobal(L, "KEY_DRIGHT");
+    
+    // Touch support using left mouse button (special constant outside SDL scancode range)
+    lua_pushinteger(L, 1000);lua_setglobal(L, "KEY_TOUCH");
     
     // Initialize game controllers
     for (int i = 0; i < 4; i++) {

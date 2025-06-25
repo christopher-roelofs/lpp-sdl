@@ -1345,11 +1345,47 @@ static int lua_getAsyncResult(lua_State *L) {
     return 0;
 }
 
+// System.currentDirectory([path])
+static int lua_currentDirectory(lua_State *L) {
+    int argc = lua_gettop(L);
+    
+    if (argc == 0) {
+        // Get current directory
+        char current_dir[1024];
+        if (getcwd(current_dir, sizeof(current_dir)) != nullptr) {
+            lua_pushstring(L, current_dir);
+            return 1;
+        } else {
+            return luaL_error(L, "Failed to get current directory: %s", strerror(errno));
+        }
+    } else if (argc == 1) {
+        // Change directory
+        const char* new_dir = luaL_checkstring(L, 1);
+        std::string translated_path = translate_vita_path(new_dir);
+        
+        if (chdir(translated_path.c_str()) == 0) {
+            // Successfully changed directory, return new current directory
+            char current_dir[1024];
+            if (getcwd(current_dir, sizeof(current_dir)) != nullptr) {
+                lua_pushstring(L, current_dir);
+                return 1;
+            } else {
+                return luaL_error(L, "Failed to get current directory after change: %s", strerror(errno));
+            }
+        } else {
+            return luaL_error(L, "Failed to change directory to '%s': %s", translated_path.c_str(), strerror(errno));
+        }
+    } else {
+        return luaL_error(L, "System.currentDirectory([path]): wrong number of arguments");
+    }
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
     {"doesFileExist",       lua_doesFileExist},
     {"createDirectory",     lua_createDirectory},
+    {"currentDirectory",    lua_currentDirectory},
     {"exit",               lua_exit},
     {"openFile",           lua_openFile},
     {"closeFile",          lua_closeFile},
