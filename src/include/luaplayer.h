@@ -45,8 +45,25 @@
 extern void luaC_collectgarbage (lua_State *L);
 extern TTF_Font* g_defaultFont; // Global default font for Graphics.print
 extern bool should_exit; // Global flag to signal application exit
-extern bool g_vita_compat_mode; // Global flag for Vita compatibility mode
-extern bool g_dual_screen_mode; // Global flag for 3DS dual screen mode
+// Compatibility mode enum
+typedef enum {
+    LPP_COMPAT_NATIVE = 0,  // Native SDL mode - no compatibility layer
+    LPP_COMPAT_VITA = 1,    // Vita compatibility mode
+    LPP_COMPAT_3DS = 2      // 3DS compatibility mode
+} lpp_compat_mode_t;
+
+// 3DS screen orientation enum
+typedef enum {
+    LPP_3DS_HORIZONTAL = 0, // Side-by-side layout (default)
+    LPP_3DS_VERTICAL = 1    // Top/bottom layout (more authentic)
+} lpp_3ds_orientation_t;
+
+extern lpp_compat_mode_t g_compat_mode; // Global compatibility mode
+extern lpp_3ds_orientation_t g_3ds_orientation; // 3DS screen orientation (horizontal/vertical)
+extern bool g_vita_compat_mode; // Global flag for Vita compatibility mode (deprecated, use g_compat_mode)
+extern bool g_dual_screen_mode; // Global flag for 3DS dual screen mode (deprecated, use g_compat_mode)
+extern bool g_3ds_single_screen_mode; // Global flag for 3DS single-screen mode on small displays
+extern int g_3ds_active_screen; // Currently active screen in single-screen mode (0=top, 1=bottom)
 extern float g_scale_x; // Manual scaling factor for dual screen X
 extern float g_scale_y; // Manual scaling factor for dual screen Y
 extern float g_top_screen_scale_x; // Top screen X scaling factor
@@ -62,23 +79,40 @@ void setScreenViewport(int screen_id);
 const int SCREEN_WIDTH = 960;
 const int SCREEN_HEIGHT = 544;
 
-// Native mode logical resolution (HD 720p for good scaling)
-const int NATIVE_LOGICAL_WIDTH = 1280;
-const int NATIVE_LOGICAL_HEIGHT = 720;
+// Native mode logical resolution (set dynamically based on display)
+extern int NATIVE_LOGICAL_WIDTH;
+extern int NATIVE_LOGICAL_HEIGHT;
 
-// 3DS dual screen support - SIDE BY SIDE layout
+// 3DS dual screen support - HORIZONTAL (side-by-side) and VERTICAL (top/bottom) layouts
 // 3DS screen dimensions: Top screen 400x240, Bottom screen 320x240
 const int DS_TOP_SCREEN_WIDTH = 400;
 const int DS_TOP_SCREEN_HEIGHT = 240;
 const int DS_BOTTOM_SCREEN_WIDTH = 320;
 const int DS_BOTTOM_SCREEN_HEIGHT = 240;
 
-const int DUAL_SCREEN_WIDTH = DS_TOP_SCREEN_WIDTH + DS_BOTTOM_SCREEN_WIDTH;  // Total width: 400 + 320 = 720
-const int DUAL_SCREEN_HEIGHT = DS_TOP_SCREEN_HEIGHT;                         // Height: 240 (top screen height)
-const int TOP_SCREEN_X_OFFSET = 0;                                          // Top screen starts at X=0 
-const int TOP_SCREEN_Y_OFFSET = 0;                                          // Top screen starts at Y=0
-const int BOTTOM_SCREEN_X_OFFSET = DS_TOP_SCREEN_WIDTH;                     // Bottom screen starts after top screen (X=400)
-const int BOTTOM_SCREEN_Y_OFFSET = 0;                                       // Bottom screen aligned with top screen (Y=0)
+// HORIZONTAL layout (side-by-side) - original layout
+const int DUAL_SCREEN_WIDTH_H = DS_TOP_SCREEN_WIDTH + DS_BOTTOM_SCREEN_WIDTH;  // Total width: 400 + 320 = 720
+const int DUAL_SCREEN_HEIGHT_H = DS_TOP_SCREEN_HEIGHT;                         // Height: 240 (top screen height)
+const int TOP_SCREEN_X_OFFSET_H = 0;                                          // Top screen starts at X=0 
+const int TOP_SCREEN_Y_OFFSET_H = 0;                                          // Top screen starts at Y=0
+const int BOTTOM_SCREEN_X_OFFSET_H = DS_TOP_SCREEN_WIDTH;                     // Bottom screen starts after top screen (X=400)
+const int BOTTOM_SCREEN_Y_OFFSET_H = 0;                                       // Bottom screen aligned with top screen (Y=0)
+
+// VERTICAL layout (top/bottom) - more authentic 3DS layout
+const int DUAL_SCREEN_WIDTH_V = DS_TOP_SCREEN_WIDTH;                          // Width: 400 (top screen width)
+const int DUAL_SCREEN_HEIGHT_V = DS_TOP_SCREEN_HEIGHT + DS_BOTTOM_SCREEN_HEIGHT; // Total height: 240 + 240 = 480
+const int TOP_SCREEN_X_OFFSET_V = 0;                                          // Top screen starts at X=0
+const int TOP_SCREEN_Y_OFFSET_V = 0;                                          // Top screen starts at Y=0
+const int BOTTOM_SCREEN_X_OFFSET_V = (DS_TOP_SCREEN_WIDTH - DS_BOTTOM_SCREEN_WIDTH) / 2; // Center bottom screen (X=40)
+const int BOTTOM_SCREEN_Y_OFFSET_V = DS_TOP_SCREEN_HEIGHT;                    // Bottom screen below top screen (Y=240)
+
+// Legacy constants for backward compatibility (horizontal layout)
+const int DUAL_SCREEN_WIDTH = DUAL_SCREEN_WIDTH_H;
+const int DUAL_SCREEN_HEIGHT = DUAL_SCREEN_HEIGHT_H;
+const int TOP_SCREEN_X_OFFSET = TOP_SCREEN_X_OFFSET_H;
+const int TOP_SCREEN_Y_OFFSET = TOP_SCREEN_Y_OFFSET_H;
+const int BOTTOM_SCREEN_X_OFFSET = BOTTOM_SCREEN_X_OFFSET_H;
+const int BOTTOM_SCREEN_Y_OFFSET = BOTTOM_SCREEN_Y_OFFSET_H;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(val, min, max) ((val)>(max)?(max):((val)<(min)?(min):(val)))

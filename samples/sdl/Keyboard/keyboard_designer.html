@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPP-SDL Keyboard Theme Designer</title>
+    <style>
+        :root {
+            --background-color: #282828;
+            --font-color: #ffffff;
+            --selected-background-color: #6496c8;
+            --selected-font-color: #ffff00;
+            --key-background-color: #505050;
+            --shift-key-color: #966464;
+            --title-bar-color: #3c3c3c;
+            --input-background-color: #ffffff;
+            --input-border-color: #000000;
+            --input-text-color: #000000;
+            --keyboard-border-color: #646464;
+            --key-border-color: #787878;
+
+            --body-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --control-bg: #2a2a2a;
+            --border-color: #444;
+            --header-color: #007acc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls, .output {
+            background-color: var(--control-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            min-width: 300px;
+        }
+
+        h1, h2 {
+            color: var(--header-color);
+            border-bottom: 2px solid var(--header-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-size: 1em;
+        }
+
+        .control-group input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .control-group input[type="color"]::-webkit-color-swatch {
+            border-radius: 4px;
+            border: none;
+        }
+
+        .control-group input[type="color"]::-moz-color-swatch {
+            border-radius: 4px;
+            border: none;
+        }
+
+        #lua-code {
+            width: 100%;
+            height: 400px;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #copy-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        #copy-button:hover {
+            background-color: #005f9e;
+        }
+
+        .keyboard-preview-container {
+            flex-grow: 1;
+        }
+
+        .keyboard-preview {
+            background-color: var(--background-color);
+            border: 2px solid var(--keyboard-border-color);
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+
+        .title-bar {
+            background-color: var(--title-bar-color);
+            color: var(--font-color);
+            padding: 8px;
+            border-radius: 4px 4px 0 0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .input-area {
+            background-color: var(--input-background-color);
+            border: 1px solid var(--input-border-color);
+            color: var(--input-text-color);
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 4px;
+            min-height: 24px;
+        }
+
+        .key-grid {
+            display: grid;
+            gap: 5px;
+        }
+
+        .key-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .key {
+            background-color: var(--key-background-color);
+            color: var(--font-color);
+            border: 1px solid var(--key-border-color);
+            border-radius: 4px;
+            padding: 10px 5px;
+            text-align: center;
+            font-size: 0.9em;
+            flex-grow: 1;
+            min-width: 40px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .key.selected {
+            background-color: var(--selected-background-color);
+            color: var(--selected-font-color);
+        }
+
+        .key.shift {
+            background-color: var(--shift-key-color);
+        }
+
+        .key.wide {
+            flex-grow: 3;
+        }
+
+        .key.spacer {
+            flex-grow: 5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <h1>Theme Controls</h1>
+            <div id="color-pickers"></div>
+        </div>
+
+        <div class="keyboard-preview-container">
+            <div class="keyboard-preview">
+                <div class="title-bar">Keyboard Title</div>
+                <div class="input-area">Some text...</div>
+                <div class="key-grid">
+                    <!-- Keyboard layout will be generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <div class="output">
+            <h2>Generated Lua Code</h2>
+            <textarea id="lua-code" readonly></textarea>
+            <button id="copy-button">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorPickersContainer = document.getElementById('color-pickers');
+            const luaCodeTextArea = document.getElementById('lua-code');
+            const copyButton = document.getElementById('copy-button');
+            const keyboardGrid = document.querySelector('.keyboard-preview .key-grid');
+            const root = document.documentElement;
+
+            const themeProperties = {
+                'backgroundColor': { label: 'Background', value: '#282828', func: 'setBackgroundColor' },
+                'fontColor': { label: 'Font', value: '#ffffff', func: 'setFontColor' },
+                'selectedBackgroundColor': { label: 'Selected BG', value: '#6496c8', func: 'setSelectedBackgroundColor' },
+                'selectedFontColor': { label: 'Selected Font', value: '#ffff00', func: 'setSelectedFontColor' },
+                'keyBackgroundColor': { label: 'Key BG', value: '#505050', func: 'setKeyBackgroundColor' },
+                'shiftKeyColor': { label: 'Shift Key', value: '#966464', func: 'setShiftKeyColor' },
+                'titleBarColor': { label: 'Title Bar', value: '#3c3c3c', func: 'setTitleBarColor' },
+                'inputBackgroundColor': { label: 'Input BG', value: '#ffffff', func: 'setInputBackgroundColor' },
+                'inputBorderColor': { label: 'Input Border', value: '#000000', func: 'setInputBorderColor' },
+                'inputTextColor': { label: 'Input Text', value: '#000000', func: 'setInputTextColor' },
+                'keyboardBorderColor': { label: 'Keyboard Border', value: '#646464', func: 'setKeyboardBorderColor' },
+                'keyBorderColor': { label: 'Key Border', value: '#787878', func: 'setKeyBorderColor' },
+            };
+
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+
+            function generateLuaCode() {
+                let code = '-- Generated by LPP-SDL Theme Designer\n';
+                code += 'function setMyTheme()\n';
+                for (const [key, prop] of Object.entries(themeProperties)) {
+                    const rgb = hexToRgb(prop.value);
+                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+                    root.style.setProperty(cssVar, prop.value);
+                    code += `    Keyboard.${prop.func}(Color.new(${rgb.r}, ${rgb.g}, ${rgb.b}, 255))\n`;
+                }
+                code += 'end\n\n';
+                code += '-- Call the function to apply the theme\n';
+                code += 'setMyTheme()';
+                luaCodeTextArea.value = code;
+            }
+
+            function createColorPickers() {
+                for (const [key, prop] of Object.entries(themeProperties)) {
+                    const group = document.createElement('div');
+                    group.className = 'control-group';
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `${key}-picker`);
+                    label.textContent = prop.label;
+
+                    const picker = document.createElement('input');
+                    picker.type = 'color';
+                    picker.id = `${key}-picker`;
+                    picker.value = prop.value;
+
+                    picker.addEventListener('input', (event) => {
+                        prop.value = event.target.value;
+                        generateLuaCode();
+                    });
+
+                    group.appendChild(label);
+                    group.appendChild(picker);
+                    colorPickersContainer.appendChild(group);
+                }
+            }
+
+            function createKeyboardPreview() {
+                const layout = [
+                    ['1','2','3','4','5','6','7','8','9','0','-','=','DEL'],
+                    ['q','w','e','r','t','y','u','i','o','p','[',']','\\'],
+                    ['a','s','d','f','g','h','j','k','l',';',"'",'ENTER'],
+                    ['SHIFT','z','x','c','v','b','n','m',',','.','/','SHIFT'],
+                    ['SPACE','CLEAR','CANCEL','OK']
+                ];
+
+                keyboardGrid.innerHTML = '';
+                layout.forEach((row, rowIndex) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'key-row';
+                    row.forEach(keyText => {
+                        const keyDiv = document.createElement('div');
+                        keyDiv.className = 'key';
+                        keyDiv.textContent = keyText;
+
+                        if (keyText.toUpperCase() === 'SHIFT') keyDiv.classList.add('shift');
+                        if (['ENTER', 'SHIFT', 'SPACE', 'CLEAR', 'CANCEL', 'OK'].includes(keyText.toUpperCase())) {
+                           keyDiv.classList.add('wide');
+                        }
+                        if (rowIndex === 1 && keyText === 'q') {
+                            keyDiv.classList.add('selected'); // Highlight one key as example
+                        }
+
+                        rowDiv.appendChild(keyDiv);
+                    });
+                    keyboardGrid.appendChild(rowDiv);
+                });
+            }
+
+            copyButton.addEventListener('click', () => {
+                luaCodeTextArea.select();
+                document.execCommand('copy');
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => { copyButton.textContent = 'Copy to Clipboard'; }, 2000);
+            });
+
+            // Initial setup
+            createColorPickers();
+            createKeyboardPreview();
+            generateLuaCode();
+        });
+    </script>
+</body>
+</html>

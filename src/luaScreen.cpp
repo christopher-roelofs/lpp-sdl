@@ -115,7 +115,7 @@ static int lua_flip(lua_State *L) {
         if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
             // Reapply logical size for both modes
             if (g_renderer) {
-                if (g_dual_screen_mode && g_vita_compat_mode) {
+                if (g_compat_mode == LPP_COMPAT_3DS) {
                     // 3DS dual screen mode: recalculate manual scaling factors
                     extern SDL_Window* g_window;
                     int new_window_width, new_window_height;
@@ -163,8 +163,15 @@ static int lua_flip(lua_State *L) {
                     SDL_RenderPresent(g_renderer);
                     
                     // Re-establish logical scaling based on mode
-                    if (g_vita_compat_mode) {
+                    if (g_compat_mode == LPP_COMPAT_VITA) {
                         SDL_RenderSetLogicalSize(g_renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+                    } else if (g_compat_mode == LPP_COMPAT_3DS) {
+                        // 3DS mode: use appropriate dual screen dimensions
+                        if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+                            SDL_RenderSetLogicalSize(g_renderer, DUAL_SCREEN_WIDTH_V, DUAL_SCREEN_HEIGHT_V);
+                        } else {
+                            SDL_RenderSetLogicalSize(g_renderer, DUAL_SCREEN_WIDTH_H, DUAL_SCREEN_HEIGHT_H);
+                        }
                     } else {
                         SDL_RenderSetLogicalSize(g_renderer, NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
                     }
@@ -183,6 +190,37 @@ static int lua_flip(lua_State *L) {
 
     // Present the rendered frame
     if (g_renderer) { // Ensure g_renderer is valid
+#ifdef __APPLE__
+        // Clear letterbox areas before present to prevent artifacts on macOS ARM64
+        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+        SDL_Rect viewport;
+        SDL_RenderGetViewport(g_renderer, &viewport);
+        
+        int window_w, window_h;
+        SDL_GetWindowSize(g_window, &window_w, &window_h);
+        
+        // Clear areas outside viewport if letterboxing is active
+        if (viewport.w < window_w || viewport.h < window_h) {
+            // Clear left/right letterbox areas
+            if (viewport.x > 0) {
+                SDL_Rect left_box = {0, 0, viewport.x, window_h};
+                SDL_RenderFillRect(g_renderer, &left_box);
+            }
+            if (viewport.x + viewport.w < window_w) {
+                SDL_Rect right_box = {viewport.x + viewport.w, 0, window_w - (viewport.x + viewport.w), window_h};
+                SDL_RenderFillRect(g_renderer, &right_box);
+            }
+            // Clear top/bottom letterbox areas
+            if (viewport.y > 0) {
+                SDL_Rect top_box = {0, 0, window_w, viewport.y};
+                SDL_RenderFillRect(g_renderer, &top_box);
+            }
+            if (viewport.y + viewport.h < window_h) {
+                SDL_Rect bottom_box = {0, viewport.y + viewport.h, window_w, window_h - (viewport.y + viewport.h)};
+                SDL_RenderFillRect(g_renderer, &bottom_box);
+            }
+        }
+#endif
         SDL_RenderPresent(g_renderer);
         // Reset renderer state to prevent artifacts
         SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
@@ -420,8 +458,15 @@ static int lua_waitVblankStart(lua_State *L) {
 
 // Get logical screen width
 static int lua_getScreenWidth(lua_State *L) {
-    if (g_vita_compat_mode) {
+    if (g_compat_mode == LPP_COMPAT_VITA) {
         lua_pushinteger(L, SCREEN_WIDTH);
+    } else if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS mode: return appropriate dual screen width (always use the actual screen layout width)
+        if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+            lua_pushinteger(L, DUAL_SCREEN_WIDTH_V);
+        } else {
+            lua_pushinteger(L, DUAL_SCREEN_WIDTH_H);
+        }
     } else {
         // Native mode: return logical width for consistent coordinate system
         lua_pushinteger(L, NATIVE_LOGICAL_WIDTH);
@@ -431,8 +476,15 @@ static int lua_getScreenWidth(lua_State *L) {
 
 // Get logical screen height
 static int lua_getScreenHeight(lua_State *L) {
-    if (g_vita_compat_mode) {
+    if (g_compat_mode == LPP_COMPAT_VITA) {
         lua_pushinteger(L, SCREEN_HEIGHT);
+    } else if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS mode: return appropriate dual screen height (always use the actual screen layout height)
+        if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+            lua_pushinteger(L, DUAL_SCREEN_HEIGHT_V);
+        } else {
+            lua_pushinteger(L, DUAL_SCREEN_HEIGHT_H);
+        }
     } else {
         // Native mode: return logical height for consistent coordinate system
         lua_pushinteger(L, NATIVE_LOGICAL_HEIGHT);
@@ -558,9 +610,6 @@ static int lua_screen_fillRect(lua_State *L) {
     int x_offset = getScreenXOffset(screen);
     int y_offset = getScreenYOffset(screen);
     
-    printf("DEBUG: screen=%d, x_offset=%d, y_offset=%d\n", screen, x_offset, y_offset);
-    printf("DEBUG: x1=%d, x2=%d, y1=%d, y2=%d\n", x1, x2, y1, y2);
-    
     // Set color
     SDL_SetRenderDrawColor(g_renderer, 
                           (color) & 0xFF, 
@@ -575,62 +624,21 @@ static int lua_screen_fillRect(lua_State *L) {
     rect.w = abs(x2 - x1);
     rect.h = abs(y2 - y1);
     
-    printf("DEBUG: Local coordinates: rect=(%d,%d,%d,%d)\n", rect.x, rect.y, rect.w, rect.h);
-    
     // Apply per-screen scaling and positioning for dual screen mode
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Set viewport clipping for this screen to maintain aspect ratio
-        setScreenViewport(screen);
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS dual screen mode: use coordinate offsets (no clipping needed with SDL logical scaling)
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
-        
-        // First: Apply scaling to local coordinates
-        rect.x = (int)(rect.x * scale_x);
-        rect.y = (int)(rect.y * scale_y);
-        rect.w = (int)(rect.w * scale_x);
-        rect.h = (int)(rect.h * scale_y);
-        
-        // Second: Add properly calculated screen offset to position the screen in the window
-        // The offset should position the screen in the final window coordinate space
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y); // Get top screen scaling
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x); // Position after top screen
-            rect.x += bottom_screen_x_pos;
-            rect.y += (int)(y_offset * scale_y); // Y offset can use bottom screen scaling
-        } else { // TOP_SCREEN
-            // Top screen starts at window origin (no additional offset needed)
-            rect.x += (int)(x_offset * scale_x); // Should be 0 for top screen
-            rect.y += (int)(y_offset * scale_y); // Should be 0 for top screen
-        }
-        
-        // Calculate actual offset for debug output
-        int actual_x_offset = 0, actual_y_offset = 0;
-        if (screen == 1) {
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            actual_x_offset = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            actual_y_offset = (int)(y_offset * scale_y);
-        } else {
-            actual_x_offset = (int)(x_offset * scale_x);
-            actual_y_offset = (int)(y_offset * scale_y);
-        }
-        
-        printf("DEBUG: Scaled local: (%d,%d,%d,%d), calculated offset: (%d,%d)\n", 
-               (int)(((x1 < x2) ? x1 : x2) * scale_x), (int)(((y1 < y2) ? y1 : y2) * scale_y),
-               (int)(abs(x2 - x1) * scale_x), (int)(abs(y2 - y1) * scale_y),
-               actual_x_offset, actual_y_offset);
-        printf("DEBUG: Final positioned rect: (%d,%d,%d,%d)\n", rect.x, rect.y, rect.w, rect.h);
+        // Add screen offset to position the screen correctly in the logical coordinate space
+        rect.x += screen_x_offset;
+        rect.y += screen_y_offset;
     } else {
-        // Non-dual screen mode: just add the offset
+        // Non-3DS dual screen mode: just add the basic offset
         rect.x += x_offset;
         rect.y += y_offset;
     }
     
-    printf("DEBUG: Final fillRect screen=%d: (%d,%d,%d,%d)\n", screen, rect.x, rect.y, rect.w, rect.h);
     SDL_RenderFillRect(g_renderer, &rect);
     return 0;
 }
@@ -685,27 +693,15 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
     rect.w = abs(x2 - x1);
     rect.h = abs(y2 - y1);
     
-    // Apply per-screen scaling and positioning for dual screen mode
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    // Apply screen positioning for dual screen mode
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Use simple coordinate offsets (SDL logical scaling handles the rest)
+        int x_offset = getScreenXOffset(screen);
+        int y_offset = getScreenYOffset(screen);
         
-        // First: Apply scaling to local coordinates
-        rect.x = (int)(rect.x * scale_x);
-        rect.y = (int)(rect.y * scale_y);
-        rect.w = (int)(rect.w * scale_x);
-        rect.h = (int)(rect.h * scale_y);
-        
-        // Second: Add properly calculated screen offset to position the screen in the window
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            rect.x += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the screen correctly in the logical coordinate space
+        rect.x += x_offset;
+        rect.y += y_offset;
     } else {
         // Non-dual screen mode: just add the offset
         rect.x += x_offset;
@@ -759,31 +755,20 @@ static int lua_screen_drawLine(lua_State *L) {
                           (color >> 16) & 0xFF, 
                           (color >> 24) & 0xFF);
     
-    // Apply per-screen scaling and positioning for dual screen mode
+    // Apply screen positioning for dual screen mode
     int scaled_x1 = x1, scaled_y1 = y1;
     int scaled_x2 = x2, scaled_y2 = y2;
     
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Use simple coordinate offsets (SDL logical scaling handles the rest)
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // First: Apply scaling to local coordinates
-        scaled_x1 = (int)(x1 * scale_x);
-        scaled_y1 = (int)(y1 * scale_y);
-        scaled_x2 = (int)(x2 * scale_x);
-        scaled_y2 = (int)(y2 * scale_y);
-        
-        // Second: Add properly calculated screen offset to position the screen in the window
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            scaled_x1 += bottom_screen_x_pos;
-            scaled_x2 += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the line correctly in the logical coordinate space
+        scaled_x1 += screen_x_offset;
+        scaled_y1 += screen_y_offset;
+        scaled_x2 += screen_x_offset;
+        scaled_y2 += screen_y_offset;
     } else {
         // Non-dual screen mode: just add the offset
         scaled_x1 += x_offset;
@@ -844,27 +829,15 @@ static int lua_screen_drawImage(lua_State *L) {
     // Create destination rectangle - start with local coordinates
     SDL_Rect dest_rect = {x, y, tex_w, tex_h};
     
-    // Apply per-screen scaling and positioning for dual screen mode
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    // Apply screen positioning for dual screen mode
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Use simple coordinate offsets (SDL logical scaling handles the rest)
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // First: Apply scaling to local coordinates
-        dest_rect.x = (int)(dest_rect.x * scale_x);
-        dest_rect.y = (int)(dest_rect.y * scale_y);
-        dest_rect.w = (int)(dest_rect.w * scale_x);
-        dest_rect.h = (int)(dest_rect.h * scale_y);
-        
-        // Second: Add properly calculated screen offset to position the screen in the window
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            dest_rect.x += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the image correctly in the logical coordinate space
+        dest_rect.x += screen_x_offset;
+        dest_rect.y += screen_y_offset;
     } else {
         // Non-dual screen mode: just add the offset
         dest_rect.x += x_offset;
@@ -924,27 +897,15 @@ static int lua_screen_drawPartialImage(lua_State *L) {
     SDL_Rect src_rect = {src_x, src_y, src_w, src_h};
     SDL_Rect dest_rect = {dest_x, dest_y, src_w, src_h};
     
-    // Apply per-screen scaling and positioning for dual screen mode
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    // Apply screen positioning for dual screen mode
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Use simple coordinate offsets (SDL logical scaling handles the rest)
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // First: Apply scaling to local coordinates
-        dest_rect.x = (int)(dest_rect.x * scale_x);
-        dest_rect.y = (int)(dest_rect.y * scale_y);
-        dest_rect.w = (int)(dest_rect.w * scale_x);
-        dest_rect.h = (int)(dest_rect.h * scale_y);
-        
-        // Second: Add properly calculated screen offset to position the screen in the window
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            dest_rect.x += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the partial image correctly in the logical coordinate space
+        dest_rect.x += screen_x_offset;
+        dest_rect.y += screen_y_offset;
     } else {
         // Non-dual screen mode: just add the offset
         dest_rect.x += x_offset;
@@ -1075,7 +1036,7 @@ static int lua_screen_debugPrint(lua_State *L) {
             }
         }
     }
-
+    
     if (!g_defaultFont) {
         fprintf(stderr, "Error: g_defaultFont not loaded. Cannot render text with Screen.debugPrint.\n");
         return 0; // Don't cause Lua error, just don't render
@@ -1108,6 +1069,7 @@ static int lua_screen_debugPrint(lua_State *L) {
         SDL_FreeSurface(text_surface);
         return 0;
     }
+    
 
     // Get text dimensions
     int text_w = text_surface->w;
@@ -1121,29 +1083,18 @@ static int lua_screen_debugPrint(lua_State *L) {
     // Create destination rectangle - start with local coordinates
     SDL_Rect dest_rect = {x, y, text_w, text_h};
     
-    // Apply per-screen scaling and positioning for dual screen mode
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    // Apply screen positioning - use proper screen offsets in 3DS mode
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS mode: Use coordinate offsets based on screen layout orientation
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // First: Apply scaling to local coordinates
-        dest_rect.x = (int)(dest_rect.x * scale_x);
-        dest_rect.y = (int)(dest_rect.y * scale_y);
-        dest_rect.w = (int)(dest_rect.w * scale_x);
-        dest_rect.h = (int)(dest_rect.h * scale_y);
         
-        // Second: Add properly calculated screen offset to position the screen in the window
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            dest_rect.x += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the text correctly in the logical coordinate space
+        dest_rect.x += screen_x_offset;
+        dest_rect.y += screen_y_offset;
     } else {
-        // Non-dual screen mode: just add the offset
+        // Non-3DS mode: use the legacy offset calculation
         dest_rect.x += x_offset;
         dest_rect.y += y_offset;
     }
@@ -1198,28 +1149,18 @@ static int lua_screen_drawPixel(lua_State *L) {
     int x_offset = getScreenXOffset(screen);
     int y_offset = getScreenYOffset(screen);
     
-    // Apply screen scaling and positioning
+    // Apply screen positioning
     int final_x = x;
     int final_y = y;
     
-    if (g_dual_screen_mode && g_vita_compat_mode) {
-        // Get per-screen scaling factors
-        float scale_x, scale_y;
-        getScreenScaling(screen, &scale_x, &scale_y);
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Use simple coordinate offsets (SDL logical scaling handles the rest)
+        int screen_x_offset = getScreenXOffset(screen);
+        int screen_y_offset = getScreenYOffset(screen);
         
-        // Apply scaling to coordinates
-        final_x = (int)(x * scale_x);
-        final_y = (int)(y * scale_y);
-        
-        // Add screen offset
-        if (screen == 1) { // BOTTOM_SCREEN
-            // Bottom screen should be positioned after the scaled top screen area
-            float top_screen_scale_x, top_screen_scale_y;
-            getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-            int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-            final_x += bottom_screen_x_pos;
-        }
-        // Top screen starts at window origin (no additional offset needed)
+        // Add screen offset to position the pixel correctly in the logical coordinate space
+        final_x += screen_x_offset;
+        final_y += screen_y_offset;
     } else {
         // Non-dual screen mode: just add the offset
         final_x += x_offset;

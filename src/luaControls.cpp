@@ -201,23 +201,38 @@ static int lua_touchpad(lua_State *L){
             extern bool g_dual_screen_mode;
             extern bool g_vita_compat_mode;
             
-            if (g_dual_screen_mode && g_vita_compat_mode) {
-                // In 3DS mode, coordinates need to be mapped to bottom screen coordinate space
-                SDL_GetWindowSize(g_window, &window_w, &window_h);
+            // Get logical and window sizes for coordinate transformation
+            SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+            SDL_GetWindowSize(g_window, &window_w, &window_h);
+            
+            // Transform from window coordinates to logical coordinates
+            if (logical_w > 0 && logical_h > 0 && window_w > 0 && window_h > 0) {
+                logical_x = lerp(mouse_x, window_w, logical_w);
+                logical_y = lerp(mouse_y, window_h, logical_h);
                 
-                // For now, just scale to bottom screen dimensions (320x240 in the bitmap)
-                // The bottom screen in the level is 320x240 pixels
-                logical_x = (mouse_x * 320) / window_w;
-                logical_y = (mouse_y * 240) / window_h;
-            } else {
-                // Get logical and window sizes for normal scaling
-                SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
-                SDL_GetWindowSize(g_window, &window_w, &window_h);
-                
-                // Transform like the Vita version: scale from window size to logical size
-                if (logical_w > 0 && logical_h > 0 && window_w > 0 && window_h > 0) {
-                    logical_x = lerp(mouse_x, window_w, logical_w);
-                    logical_y = lerp(mouse_y, window_h, logical_h);
+                // For 3DS dual-screen mode, convert to bottom screen coordinates
+                if (g_dual_screen_mode && g_vita_compat_mode) {
+                    extern lpp_3ds_orientation_t g_3ds_orientation;
+                    extern int getScreenXOffset(int screen_id);
+                    extern int getScreenYOffset(int screen_id);
+                    
+                    // Check if the click is on the bottom screen and convert to local coordinates
+                    int bottom_x_offset = getScreenXOffset(1); // BOTTOM_SCREEN
+                    int bottom_y_offset = getScreenYOffset(1);
+                    
+                    if (logical_x >= bottom_x_offset && logical_y >= bottom_y_offset) {
+                        // Click is on bottom screen area - convert to local bottom screen coordinates
+                        logical_x = logical_x - bottom_x_offset;
+                        logical_y = logical_y - bottom_y_offset;
+                        
+                        // Clamp to bottom screen dimensions
+                        if (logical_x > 320) logical_x = 320;
+                        if (logical_y > 240) logical_y = 240;
+                    } else {
+                        // Click is not on bottom screen area - report no touch
+                        logical_x = -1;
+                        logical_y = -1;
+                    }
                 }
             }
         }

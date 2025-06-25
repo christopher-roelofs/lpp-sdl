@@ -77,84 +77,76 @@ typedef int SceUID;
 // Helper functions to calculate screen offsets for dual screen mode
 extern int getScreenXOffset(int screen_id);
 int getScreenXOffset(int screen_id) {
-    if (!g_dual_screen_mode) {
+    // Check if we're in 3DS compatibility mode
+    if (g_compat_mode != LPP_COMPAT_3DS) {
         return 0; // Single screen mode: no offset
     }
     
-    // In dual screen mode (side-by-side):
-    // TOP_SCREEN (0) -> X offset = 0
-    // BOTTOM_SCREEN (1) -> X offset = SCREEN_WIDTH
-    if (screen_id == 1) {
-        // printf("DEBUG: getScreenXOffset(1) returning BOTTOM_SCREEN_X_OFFSET=%d\n", BOTTOM_SCREEN_X_OFFSET);
-        return BOTTOM_SCREEN_X_OFFSET;
+    // Orientation-aware screen offsets (using logical coordinates)
+    if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+        // Vertical layout: both screens use same X offset (0 for top, centered for bottom)
+        if (screen_id == 1) {
+            return BOTTOM_SCREEN_X_OFFSET_V; // Centered bottom screen
+        }
+        return TOP_SCREEN_X_OFFSET_V; // Top screen at X=0
+    } else {
+        // Horizontal layout: side-by-side
+        if (screen_id == 1) {
+            return BOTTOM_SCREEN_X_OFFSET_H; // Bottom screen to the right
+        }
+        return TOP_SCREEN_X_OFFSET_H; // Top screen at X=0
     }
-    // printf("DEBUG: getScreenXOffset(%d) returning TOP_SCREEN_X_OFFSET=%d\n", screen_id, TOP_SCREEN_X_OFFSET);
-    return TOP_SCREEN_X_OFFSET;
 }
 
 int getScreenYOffset(int screen_id) {
-    if (!g_dual_screen_mode) {
+    // Check if we're in 3DS compatibility mode
+    if (g_compat_mode != LPP_COMPAT_3DS) {
         return 0; // Single screen mode: no offset
     }
     
-    // In dual screen mode (side-by-side):
-    // TOP_SCREEN (0) -> Y offset = 0
-    // BOTTOM_SCREEN (1) -> Y offset = centered
-    if (screen_id == 1) {
-        return BOTTOM_SCREEN_Y_OFFSET;
+    // Orientation-aware screen offsets (using logical coordinates)
+    if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+        // Vertical layout: screens stacked top/bottom
+        if (screen_id == 1) {
+            return BOTTOM_SCREEN_Y_OFFSET_V; // Bottom screen below top screen
+        }
+        return TOP_SCREEN_Y_OFFSET_V; // Top screen at Y=0
+    } else {
+        // Horizontal layout: both screens at same Y level
+        if (screen_id == 1) {
+            return BOTTOM_SCREEN_Y_OFFSET_H; // Bottom screen at Y=0
+        }
+        return TOP_SCREEN_Y_OFFSET_H; // Top screen at Y=0
     }
-    return TOP_SCREEN_Y_OFFSET;
 }
 
 // Get per-screen scaling factors for proper aspect ratio rendering
 void getScreenScaling(int screen_id, float* scale_x, float* scale_y) {
-    if (!g_dual_screen_mode || !g_vita_compat_mode) {
-        *scale_x = 1.0f;
-        *scale_y = 1.0f;
-        return;
-    }
-    
-    if (screen_id == 1) { // BOTTOM_SCREEN
-        *scale_x = g_bottom_screen_scale_x;
-        *scale_y = g_bottom_screen_scale_y;
-    } else { // TOP_SCREEN (0) or default
-        *scale_x = g_top_screen_scale_x;
-        *scale_y = g_top_screen_scale_y;
-    }
+    // For 3DS mode, use 1:1 scaling since SDL logical scaling handles it
+    *scale_x = 1.0f;
+    *scale_y = 1.0f;
 }
 
 // Set viewport clipping for a specific screen to maintain aspect ratios
 void setScreenViewport(int screen_id) {
     extern SDL_Renderer* g_renderer;
+    extern lpp_compat_mode_t g_compat_mode;
     
-    if (!g_dual_screen_mode || !g_vita_compat_mode || !g_renderer) {
-        // Clear any clipping for non-dual screen modes
+    // For 3DS mode with SDL logical scaling, disable clipping entirely
+    // SDL handles the coordinate translation and screen positioning automatically
+    if (g_compat_mode == LPP_COMPAT_3DS || !g_renderer) {
         SDL_RenderSetClipRect(g_renderer, NULL);
         return;
     }
     
-    // For now, disable clipping until we fix the coordinate calculation
-    SDL_RenderSetClipRect(g_renderer, NULL);
-    return;
-    
-    SDL_Rect viewport;
-    int x_offset = getScreenXOffset(screen_id);
-    int y_offset = getScreenYOffset(screen_id);
-    
-    if (screen_id == 1) { // BOTTOM_SCREEN
-        viewport.x = (int)(x_offset * g_bottom_screen_scale_x);
-        viewport.y = (int)(y_offset * g_bottom_screen_scale_y);
-        viewport.w = (int)(DS_BOTTOM_SCREEN_WIDTH * g_bottom_screen_scale_x);
-        viewport.h = (int)(DS_BOTTOM_SCREEN_HEIGHT * g_bottom_screen_scale_y);
-    } else { // TOP_SCREEN (0) or default
-        viewport.x = (int)(x_offset * g_top_screen_scale_x);
-        viewport.y = (int)(y_offset * g_top_screen_scale_y);
-        viewport.w = (int)(DS_TOP_SCREEN_WIDTH * g_top_screen_scale_x);
-        viewport.h = (int)(DS_TOP_SCREEN_HEIGHT * g_top_screen_scale_y);
+    // Only enable clipping for other dual screen modes that need manual scaling
+    if (!g_dual_screen_mode) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+        return;
     }
     
-    printf("DEBUG: setScreenViewport(%d) - viewport=(%d,%d,%d,%d)\n", screen_id, viewport.x, viewport.y, viewport.w, viewport.h);
-    SDL_RenderSetClipRect(g_renderer, &viewport);
+    // Legacy manual scaling viewport (currently unused)
+    SDL_RenderSetClipRect(g_renderer, NULL);
 }
 
 extern "C"{
@@ -1310,31 +1302,12 @@ static int lua_fprint(lua_State *L) {
             scaled_height 
         };
 
-        // Apply per-screen scaling and positioning for dual screen mode
-        if (g_dual_screen_mode && g_vita_compat_mode) {
-            // Get per-screen scaling factors
-            float scale_x, scale_y;
-            getScreenScaling(screen, &scale_x, &scale_y);
-            
-            // First: Apply scaling to local coordinates
-            dest_rect.x = (int)(dest_rect.x * scale_x);
-            dest_rect.y = (int)(dest_rect.y * scale_y);
-            dest_rect.w = (int)(dest_rect.w * scale_x);
-            dest_rect.h = (int)(dest_rect.h * scale_y);
-            
-            // Second: Add properly calculated screen offset to position the screen in the window
-            if (screen == 1) { // BOTTOM_SCREEN
-                // Bottom screen should be positioned after the scaled top screen area
-                float top_screen_scale_x, top_screen_scale_y;
-                getScreenScaling(0, &top_screen_scale_x, &top_screen_scale_y);
-                int bottom_screen_x_pos = (int)(DS_TOP_SCREEN_WIDTH * top_screen_scale_x);
-                dest_rect.x += bottom_screen_x_pos;
-            }
-            // Top screen starts at window origin (no additional offset needed)
-        } else {
-            // Non-dual screen mode: just add the offset
-            dest_rect.x += x_offset;
-            dest_rect.y += y_offset;
+        // Apply screen offsets for 3DS mode
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            int screen_x_offset = getScreenXOffset(screen);
+            int screen_y_offset = getScreenYOffset(screen);
+            dest_rect.x += screen_x_offset;
+            dest_rect.y += screen_y_offset;
         }
 
         SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
