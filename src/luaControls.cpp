@@ -211,7 +211,8 @@ static int lua_touchpad(lua_State *L){
                 logical_y = lerp(mouse_y, window_h, logical_h);
                 
                 // For 3DS dual-screen mode, convert to bottom screen coordinates
-                if (g_dual_screen_mode && g_vita_compat_mode) {
+                extern lpp_compat_mode_t g_compat_mode;
+                if (g_compat_mode == LPP_COMPAT_3DS) {
                     extern lpp_3ds_orientation_t g_3ds_orientation;
                     extern int getScreenXOffset(int screen_id);
                     extern int getScreenYOffset(int screen_id);
@@ -241,7 +242,10 @@ static int lua_touchpad(lua_State *L){
         lua_pushinteger(L, logical_y);
         return 2;
     }
-    return 0;
+    // Return invalid coordinates when no touch is detected
+    lua_pushinteger(L, -1);
+    lua_pushinteger(L, -1);
+    return 2;
 }
 
 static int lua_rumble(lua_State *L){

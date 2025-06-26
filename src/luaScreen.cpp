@@ -222,8 +222,13 @@ static int lua_flip(lua_State *L) {
         }
 #endif
         SDL_RenderPresent(g_renderer);
-        // Reset renderer state to prevent artifacts
-        SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+        
+        // In 3DS compatibility mode, preserve framebuffer content like the original 3DS
+        // This prevents content from being cleared between frames
+        if (g_compat_mode != LPP_COMPAT_3DS) {
+            // Reset renderer state to prevent artifacts (only in non-3DS modes)
+            SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+        }
     }
 
     // Check if the Lua script wants to exit
@@ -349,17 +354,20 @@ static int lua_getP(lua_State *L) {
 	Uint32* pixels = (Uint32*)tex->data;
 	Uint32 pixel = pixels[y * tex->w + x];
 	
-	// Extract RGBA components (RGBA32 format: R=bits 0-7, G=bits 8-15, B=bits 16-23, A=bits 24-31)
+	// Extract ABGR components (ABGR8888 format: A=bits 24-31, B=bits 16-23, G=bits 8-15, R=bits 0-7)
 	Uint8 r = (pixel >> 0) & 0xFF;
 	Uint8 g = (pixel >> 8) & 0xFF;
 	Uint8 b = (pixel >> 16) & 0xFF;
 	Uint8 a = (pixel >> 24) & 0xFF;
 	
-	// Pack into RGB format that matches game expectations (RGB: R=bits 16-23, G=bits 8-15, B=bits 0-7)
-	// Pure green (0,255,0) should be 65280 = 0x00FF00
-	Uint32 color = (r << 16) | (g << 8) | b;
+	// Force alpha to 255 for compatibility with 3DS behavior (BMPs don't have alpha)
+	a = 255;
 	
-	lua_pushinteger(L, color);
+	// Pack into RGBA format that matches Color.new() format (RGBA: R=bits 0-7, G=bits 8-15, B=bits 16-23, A=bits 24-31)
+	// Pure green (0,255,0) should be 65280 = 0xFF00
+	uint32_t color = r | (g << 8) | (b << 16) | (a << 24);
+	
+	lua_pushinteger(L, (int32_t)color);
 	return 1;
 }
 
@@ -385,8 +393,8 @@ static int lua_color(lua_State *L) {
 	int b = luaL_checkinteger(L, 3);
 	int a = 255;
 	if (argc==4) a = luaL_checkinteger(L, 4);
-	int color = r | (g << 8) | (b << 16) | (a << 24);
-	lua_pushinteger(L,color);
+	uint32_t color = r | (g << 8) | (b << 16) | (a << 24);
+	lua_pushinteger(L, (int32_t)color);
 	return 1;
 }
 
@@ -958,8 +966,8 @@ static int lua_screen_loadimg(lua_State *L) {
     int size = surface->w * surface->h * 4; // RGBA
     tex->data = malloc(size);
     
-    // Convert surface to RGBA format for consistent pixel access
-    SDL_Surface* rgba_surface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    // Convert surface to ABGR8888 format for consistent pixel access (matches 3DS byte order)
+    SDL_Surface* rgba_surface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ABGR8888, 0);
     if (rgba_surface) {
         memcpy(tex->data, rgba_surface->pixels, size);
         SDL_FreeSurface(rgba_surface);
