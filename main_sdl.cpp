@@ -65,6 +65,8 @@ extern "C" void sdl_key_up(int scancode);
 extern "C" void sdl_mouse_button_down();
 extern "C" void sdl_mouse_button_up();
 extern "C" void init_controllers();
+extern "C" void cleanup_controllers();
+extern "C" void handle_controller_event(SDL_Event* event);
 
 // Forward declaration for file browser
 const char* launch_file_browser(lua_State* L);
@@ -270,6 +272,9 @@ const char* launch_file_browser(lua_State* L) {
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
+            
+            // Handle controller hotplug events
+            handle_controller_event(&e);
             
             if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
@@ -1077,6 +1082,9 @@ int main(int argc, char* args[]) {
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
+            
+            // Handle controller hotplug events
+            handle_controller_event(&e);
             // Handle keyboard events for controls
             if (e.type == SDL_KEYDOWN) {
                 sdl_key_down(e.key.keysym.scancode);
@@ -1194,6 +1202,9 @@ int main(int argc, char* args[]) {
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
 
+    // Cleanup controllers before SDL shutdown
+    cleanup_controllers();
+    
     // Quit SDL subsystems
     IMG_Quit();
     if (g_defaultFont) TTF_CloseFont(g_defaultFont);

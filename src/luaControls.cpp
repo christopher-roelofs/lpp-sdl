@@ -41,6 +41,7 @@
 
 // Simple keyboard key constants - just use the SDL scancode values directly
 static SDL_GameController* controllers[4] = {NULL, NULL, NULL, NULL};
+static SDL_Joystick* fallback_joysticks[4] = {NULL, NULL, NULL, NULL};
 static int left_analog_x = 128 * 256, left_analog_y = 128 * 256;  // Initialize to center position (128 in Vita range)
 static int right_analog_x = 128 * 256, right_analog_y = 128 * 256;
 static int mouse_x = 0, mouse_y = 0;
@@ -54,8 +55,48 @@ static bool current_keys[SDL_NUM_SCANCODES] = {false};
 static bool previous_keys[SDL_NUM_SCANCODES] = {false};
 static int frame_counter = 0;
 
+// Load SDL GameControllerDB for consistent controller mappings
+static void load_controller_database() {
+    // Try to load gamecontrollerdb.txt from current directory
+    FILE* db_file = fopen("gamecontrollerdb.txt", "r");
+    if (db_file) {
+        fclose(db_file);
+        int result = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
+        if (result > 0) {
+            printf("Loaded %d controller mappings from gamecontrollerdb.txt\n", result);
+        } else if (result == 0) {
+            printf("No new controller mappings found in gamecontrollerdb.txt\n");
+        } else {
+            printf("Error loading gamecontrollerdb.txt: %s\n", SDL_GetError());
+        }
+    } else {
+        printf("gamecontrollerdb.txt not found, using built-in SDL controller mappings\n");
+        printf("For better controller support, download gamecontrollerdb.txt from:\n");
+        printf("https://github.com/mdqinc/SDL_GameControllerDB/blob/master/gamecontrollerdb.txt\n");
+        printf("and place it in the same directory as the executable.\n");
+    }
+}
+
+// Cleanup controllers on shutdown
+extern "C" void cleanup_controllers() {
+    printf("Cleaning up controllers...\n");
+    for (int i = 0; i < 4; i++) {
+        if (controllers[i]) {
+            SDL_GameControllerClose(controllers[i]);
+            controllers[i] = NULL;
+        }
+        if (fallback_joysticks[i]) {
+            SDL_JoystickClose(fallback_joysticks[i]);
+            fallback_joysticks[i] = NULL;
+        }
+    }
+}
+
 // Initialize game controllers
 extern "C" void init_controllers() {
+    // Load controller database first for better compatibility
+    load_controller_database();
+    
     printf("Detecting game controllers...\n");
     int num_joysticks = SDL_NumJoysticks();
     printf("Found %d joystick(s)\n", num_joysticks);
@@ -64,12 +105,93 @@ extern "C" void init_controllers() {
         if (SDL_IsGameController(i)) {
             controllers[i] = SDL_GameControllerOpen(i);
             if (controllers[i]) {
-                printf("Controller %d: %s (opened successfully)\n", i, SDL_GameControllerName(controllers[i]));
+                const char* name = SDL_GameControllerName(controllers[i]);
+                const char* mapping = SDL_GameControllerMapping(controllers[i]);
+                printf("Controller %d: %s (opened successfully)\n", i, name ? name : "Unknown");
+                if (mapping) {
+                    printf("  Using mapping: %.100s...\n", mapping);  // Truncate long mappings
+                    SDL_free((void*)mapping);  // SDL_GameControllerMapping returns allocated memory
+                }
             } else {
                 printf("Controller %d: Failed to open - %s\n", i, SDL_GetError());
             }
         } else {
             printf("Joystick %d: Not a recognized game controller\n", i);
+            
+            // Output detailed joystick info to help create gamecontrollerdb.txt entry
+            SDL_Joystick* joystick = SDL_JoystickOpen(i);
+            if (joystick) {
+                printf("  Raw Joystick Details:\n");
+                printf("    Name: %s\n", SDL_JoystickName(joystick) ? SDL_JoystickName(joystick) : "Unknown");
+                
+                SDL_JoystickGUID guid = SDL_JoystickGetGUID(joystick);
+                char guid_str[33];
+                SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str));
+                printf("    GUID: %s\n", guid_str);
+                
+                printf("    Axes: %d\n", SDL_JoystickNumAxes(joystick));
+                printf("    Buttons: %d\n", SDL_JoystickNumButtons(joystick));
+                printf("    Hats: %d\n", SDL_JoystickNumHats(joystick));
+                
+                printf("  To add support, create a gamecontrollerdb.txt entry like:\n");
+                printf("  %s,Your Controller Name,a:b0,b:b1,x:b2,y:b3,back:b4,start:b5,leftstick:b6,rightstick:b7,leftshoulder:b8,rightshoulder:b9,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a4,righttrigger:a5,platform:Linux,\n", guid_str);
+                
+                // Keep joystick open as fallback for basic input
+                fallback_joysticks[i] = joystick;
+                printf("  Using joystick as fallback input device (basic button mapping)\n");
+            }
+        }
+    }
+}
+
+// Handle controller hotplug events
+extern "C" void handle_controller_event(SDL_Event* event) {
+    if (event->type == SDL_CONTROLLERDEVICEADDED) {
+        int device_index = event->cdevice.which;
+        printf("Controller hotplug: Device %d added\n", device_index);
+        
+        // Find an empty slot
+        for (int i = 0; i < 4; i++) {
+            if (!controllers[i]) {
+                if (SDL_IsGameController(device_index)) {
+                    controllers[i] = SDL_GameControllerOpen(device_index);
+                    if (controllers[i]) {
+                        const char* name = SDL_GameControllerName(controllers[i]);
+                        const char* mapping = SDL_GameControllerMapping(controllers[i]);
+                        printf("Controller %d: %s (hotplugged successfully)\n", i, name ? name : "Unknown");
+                        if (mapping) {
+                            printf("  Using mapping: %.100s...\n", mapping);
+                            SDL_free((void*)mapping);
+                        }
+                    }
+                } else {
+                    // Use as fallback joystick
+                    SDL_Joystick* joystick = SDL_JoystickOpen(device_index);
+                    if (joystick) {
+                        fallback_joysticks[i] = joystick;
+                        printf("Controller %d: Using as fallback joystick (hotplugged)\n", i);
+                    }
+                }
+                break;
+            }
+        }
+    } else if (event->type == SDL_CONTROLLERDEVICEREMOVED) {
+        SDL_JoystickID instance_id = event->cdevice.which;
+        printf("Controller hotplug: Device with instance ID %d removed\n", instance_id);
+        
+        // Find and close the removed controller
+        for (int i = 0; i < 4; i++) {
+            if (controllers[i] && SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controllers[i])) == instance_id) {
+                printf("Closing controller %d\n", i);
+                SDL_GameControllerClose(controllers[i]);
+                controllers[i] = NULL;
+                break;
+            } else if (fallback_joysticks[i] && SDL_JoystickInstanceID(fallback_joysticks[i]) == instance_id) {
+                printf("Closing fallback joystick %d\n", i);
+                SDL_JoystickClose(fallback_joysticks[i]);
+                fallback_joysticks[i] = NULL;
+                break;
+            }
         }
     }
 }
@@ -95,8 +217,10 @@ static void update_input_state() {
     current_keys[SDL_SCANCODE_DOWN] = false;       // D-Pad Down
     current_keys[SDL_SCANCODE_LEFT] = false;       // D-Pad Left
     current_keys[SDL_SCANCODE_RIGHT] = false;      // D-Pad Right
-    current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger/L (3DS)
-    current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger/R (3DS)
+    current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger (Vita only)
+    current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger (Vita only)
+    current_keys[SDL_SCANCODE_Q] = false;          // L (3DS/Vita)
+    current_keys[SDL_SCANCODE_E] = false;          // R (3DS/Vita)
     current_keys[SDL_SCANCODE_LSHIFT] = false;     // Y (3DS only)
     current_keys[SDL_SCANCODE_LALT] = false;       // Start (3DS only)
     current_keys[SDL_SCANCODE_LCTRL] = false;      // Select (3DS only)
@@ -119,27 +243,78 @@ static void update_input_state() {
         // This allows existing games to work with gamepad without code changes
         
         extern lpp_compat_mode_t g_compat_mode;
-        if (g_compat_mode == LPP_COMPAT_3DS) {
-            // 3DS gamepad mapping - map to keys that match 3DS button layout
+        if (g_compat_mode == LPP_COMPAT_NATIVE) {
+            // Native gamepad mapping - use intuitive button layout
+            // For most users, the physical button labeled "A" should act as the primary action button
+            // This means mapping based on the controller's physical layout, not SDL's logical layout
+            
+            // For Nintendo-style controllers (8BitDo, Pro Controller, etc.):
+            // Physical A (right) = SDL B button, should map to primary action
+            // Physical B (bottom) = SDL A button, should map to secondary action
+            // For Xbox-style controllers:
+            // Physical A (bottom) = SDL A button, primary action  
+            // Physical B (right) = SDL B button, secondary action
+            
+            // Since we can't easily detect controller type, we'll use a sensible default:
+            // Map SDL's logical buttons to common game actions
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                current_keys[SDL_SCANCODE_RETURN] = true; // A = Return (KEY_A maps to Return in 3DS mode)
+                current_keys[SDL_SCANCODE_SPACE] = true; // SDL A = Primary action (Space/Jump)
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                current_keys[SDL_SCANCODE_BACKSPACE] = true; // B = Backspace (KEY_B maps to Backspace in 3DS mode)
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // SDL B = Secondary action (Back/Cancel)
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                current_keys[SDL_SCANCODE_SPACE] = true; // X = Space (KEY_X maps to Space in 3DS mode)
+                current_keys[SDL_SCANCODE_X] = true; // SDL X = X action
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                current_keys[SDL_SCANCODE_LSHIFT] = true; // Y = LShift (KEY_Y maps to LShift in 3DS mode)
+                current_keys[SDL_SCANCODE_Y] = true; // SDL Y = Y action
             }
             
             // Shoulder buttons
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
-                current_keys[SDL_SCANCODE_PAGEUP] = true; // L = PageUp (KEY_L maps to PageUp in 3DS mode)
+                current_keys[SDL_SCANCODE_Q] = true; // L1/LB = Q
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
-                current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R = PageDown (KEY_R maps to PageDown in 3DS mode)
+                current_keys[SDL_SCANCODE_E] = true; // R1/RB = E
+            }
+            
+            // Start/Select buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // Start = Enter
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_TAB] = true; // Back/Select = Tab
+            }
+            
+            // Guide button
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_GUIDE)) {
+                current_keys[SDL_SCANCODE_ESCAPE] = true; // Guide = Escape
+            }
+            
+        } else if (g_compat_mode == LPP_COMPAT_3DS) {
+            // 3DS gamepad mapping - map to Nintendo button layout
+            // SDL uses Xbox naming (A=bottom, B=right, X=left, Y=top)
+            // 3DS uses Nintendo layout (A=right, B=bottom, X=top, Y=left)
+            // So we need to translate: SDL_B->3DS_A, SDL_A->3DS_B, SDL_Y->3DS_X, SDL_X->3DS_Y
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // SDL B (right) = 3DS A = Return (KEY_A maps to Return in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // SDL A (bottom) = 3DS B = Backspace (KEY_B maps to Backspace in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // SDL Y (top) = 3DS X = Space (KEY_X maps to Space in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_LSHIFT] = true; // SDL X (left) = 3DS Y = LShift (KEY_Y maps to LShift in 3DS mode)
+            }
+            
+            // Shoulder buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_Q] = true; // L = Q (KEY_L maps to Q in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_E] = true; // R = E (KEY_R maps to E in 3DS mode)
             }
             
             // Start/Select buttons
@@ -150,19 +325,21 @@ static void update_input_state() {
                 current_keys[SDL_SCANCODE_LCTRL] = true; // Select = LCtrl (KEY_SELECT maps to LCtrl in 3DS mode)
             }
         } else {
-            // Vita gamepad mapping (original behavior)
-            // Face buttons (Cross, Circle, Square, Triangle)
+            // Vita gamepad mapping - map to PlayStation button layout
+            // SDL uses Xbox naming (A=bottom, B=right, X=left, Y=top)
+            // Vita uses PlayStation layout (Cross=bottom, Circle=right, Square=left, Triangle=top)
+            // So mapping is: SDL_A->Cross, SDL_B->Circle, SDL_X->Square, SDL_Y->Triangle
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                current_keys[SDL_SCANCODE_SPACE] = true; // Cross = Space
+                current_keys[SDL_SCANCODE_SPACE] = true; // SDL A (bottom) = Cross = Space
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Circle = Backspace
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // SDL B (right) = Circle = Backspace
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                current_keys[SDL_SCANCODE_Z] = true; // Square = Z
+                current_keys[SDL_SCANCODE_Z] = true; // SDL X (left) = Square = Z
             }
             if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                current_keys[SDL_SCANCODE_X] = true; // Triangle = X
+                current_keys[SDL_SCANCODE_X] = true; // SDL Y (top) = Triangle = X
             }
             
             // Shoulder buttons
@@ -203,6 +380,91 @@ static void update_input_state() {
         if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384) { // > 50%
             current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
         }
+    } else if (fallback_joysticks[0] && SDL_JoystickGetAttached(fallback_joysticks[0])) {
+        // Fallback: Use raw joystick input for unrecognized controllers
+        if (frame_counter % 300 == 0) { // Print debug info every 5 seconds at 60fps
+            printf("Using fallback joystick input (frame %d)\n", frame_counter);
+        }
+        
+        // Read analog sticks (assuming axes 0,1 = left stick, 2,3 = right stick)
+        if (SDL_JoystickNumAxes(fallback_joysticks[0]) >= 2) {
+            Sint16 sdl_lx = SDL_JoystickGetAxis(fallback_joysticks[0], 0);
+            Sint16 sdl_ly = SDL_JoystickGetAxis(fallback_joysticks[0], 1);
+            left_analog_x = ((sdl_lx + 32768) * 255 / 65535) * 256;
+            left_analog_y = ((sdl_ly + 32768) * 255 / 65535) * 256;
+        }
+        if (SDL_JoystickNumAxes(fallback_joysticks[0]) >= 4) {
+            Sint16 sdl_rx = SDL_JoystickGetAxis(fallback_joysticks[0], 2);
+            Sint16 sdl_ry = SDL_JoystickGetAxis(fallback_joysticks[0], 3);
+            right_analog_x = ((sdl_rx + 32768) * 255 / 65535) * 256;
+            right_analog_y = ((sdl_ry + 32768) * 255 / 65535) * 256;
+        }
+        
+        // Basic button mapping (assuming standard gamepad button order)
+        // Map based on compatibility mode
+        if (SDL_JoystickNumButtons(fallback_joysticks[0]) >= 4) {
+            extern lpp_compat_mode_t g_compat_mode;
+            if (g_compat_mode == LPP_COMPAT_NATIVE) {
+                // Native mode: Use intuitive mapping (button 0 = primary action)
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 0)) { // Button 0 -> Primary action
+                    current_keys[SDL_SCANCODE_SPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 1)) { // Button 1 -> Secondary action
+                    current_keys[SDL_SCANCODE_BACKSPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 2)) { // Button 2 -> X action
+                    current_keys[SDL_SCANCODE_X] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 3)) { // Button 3 -> Y action
+                    current_keys[SDL_SCANCODE_Y] = true;
+                }
+            } else if (g_compat_mode == LPP_COMPAT_3DS) {
+                // 3DS mode: Map to 3DS button expectations
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 0)) { // Button 0 -> A (Return)
+                    current_keys[SDL_SCANCODE_RETURN] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 1)) { // Button 1 -> B (Backspace)
+                    current_keys[SDL_SCANCODE_BACKSPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 2)) { // Button 2 -> X (Space)
+                    current_keys[SDL_SCANCODE_SPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 3)) { // Button 3 -> Y (LShift)
+                    current_keys[SDL_SCANCODE_LSHIFT] = true;
+                }
+            } else {
+                // Vita mode: Map to Vita button expectations
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 0)) { // Button 0 -> Cross (Space)
+                    current_keys[SDL_SCANCODE_SPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 1)) { // Button 1 -> Circle (Backspace)
+                    current_keys[SDL_SCANCODE_BACKSPACE] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 2)) { // Button 2 -> Square (Z)
+                    current_keys[SDL_SCANCODE_Z] = true;
+                }
+                if (SDL_JoystickGetButton(fallback_joysticks[0], 3)) { // Button 3 -> Triangle (X)
+                    current_keys[SDL_SCANCODE_X] = true;
+                }
+            }
+        }
+        
+        // D-Pad via hat (if available)
+        if (SDL_JoystickNumHats(fallback_joysticks[0]) >= 1) {
+            Uint8 hat = SDL_JoystickGetHat(fallback_joysticks[0], 0);
+            if (hat & SDL_HAT_UP) current_keys[SDL_SCANCODE_UP] = true;
+            if (hat & SDL_HAT_DOWN) current_keys[SDL_SCANCODE_DOWN] = true;
+            if (hat & SDL_HAT_LEFT) current_keys[SDL_SCANCODE_LEFT] = true;
+            if (hat & SDL_HAT_RIGHT) current_keys[SDL_SCANCODE_RIGHT] = true;
+        }
+        
+        if (frame_counter % 300 == 0) { // Print debug info every 5 seconds at 60fps
+            printf("Fallback joystick: buttons=%d, axes=%d, hats=%d\n", 
+                   SDL_JoystickNumButtons(fallback_joysticks[0]),
+                   SDL_JoystickNumAxes(fallback_joysticks[0]), 
+                   SDL_JoystickNumHats(fallback_joysticks[0]));
+        }
+        
     } else {
         // No controller - set analog sticks to neutral position (128 in Vita's 0-255 range)
         // Since lua_readleft divides by 256, we multiply by 256 here
@@ -631,6 +893,57 @@ static int lua_init(lua_State *L) {
     return 0;
 }
 
+static int lua_getControllerStatus(lua_State *L) {
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 0) return luaL_error(L, "wrong number of arguments");
+#endif
+    
+    // Create a table to return controller status
+    lua_createtable(L, 0, 4); // Create table with 4 slots for controller info
+    
+    for (int i = 0; i < 4; i++) {
+        // Create table for each controller slot
+        lua_createtable(L, 0, 4); // Create table with 4 fields
+        
+        bool is_connected = false;
+        const char* controller_name = "Disconnected";
+        const char* controller_type = "none";
+        
+        if (controllers[i] && SDL_GameControllerGetAttached(controllers[i])) {
+            is_connected = true;
+            controller_name = SDL_GameControllerName(controllers[i]);
+            controller_type = "gamecontroller";
+        } else if (fallback_joysticks[i] && SDL_JoystickGetAttached(fallback_joysticks[i])) {
+            is_connected = true;
+            controller_name = SDL_JoystickName(fallback_joysticks[i]);
+            controller_type = "joystick";
+        }
+        
+        // Set fields in controller table
+        lua_pushstring(L, "connected");
+        lua_pushboolean(L, is_connected);
+        lua_settable(L, -3);
+        
+        lua_pushstring(L, "name");
+        lua_pushstring(L, controller_name ? controller_name : "Unknown");
+        lua_settable(L, -3);
+        
+        lua_pushstring(L, "type");
+        lua_pushstring(L, controller_type);
+        lua_settable(L, -3);
+        
+        lua_pushstring(L, "port");
+        lua_pushinteger(L, i);
+        lua_settable(L, -3);
+        
+        // Add this controller table to the main table with 1-based indexing
+        lua_rawseti(L, -2, i + 1);
+    }
+    
+    return 1; // Return the table
+}
+
 static const luaL_Reg Controls_functions[] = {
   {"read",             lua_readC},    
   {"readLeftAnalog",   lua_readleft},      
@@ -643,6 +956,7 @@ static const luaL_Reg Controls_functions[] = {
   {"lockHomeButton",   lua_lock},    
   {"unlockHomeButton", lua_unlock},    
   {"getDeviceInfo",    lua_gettype},
+  {"getControllerStatus", lua_getControllerStatus},
   {"headsetStatus",    lua_headset},
   {"readAccel",        lua_accel},
   {"readGyro",         lua_gyro},
@@ -706,8 +1020,8 @@ static void set_key_constants(lua_State *L) {
         lua_pushinteger(L, SDL_SCANCODE_BACKSPACE);lua_setglobal(L, "KEY_B");
         lua_pushinteger(L, SDL_SCANCODE_SPACE);lua_setglobal(L, "KEY_X");
         lua_pushinteger(L, SDL_SCANCODE_LSHIFT);lua_setglobal(L, "KEY_Y");
-        lua_pushinteger(L, SDL_SCANCODE_PAGEUP);lua_setglobal(L, "KEY_L");
-        lua_pushinteger(L, SDL_SCANCODE_PAGEDOWN);lua_setglobal(L, "KEY_R");
+        lua_pushinteger(L, SDL_SCANCODE_Q);lua_setglobal(L, "KEY_L");
+        lua_pushinteger(L, SDL_SCANCODE_E);lua_setglobal(L, "KEY_R");
         lua_pushinteger(L, SDL_SCANCODE_LALT);lua_setglobal(L, "KEY_START");
         lua_pushinteger(L, SDL_SCANCODE_LCTRL);lua_setglobal(L, "KEY_SELECT");
         lua_pushinteger(L, SDL_SCANCODE_UP);lua_setglobal(L, "KEY_DUP");
