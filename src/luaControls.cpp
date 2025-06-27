@@ -54,6 +54,26 @@ static bool current_keys[SDL_NUM_SCANCODES] = {false};
 static bool previous_keys[SDL_NUM_SCANCODES] = {false};
 static int frame_counter = 0;
 
+// Initialize game controllers
+extern "C" void init_controllers() {
+    printf("Detecting game controllers...\n");
+    int num_joysticks = SDL_NumJoysticks();
+    printf("Found %d joystick(s)\n", num_joysticks);
+    
+    for (int i = 0; i < num_joysticks && i < 4; i++) {
+        if (SDL_IsGameController(i)) {
+            controllers[i] = SDL_GameControllerOpen(i);
+            if (controllers[i]) {
+                printf("Controller %d: %s (opened successfully)\n", i, SDL_GameControllerName(controllers[i]));
+            } else {
+                printf("Controller %d: Failed to open - %s\n", i, SDL_GetError());
+            }
+        } else {
+            printf("Joystick %d: Not a recognized game controller\n", i);
+        }
+    }
+}
+
 static void update_input_state() {
     // Pump events to update keyboard state
     SDL_PumpEvents();
@@ -61,6 +81,26 @@ static void update_input_state() {
     // Update keyboard state
     keyboard_state = SDL_GetKeyboardState(NULL);
     
+    // Clear gamepad-mapped keys first (so they don't stick if button is released)
+    // Clear keys used for both Vita and 3DS gamepad mapping
+    current_keys[SDL_SCANCODE_SPACE] = false;      // Cross/X
+    current_keys[SDL_SCANCODE_BACKSPACE] = false;  // Circle/B
+    current_keys[SDL_SCANCODE_Z] = false;          // Square (Vita only)
+    current_keys[SDL_SCANCODE_X] = false;          // Triangle (Vita only)
+    current_keys[SDL_SCANCODE_Q] = false;          // L (Vita only)
+    current_keys[SDL_SCANCODE_E] = false;          // R (Vita only)
+    current_keys[SDL_SCANCODE_RETURN] = false;     // Start/A
+    current_keys[SDL_SCANCODE_TAB] = false;        // Select (Vita only)
+    current_keys[SDL_SCANCODE_UP] = false;         // D-Pad Up
+    current_keys[SDL_SCANCODE_DOWN] = false;       // D-Pad Down
+    current_keys[SDL_SCANCODE_LEFT] = false;       // D-Pad Left
+    current_keys[SDL_SCANCODE_RIGHT] = false;      // D-Pad Right
+    current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger/L (3DS)
+    current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger/R (3DS)
+    current_keys[SDL_SCANCODE_LSHIFT] = false;     // Y (3DS only)
+    current_keys[SDL_SCANCODE_LALT] = false;       // Start (3DS only)
+    current_keys[SDL_SCANCODE_LCTRL] = false;      // Select (3DS only)
+
     // Update controller state if available
     if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
         // Read analog sticks and convert from SDL range (-32768 to 32767) to Vita range (0-255)
@@ -74,6 +114,95 @@ static void update_input_state() {
         left_analog_y = ((sdl_ly + 32768) * 255 / 65535) * 256;
         right_analog_x = ((sdl_rx + 32768) * 255 / 65535) * 256;
         right_analog_y = ((sdl_ry + 32768) * 255 / 65535) * 256;
+        
+        // Map gamepad buttons to keyboard scancodes for platform compatibility
+        // This allows existing games to work with gamepad without code changes
+        
+        extern lpp_compat_mode_t g_compat_mode;
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // 3DS gamepad mapping - map to keys that match 3DS button layout
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // A = Return (KEY_A maps to Return in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // B = Backspace (KEY_B maps to Backspace in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // X = Space (KEY_X maps to Space in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_LSHIFT] = true; // Y = LShift (KEY_Y maps to LShift in 3DS mode)
+            }
+            
+            // Shoulder buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_PAGEUP] = true; // L = PageUp (KEY_L maps to PageUp in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R = PageDown (KEY_R maps to PageDown in 3DS mode)
+            }
+            
+            // Start/Select buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_LALT] = true; // Start = LAlt (KEY_START maps to LAlt in 3DS mode)
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_LCTRL] = true; // Select = LCtrl (KEY_SELECT maps to LCtrl in 3DS mode)
+            }
+        } else {
+            // Vita gamepad mapping (original behavior)
+            // Face buttons (Cross, Circle, Square, Triangle)
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // Cross = Space
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Circle = Backspace
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_Z] = true; // Square = Z
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_X] = true; // Triangle = X
+            }
+            
+            // Shoulder buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_Q] = true; // L = Q
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_E] = true; // R = E
+            }
+            
+            // Start/Select buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // Start = Return
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_TAB] = true; // Select = Tab
+            }
+        }
+        
+        // D-Pad
+        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+            current_keys[SDL_SCANCODE_UP] = true;
+        }
+        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+            current_keys[SDL_SCANCODE_DOWN] = true;
+        }
+        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+            current_keys[SDL_SCANCODE_LEFT] = true;
+        }
+        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+            current_keys[SDL_SCANCODE_RIGHT] = true;
+        }
+        
+        // Triggers (map to L/R as well for compatibility)
+        if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16384) { // > 50%
+            current_keys[SDL_SCANCODE_PAGEUP] = true; // L Trigger = PageUp
+        }
+        if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384) { // > 50%
+            current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
+        }
     } else {
         // No controller - set analog sticks to neutral position (128 in Vita's 0-255 range)
         // Since lua_readleft divides by 256, we multiply by 256 here
@@ -111,9 +240,11 @@ static int lua_readC(lua_State *L){
     update_input_state();
     
     // Update current keys from SDL keyboard state
+    // Note: Don't overwrite gamepad mappings that were set in update_input_state()
     if (keyboard_state) {
         for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
-            current_keys[i] = keyboard_state[i] != 0;
+            // Use OR operation to combine keyboard and gamepad states
+            current_keys[i] = current_keys[i] || (keyboard_state[i] != 0);
         }
     }
     

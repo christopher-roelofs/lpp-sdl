@@ -68,9 +68,9 @@ local function drawAnalogStick(x, y, title, stick_x, stick_y)
         Graphics.debugPrint(x1, y1, ".", gray)
     end
     
-    -- Draw stick position
-    local stick_pos_x = base_x + (stick_x / 128) * radius * 0.8
-    local stick_pos_y = base_y + (stick_y / 128) * radius * 0.8
+    -- Draw stick position (Vita range: 0-255 with 128 as center)
+    local stick_pos_x = base_x + ((stick_x - 128) / 128) * radius * 0.8
+    local stick_pos_y = base_y + ((stick_y - 128) / 128) * radius * 0.8
     Graphics.debugPrint(stick_pos_x - 2, stick_pos_y - 2, "●", red)
     
     -- Display values

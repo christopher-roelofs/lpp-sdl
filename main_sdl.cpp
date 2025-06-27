@@ -64,6 +64,7 @@ extern "C" void sdl_key_down(int scancode);
 extern "C" void sdl_key_up(int scancode);
 extern "C" void sdl_mouse_button_down();
 extern "C" void sdl_mouse_button_up();
+extern "C" void init_controllers();
 
 // Forward declaration for file browser
 const char* launch_file_browser(lua_State* L);
@@ -478,7 +479,7 @@ int main(int argc, char* args[]) {
     luaGui_init(L);
 
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return 1;
     }
@@ -496,6 +497,9 @@ int main(int argc, char* args[]) {
         SDL_Quit();
         return 1;
     }
+
+    // Initialize and detect game controllers
+    init_controllers();
 
     // Handle file browser mode early (before renderer setup)
     if (strcmp(lua_file, "__file_browser__") == 0) {
