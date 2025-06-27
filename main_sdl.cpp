@@ -371,17 +371,6 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
-        } else if (strcmp(args[i], "-vitascale") == 0) {
-            // Legacy support for old flag name
-            compat_mode = LPP_COMPAT_VITA;
-            vita_compat_mode = true;
-            printf("Vita compatibility mode enabled (legacy -vitascale flag)\n");
-        } else if (strcmp(args[i], "-3dsscale") == 0) {
-            // Legacy support for old flag name
-            compat_mode = LPP_COMPAT_3DS;
-            threeds_compat_mode = true;
-            vita_compat_mode = true;
-            printf("3DS compatibility mode enabled (legacy -3dsscale flag)\n");
         } else if (strcmp(args[i], "-debug") == 0) {
             g_debug_mode = true;
             printf("Debug mode enabled\n");
@@ -394,9 +383,6 @@ int main(int argc, char* args[]) {
             printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
             printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
             printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
-            printf("\nLegacy Options (deprecated):\n");
-            printf("  -vitascale      Legacy alias for -vitacompat\n");
-            printf("  -3dsscale       Legacy alias for -3dscompat\n");
             printf("\nOther Options:\n");
             printf("  -debug          Enable debug output\n");
             printf("  -h, --help      Show this help message\n");
