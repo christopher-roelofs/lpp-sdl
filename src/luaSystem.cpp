@@ -1454,6 +1454,26 @@ static int lua_pathGetFilename(lua_State *L) {
     return 1;
 }
 
+// System.setGamepadLayout(layout) - Set gamepad button layout (0=Nintendo, 1=Xbox)
+static int lua_setGamepadLayout(lua_State *L) {
+    int layout = luaL_checkinteger(L, 1);
+    if (layout < 0 || layout > 1) {
+        return luaL_error(L, "Invalid gamepad layout. Use 0 for Nintendo or 1 for Xbox.");
+    }
+    
+    extern int g_gamepad_layout;
+    g_gamepad_layout = layout;
+    
+    return 0;
+}
+
+// System.getGamepadLayout() - Get current gamepad button layout
+static int lua_getGamepadLayout(lua_State *L) {
+    extern int g_gamepad_layout;
+    lua_pushinteger(L, g_gamepad_layout);
+    return 1;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -1497,6 +1517,8 @@ static const luaL_Reg System_functions[] = {
     {"addToZip",           lua_addToZip},
     {"getAsyncState",      lua_getAsyncState},
     {"getAsyncResult",     lua_getAsyncResult},
+    {"setGamepadLayout",   lua_setGamepadLayout},
+    {"getGamepadLayout",   lua_getGamepadLayout},
     {NULL, NULL}
 };
 
@@ -1548,6 +1570,10 @@ void luaSystem_init(lua_State *L) {
     lua_pushinteger(L, 0); lua_setglobal(L, "SET");
     lua_pushinteger(L, 1); lua_setglobal(L, "CUR");
     lua_pushinteger(L, 2); lua_setglobal(L, "END");
+
+    // Set gamepad layout constants
+    lua_pushinteger(L, 0); lua_setglobal(L, "GAMEPAD_NINTENDO");
+    lua_pushinteger(L, 1); lua_setglobal(L, "GAMEPAD_XBOX");
 
     // Override dofile with Vita path translation (only for vita paths)
     lua_register(L, "dofile", lua_dofile_vita);

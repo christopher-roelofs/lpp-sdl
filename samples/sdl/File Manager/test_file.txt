@@ -1,0 +1,2 @@
+This is a test file for the enhanced file manager.
+You can navigate to this file using gamepad controls!

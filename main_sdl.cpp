@@ -35,6 +35,7 @@ bool g_dual_screen_mode = false; // Global flag for 3DS dual screen mode (deprec
 bool g_3ds_single_screen_mode = false; // Global flag for 3DS single-screen mode on small displays
 int g_3ds_active_screen = 0; // Currently active screen in single-screen mode (0=top, 1=bottom)
 bool g_debug_mode = false; // Global flag for debug output
+int g_gamepad_layout = 0; // Global gamepad layout (0=Nintendo, 1=Xbox)
 float g_scale_x = 1.0f; // Manual scaling factor for dual screen X
 float g_scale_y = 1.0f; // Manual scaling factor for dual screen Y
 float g_top_screen_scale_x = 1.0f; // Top screen X scaling factor
@@ -67,6 +68,7 @@ extern "C" void sdl_mouse_button_up();
 extern "C" void init_controllers();
 extern "C" void cleanup_controllers();
 extern "C" void handle_controller_event(SDL_Event* event);
+// Remove external current_keys reference - use Controls API instead
 
 // Forward declaration for file browser
 const char* launch_file_browser(lua_State* L);
@@ -95,6 +97,14 @@ static const char* browser_compat_modes[] = {
     "vitacompat"
 };
 static const int browser_compat_modes_count = sizeof(browser_compat_modes) / sizeof(browser_compat_modes[0]);
+
+// Gamepad layout selector for file browser
+static int browser_gamepad_layout_index = 0; // 0 = Nintendo (default), 1 = Xbox
+static const char* browser_gamepad_layouts[] = {
+    "Nintendo",
+    "Xbox"
+};
+static const int browser_gamepad_layouts_count = sizeof(browser_gamepad_layouts) / sizeof(browser_gamepad_layouts[0]);
 
 bool is_lua_file(const std::string& filename) {
     size_t dot_pos = filename.find_last_of('.');
@@ -192,12 +202,35 @@ void render_file_browser() {
     std::string mode_display = "Mode: < " + std::string(browser_compat_modes[browser_compat_mode_index]) + " >";
     draw_text(mode_display.c_str(), 450, 20, 255, 200, 100);
     
+    // Draw gamepad layout selector with dynamic color based on controller status
+    std::string layout_display = "Gamepad: < " + std::string(browser_gamepad_layouts[browser_gamepad_layout_index]) + " >";
+    
+    // Check if any controller is connected
+    bool controller_connected = false;
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            SDL_GameController* controller = SDL_GameControllerOpen(i);
+            if (controller) {
+                controller_connected = true;
+                SDL_GameControllerClose(controller);
+                break;
+            }
+        }
+    }
+    
+    // Red if no controller, green if connected
+    Uint8 r = controller_connected ? 100 : 255;
+    Uint8 g = controller_connected ? 255 : 100;
+    Uint8 b = controller_connected ? 200 : 100;
+    
+    draw_text(layout_display.c_str(), 450, 50, r, g, b);
+    
     // Draw current path
     std::string path_display = "Path: " + current_path;
     draw_text(path_display.c_str(), 20, 50, 200, 200, 200);
     
     // Draw instructions
-    draw_text("Arrow Keys: Navigate | Enter: Select | Escape: Exit | Left/Right: Change Mode", 20, 80, 150, 150, 150);
+    draw_text("Arrow Keys/D-Pad/Left Analog: Navigate | A: Select | B: Back | Start: Exit | L/R: Change Mode | Select: Layout", 20, 80, 150, 150, 150);
     
     // Draw file list
     int y_start = 120;
@@ -264,8 +297,19 @@ void render_file_browser() {
 const char* launch_file_browser(lua_State* L) {
     scan_directory(current_path);
     
+    // Ensure the global compatibility mode is set for proper gamepad mapping
+    // Default to native mode for file browser
+    extern lpp_compat_mode_t g_compat_mode;
+    extern int g_gamepad_layout;
+    g_compat_mode = LPP_COMPAT_NATIVE;
+    
+    // Initialize browser gamepad layout from global setting
+    browser_gamepad_layout_index = g_gamepad_layout;
+    
     bool quit = false;
     SDL_Event e;
+    static Uint32 last_analog_time = 0;
+    static const Uint32 analog_delay = 150; // milliseconds between analog inputs
     
     while (!quit && !should_exit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -275,6 +319,8 @@ const char* launch_file_browser(lua_State* L) {
             
             // Handle controller hotplug events
             handle_controller_event(&e);
+            
+            // No need for raw gamepad events - we'll use the Controls API instead
             
             if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
@@ -348,6 +394,213 @@ const char* launch_file_browser(lua_State* L) {
                             browser_compat_mode_index = 0;
                         }
                         break;
+                }
+            }
+        }
+        
+        // Handle gamepad input directly (since Controls API needs Lua context)
+        // Get current time for button timing
+        Uint32 current_time = SDL_GetTicks();
+        
+        // Use simple state tracking to prevent repeated actions
+        static bool prev_up = false, prev_down = false, prev_action = false, prev_back = false;
+        static bool prev_exit = false, prev_select = false, prev_l = false, prev_r = false;
+        
+        // Get keyboard state for regular keyboard input
+        const Uint8* keyboard_state = SDL_GetKeyboardState(NULL);
+        
+        // Read gamepad input with layout-aware mapping
+        bool gamepad_up = false, gamepad_down = false, gamepad_action = false;
+        bool gamepad_back = false, gamepad_start = false, gamepad_select = false, gamepad_l = false, gamepad_r = false;
+        
+        // Check for connected controllers
+        for (int i = 0; i < SDL_NumJoysticks(); i++) {
+            if (SDL_IsGameController(i)) {
+                SDL_GameController* controller = SDL_GameControllerOpen(i);
+                if (controller) {
+                    // D-pad navigation
+                    gamepad_up = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
+                    gamepad_down = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+                    
+                    // Map buttons based on selected layout
+                    if (browser_gamepad_layout_index == 0) {
+                        // Nintendo layout: Physical A (right) = action, Physical B (bottom) = back
+                        // gamecontrollerdb.txt maps: Physical A → SDL_B, Physical B → SDL_A
+                        gamepad_action = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B); // Physical A
+                        gamepad_back = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A);   // Physical B
+                    } else {
+                        // Xbox layout: Physical A (bottom) = action, Physical B (right) = back  
+                        // gamecontrollerdb.txt maps: Physical A → SDL_A, Physical B → SDL_B
+                        gamepad_action = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A); // Physical A
+                        gamepad_back = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B);   // Physical B
+                    }
+                    
+                    // Start/Select buttons
+                    gamepad_start = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START);  // Start = exit browser
+                    gamepad_select = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK); // Select = change layout
+                    
+                    // Shoulder buttons for mode switching
+                    gamepad_l = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+                    gamepad_r = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+                    
+                    SDL_GameControllerClose(controller);
+                    break; // Only use first controller
+                }
+            }
+        }
+        
+        // Combine keyboard and gamepad input
+        bool up_pressed = keyboard_state[SDL_SCANCODE_UP] || gamepad_up;
+        bool down_pressed = keyboard_state[SDL_SCANCODE_DOWN] || gamepad_down;
+        bool action_pressed = keyboard_state[SDL_SCANCODE_SPACE] || keyboard_state[SDL_SCANCODE_RETURN] || gamepad_action;
+        bool back_pressed = keyboard_state[SDL_SCANCODE_BACKSPACE] || gamepad_back; // B button = go up directory
+        bool exit_pressed = keyboard_state[SDL_SCANCODE_ESCAPE] || gamepad_start; // Start button = exit browser
+        bool select_pressed = keyboard_state[SDL_SCANCODE_TAB] || gamepad_select; // Select button = change layout
+        bool l_pressed = keyboard_state[SDL_SCANCODE_Q] || keyboard_state[SDL_SCANCODE_LEFT] || gamepad_l;
+        bool r_pressed = keyboard_state[SDL_SCANCODE_E] || keyboard_state[SDL_SCANCODE_RIGHT] || gamepad_r;
+        
+        // Navigation up
+        if (up_pressed && !prev_up) {
+            if (selected_index > 0) {
+                selected_index--;
+                if (selected_index < scroll_offset) {
+                    scroll_offset = selected_index;
+                }
+            }
+        }
+        prev_up = up_pressed;
+        
+        // Navigation down
+        if (down_pressed && !prev_down) {
+            if (selected_index < static_cast<int>(file_list.size()) - 1) {
+                selected_index++;
+                if (selected_index >= scroll_offset + MAX_VISIBLE_ITEMS) {
+                    scroll_offset = selected_index - MAX_VISIBLE_ITEMS + 1;
+                }
+            }
+        }
+        prev_down = down_pressed;
+        
+        // Action button (enter/select)
+        if (action_pressed && !prev_action) {
+            if (selected_index < static_cast<int>(file_list.size())) {
+                const FileEntry& selected = file_list[selected_index];
+                
+                if (selected.is_directory) {
+                    // Enter directory
+                    if (selected.name == "..") {
+                        // Go to parent directory
+                        size_t last_slash = current_path.find_last_of('/');
+                        if (last_slash != std::string::npos && last_slash > 0) {
+                            current_path = current_path.substr(0, last_slash);
+                        } else if (current_path != ".") {
+                            current_path = ".";
+                        }
+                    } else {
+                        // Enter subdirectory
+                        if (current_path == ".") {
+                            current_path = selected.name;
+                        } else {
+                            current_path += "/" + selected.name;
+                        }
+                    }
+                    scan_directory(current_path);
+                } else {
+                    // Select Lua file
+                    selected_file_result = new char[selected.full_path.length() + 1];
+                    strcpy(selected_file_result, selected.full_path.c_str());
+                    return selected_file_result;
+                }
+            }
+        }
+        prev_action = action_pressed;
+        
+        // Back button (B) - go up one directory
+        if (back_pressed && !prev_back) {
+            // Go to parent directory
+            size_t last_slash = current_path.find_last_of('/');
+            if (last_slash != std::string::npos && last_slash > 0) {
+                current_path = current_path.substr(0, last_slash);
+            } else if (current_path != ".") {
+                current_path = ".";
+            }
+            scan_directory(current_path);
+        }
+        prev_back = back_pressed;
+        
+        // Exit button (Start) - quit browser
+        if (exit_pressed && !prev_exit) {
+            quit = true;
+        }
+        prev_exit = exit_pressed;
+        
+        // Select button - change gamepad layout
+        if (select_pressed && !prev_select) {
+            browser_gamepad_layout_index++;
+            if (browser_gamepad_layout_index >= browser_gamepad_layouts_count) {
+                browser_gamepad_layout_index = 0;
+            }
+            // Save to global setting
+            g_gamepad_layout = browser_gamepad_layout_index;
+        }
+        prev_select = select_pressed;
+        
+        // L shoulder button for mode switching
+        if (l_pressed && !prev_l) {
+            browser_compat_mode_index--;
+            if (browser_compat_mode_index < 0) {
+                browser_compat_mode_index = browser_compat_modes_count - 1;
+            }
+        }
+        prev_l = l_pressed;
+        
+        // R shoulder button for mode switching
+        if (r_pressed && !prev_r) {
+            browser_compat_mode_index++;
+            if (browser_compat_mode_index >= browser_compat_modes_count) {
+                browser_compat_mode_index = 0;
+            }
+        }
+        prev_r = r_pressed;
+        
+        // Handle analog stick input (outside event loop for continuous polling)
+        if (current_time - last_analog_time > analog_delay) {
+            // Check for connected controllers
+            for (int i = 0; i < SDL_NumJoysticks(); i++) {
+                if (SDL_IsGameController(i)) {
+                    SDL_GameController* controller = SDL_GameControllerOpen(i);
+                    if (controller) {
+                        // Read left analog stick Y axis
+                        Sint16 left_y = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+                        
+                        // Convert to -1.0 to 1.0 range and apply deadzone
+                        float analog_y = left_y / 32768.0f;
+                        const float deadzone = 0.3f;
+                        
+                        if (analog_y < -deadzone) {
+                            // Analog stick pushed up
+                            if (selected_index > 0) {
+                                selected_index--;
+                                if (selected_index < scroll_offset) {
+                                    scroll_offset = selected_index;
+                                }
+                                last_analog_time = current_time;
+                            }
+                        } else if (analog_y > deadzone) {
+                            // Analog stick pushed down
+                            if (selected_index < static_cast<int>(file_list.size()) - 1) {
+                                selected_index++;
+                                if (selected_index >= scroll_offset + MAX_VISIBLE_ITEMS) {
+                                    scroll_offset = selected_index - MAX_VISIBLE_ITEMS + 1;
+                                }
+                                last_analog_time = current_time;
+                            }
+                        }
+                        
+                        // Don't need to keep the controller open for polling
+                        SDL_GameControllerClose(controller);
+                        break; // Only use first controller found
+                    }
                 }
             }
         }
