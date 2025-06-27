@@ -64,4 +64,22 @@ namespace PathUtils {
         std::filesystem::path fs_path(path);
         return fs_path.filename().string();
     }
+    
+    std::string translate_vita_path(const std::string& path) {
+        std::string result(path);
+        
+        // Replace app0:/ with current directory (empty string means relative to current dir)
+        size_t pos = result.find("app0:/");
+        if (pos != std::string::npos) {
+            result.replace(pos, 6, "");  // Remove "app0:/"
+        }
+        
+        // Replace ux0:/ with current directory (user data path)
+        pos = result.find("ux0:/");
+        if (pos != std::string::npos) {
+            result.replace(pos, 5, "");  // Remove "ux0:/"
+        }
+        
+        return result;
+    }
 }

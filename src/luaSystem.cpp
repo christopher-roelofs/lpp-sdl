@@ -61,23 +61,10 @@ enum {
 #define ASYNC_TASKS_MAX 1
 
 // Helper function to translate console-specific paths for cross-platform compatibility
-static std::string translate_vita_path(const char* path) {
+static std::string translate_console_path(const char* path) {
     extern lpp_compat_mode_t g_compat_mode;
-    std::string result(path);
-    bool was_console_path = false;
-    
-    // Handle Vita-specific paths
-    size_t pos = result.find("app0:/");
-    if (pos != std::string::npos) {
-        result.replace(pos, 6, "");  // Remove "app0:/"
-        was_console_path = true;
-    }
-    
-    pos = result.find("ux0:/");
-    if (pos != std::string::npos) {
-        result.replace(pos, 5, "");  // Remove "ux0:/"
-        was_console_path = true;
-    }
+    std::string result = PathUtils::translate_vita_path(path);
+    bool was_console_path = (result != path);
     
     // Handle 3DS-specific paths: convert absolute paths to relative for desktop compatibility
     if (g_compat_mode == LPP_COMPAT_3DS && !was_console_path && result.length() > 0 && result[0] == '/') {
@@ -114,7 +101,7 @@ static void addFileToZip(zipFile zf, const char* parent_path, const char* file_p
         zip_path = filename;
     }
     
-    FILE* f = fopen(translate_vita_path(file_path).c_str(), "rb");
+    FILE* f = fopen(translate_console_path(file_path).c_str(), "rb");
     if (!f) return;
     
     zip_fileinfo zi = {};
@@ -132,7 +119,7 @@ static void addFileToZip(zipFile zf, const char* parent_path, const char* file_p
 
 // Helper function to add a directory to zip archive recursively
 static void addDirToZip(zipFile zf, const char* parent_path, const char* dir_path, int compression_level) {
-    std::string translated_path = translate_vita_path(dir_path);
+    std::string translated_path = translate_console_path(dir_path);
     DIR* dir = opendir(translated_path.c_str());
     if (!dir) return;
     
@@ -179,7 +166,7 @@ static int lua_doesFileExist(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     
     // Translate Vita paths (app0:/ -> current directory)
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     // Convert Unix-style paths to platform-specific separators
     translated_path = PathUtils::unix_to_platform(translated_path);
     
@@ -303,7 +290,7 @@ static int lua_createDirectory(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     
     // Translate Vita paths
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     bool success = mkdir_recursive(translated_path);
     lua_pushboolean(L, success);
     return 1;
@@ -322,7 +309,7 @@ static int lua_openFile(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     
     // Translate Vita paths (app0:/ -> current directory)  
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     // Convert Unix-style paths to platform-specific separators
     translated_path = PathUtils::unix_to_platform(translated_path);
     const char *mode_str = NULL;
@@ -617,7 +604,7 @@ static int lua_isBatteryCharging(lua_State *L) {
 // System.deleteFile(path) - Missing function for tetromino compatibility  
 static int lua_deleteFile(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     translated_path = PathUtils::unix_to_platform(translated_path);
     bool success = (unlink(translated_path.c_str()) == 0);
     lua_pushboolean(L, success);
@@ -688,7 +675,7 @@ static int lua_wait(lua_State *L) {
 // System.doesDirExist() - Check if directory exists
 static int lua_doesDirExist(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     translated_path = PathUtils::unix_to_platform(translated_path);
     
     struct stat buffer;
@@ -707,7 +694,7 @@ static int lua_listDirectory(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     
     // Translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     translated_path = PathUtils::unix_to_platform(translated_path);
     
     // Create a table to return
@@ -786,7 +773,7 @@ static int lua_dofile_vita(lua_State *L) {
     }
     
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     // Convert Unix-style paths to platform-specific separators
     translated_path = PathUtils::unix_to_platform(translated_path);
     
@@ -810,7 +797,7 @@ static int lua_dofile_vita(lua_State *L) {
 // System.statFile(path) - Get file metadata/statistics
 static int lua_statFile(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     translated_path = PathUtils::unix_to_platform(translated_path);
     
     struct stat st;
@@ -911,9 +898,9 @@ static int lua_copyFile(lua_State *L) {
     const char *src_path = luaL_checkstring(L, 1);
     const char *dest_path = luaL_checkstring(L, 2);
     
-    std::string translated_src = translate_vita_path(src_path);
+    std::string translated_src = translate_console_path(src_path);
     translated_src = PathUtils::unix_to_platform(translated_src);
-    std::string translated_dest = translate_vita_path(dest_path);
+    std::string translated_dest = translate_console_path(dest_path);
     translated_dest = PathUtils::unix_to_platform(translated_dest);
     
     FILE *src_file = fopen(translated_src.c_str(), "rb");
@@ -973,9 +960,9 @@ static int lua_rename(lua_State *L) {
     const char *old_path = luaL_checkstring(L, 1);
     const char *new_path = luaL_checkstring(L, 2);
     
-    std::string translated_old = translate_vita_path(old_path);
+    std::string translated_old = translate_console_path(old_path);
     translated_old = PathUtils::unix_to_platform(translated_old);
-    std::string translated_new = translate_vita_path(new_path);
+    std::string translated_new = translate_console_path(new_path);
     translated_new = PathUtils::unix_to_platform(translated_new);
     
     int result = rename(translated_old.c_str(), translated_new.c_str());
@@ -1027,7 +1014,7 @@ static bool remove_directory_recursive(const std::string& path) {
 // System.deleteDirectory(path) - Remove directories
 static int lua_deleteDirectory(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     
     // Check if it's actually a directory
     struct stat st;
@@ -1056,7 +1043,7 @@ static int lua_deleteDirectory(lua_State *L) {
 // System.getFreeSpace(path) - Get available storage space
 static int lua_getFreeSpace(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     
 #if defined(_WIN32)
     ULARGE_INTEGER free_bytes;
@@ -1083,7 +1070,7 @@ static int lua_getFreeSpace(lua_State *L) {
 // System.getTotalSpace(path) - Get total storage capacity
 static int lua_getTotalSpace(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = translate_console_path(path);
     
 #if defined(_WIN32)
     ULARGE_INTEGER total_bytes;
@@ -1114,8 +1101,8 @@ static int lua_extractZip(lua_State *L) {
     const char* file_to_extract = luaL_checkstring(L, 1);
     const char* dir_to_extract = luaL_checkstring(L, 2);
     
-    std::string translated_file = translate_vita_path(file_to_extract);
-    std::string dest_dir = translate_vita_path(dir_to_extract);
+    std::string translated_file = translate_console_path(file_to_extract);
+    std::string dest_dir = translate_console_path(dir_to_extract);
     
     // Ensure destination directory ends with /
     if (dest_dir.back() != '/') {
@@ -1180,8 +1167,8 @@ static int lua_extractZipAsync(lua_State *L) {
     const char* file_to_extract = luaL_checkstring(L, 1);
     const char* dir_to_extract = luaL_checkstring(L, 2);
     
-    std::string translated_file = translate_vita_path(file_to_extract);
-    std::string dest_dir = translate_vita_path(dir_to_extract);
+    std::string translated_file = translate_console_path(file_to_extract);
+    std::string dest_dir = translate_console_path(dir_to_extract);
     
     // Ensure destination directory ends with /
     if (dest_dir.back() != '/') {
@@ -1211,8 +1198,8 @@ static int lua_extractFromZip(lua_State *L) {
     const char* filename = luaL_checkstring(L, 2);
     const char* destination = luaL_checkstring(L, 3);
     
-    std::string translated_zip = translate_vita_path(zip_file);
-    std::string translated_dest = translate_vita_path(destination);
+    std::string translated_zip = translate_console_path(zip_file);
+    std::string translated_dest = translate_console_path(destination);
     
     unz_global_info global_info;
     unz_file_info file_info;
@@ -1268,8 +1255,8 @@ static int lua_extractFromZipAsync(lua_State *L) {
     const char* filename = luaL_checkstring(L, 2);
     const char* destination = luaL_checkstring(L, 3);
     
-    std::string translated_zip = translate_vita_path(zip_file);
-    std::string translated_dest = translate_vita_path(destination);
+    std::string translated_zip = translate_console_path(zip_file);
+    std::string translated_dest = translate_console_path(destination);
     
     asyncHandle = unzOpen(translated_zip.c_str());
     if (!asyncHandle) {
@@ -1297,8 +1284,8 @@ static int lua_compressZip(lua_State *L) {
         compression_level = luaL_checkinteger(L, 3);
     }
     
-    std::string translated_path = translate_vita_path(path_to_compress);
-    std::string translated_zip = translate_vita_path(zip_filename);
+    std::string translated_path = translate_console_path(path_to_compress);
+    std::string translated_zip = translate_console_path(zip_filename);
     
     zipFile zf = zipOpen(translated_zip.c_str(), APPEND_STATUS_CREATE);
     if (!zf) {
@@ -1331,8 +1318,8 @@ static int lua_addToZip(lua_State *L) {
         compression_level = luaL_checkinteger(L, 4);
     }
     
-    std::string translated_path = translate_vita_path(path_to_add);
-    std::string translated_zip = translate_vita_path(zip_filename);
+    std::string translated_path = translate_console_path(path_to_add);
+    std::string translated_zip = translate_console_path(zip_filename);
     
     zipFile zf = zipOpen(translated_zip.c_str(), APPEND_STATUS_ADDINZIP);
     if (!zf) {
@@ -1392,7 +1379,7 @@ static int lua_currentDirectory(lua_State *L) {
     } else if (argc == 1) {
         // Change directory
         const char* new_dir = luaL_checkstring(L, 1);
-        std::string translated_path = translate_vita_path(new_dir);
+        std::string translated_path = translate_console_path(new_dir);
         
         if (chdir(translated_path.c_str()) == 0) {
             // Successfully changed directory, return new current directory

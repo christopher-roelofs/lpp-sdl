@@ -76,6 +76,7 @@ typedef int SceUID;
 
 #include "utils.h"
 #include "luaplayer.h"
+#include "include/path_utils.h"
 
 // Helper functions to calculate screen offsets for dual screen mode
 extern int getScreenXOffset(int screen_id);
@@ -209,24 +210,6 @@ extern "C"{
 void* debug_font = NULL; // SDL equivalent placeholder
 TTF_Font* g_defaultFont = NULL; // Global default font, to be loaded in main_sdl.cpp
 
-// Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
-static std::string translate_vita_path(const char* path) {
-    std::string result(path);
-    
-    // Replace app0:/ with current directory (empty string means relative to current dir)
-    size_t pos = result.find("app0:/");
-    if (pos != std::string::npos) {
-        result.replace(pos, 6, "");  // Remove "app0:/"
-    }
-    
-    // Replace ux0:/ with current directory (user data path)
-    pos = result.find("ux0:/");
-    if (pos != std::string::npos) {
-        result.replace(pos, 5, "");  // Remove "ux0:/"
-    }
-    
-    return result;
-}
 
 // Helper function to extract color from Lua stack (handles both Color objects and integers)
 static uint32_t get_color_from_lua(lua_State *L, int index) {
@@ -778,7 +761,7 @@ static int lua_loadimg(lua_State *L) {
     const char* path = luaL_checkstring(L, 1);
     
     // Translate Vita paths (app0:/ -> current directory)
-    std::string translated_path = translate_vita_path(path);
+    std::string translated_path = PathUtils::translate_vita_path(path);
     
     SDL_Texture* sdl_texture = IMG_LoadTexture(g_renderer, translated_path.c_str());
     if (!sdl_texture) {
@@ -1265,7 +1248,7 @@ static int lua_loadFont(lua_State *L) {
         sdl_font = g_defaultFont;
     } else {
         // Load specified font file
-        std::string translated_path = translate_vita_path(filename);
+        std::string translated_path = PathUtils::translate_vita_path(filename);
         sdl_font = TTF_OpenFont(translated_path.c_str(), ptsize);
         if (!sdl_font) {
             fprintf(stderr, "Failed to load font: '%s' (size %d) - SDL_ttf Error: %s\n", filename, ptsize, TTF_GetError());

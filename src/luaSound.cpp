@@ -41,6 +41,7 @@ extern "C" {
 }
 #include "luaplayer.h"
 #include "include/audiodec/audio_decoder.h"
+#include "include/path_utils.h"
 
 #define stringify(str) #str
 #define VariableRegister(lua, value) do { lua_pushinteger(lua, value); lua_setglobal (lua, stringify(value)); } while(0)
@@ -563,6 +564,9 @@ static int lua_openMusic(lua_State *L) {
 		return luaL_error(L, "Failed to initialize SDL_mixer");
 	}
 	
+	// Translate Vita paths (app0:/ -> current directory)
+	std::string translated_path = PathUtils::translate_vita_path(filepath);
+	
 	// Create new sound structure
 	SDLDecodedMusic* sound = new SDLDecodedMusic();
 	sound->chunk = nullptr;
@@ -572,38 +576,38 @@ static int lua_openMusic(lua_State *L) {
 	sound->loop = false;
 	sound->pauseTrigger = false;
 	sound->volume = DEFAULT_VOLUME;
-	sound->filepath = filepath;
+	sound->filepath = translated_path;
 	sound->title = "";
 	sound->author = "";
 	sound->id = nextSoundId++;
 	
 	// Determine if this should be loaded as music or sound effect
 	// Force click.ogg to be treated as sound effect to prevent looping issues
-	if (strstr(filepath, "click") != nullptr) {
+	if (strstr(translated_path.c_str(), "click") != nullptr) {
 		sound->isMusic = false;
 	} else {
-		sound->isMusic = shouldLoadAsMusic(filepath);
+		sound->isMusic = shouldLoadAsMusic(translated_path);
 	}
 	
 	if (sound->isMusic) {
 		// Load as music (streaming)
-		sound->music = Mix_LoadMUS(filepath);
+		sound->music = Mix_LoadMUS(translated_path.c_str());
 		if (!sound->music) {
 			delete sound;
 			return luaL_error(L, "Failed to load music file: %s", Mix_GetError());
 		}
 	} else {
 		// Load as sound effect (chunk)
-		sound->chunk = Mix_LoadWAV(filepath);
+		sound->chunk = Mix_LoadWAV(translated_path.c_str());
 		if (!sound->chunk) {
 			// Check if this is a GSM WAV file that we can decode
-			printf("Standard loading failed for %s: %s\n", filepath, Mix_GetError());
+			printf("Standard loading failed for %s: %s\n", translated_path.c_str(), Mix_GetError());
 			printf("Attempting GSM WAV decoding...\n");
 			
-			sound->chunk = decodeGsmWavToChunk(filepath);
+			sound->chunk = decodeGsmWavToChunk(translated_path.c_str());
 			if (!sound->chunk) {
 				// For truly unsupported formats, create a silent/dummy sound to prevent crashes
-				printf("Warning: Unsupported audio format for %s: %s\n", filepath, Mix_GetError());
+				printf("Warning: Unsupported audio format for %s: %s\n", translated_path.c_str(), Mix_GetError());
 				printf("Creating silent placeholder sound for compatibility\n");
 				
 				// Create a proper silent WAV file in memory

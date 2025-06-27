@@ -25,6 +25,9 @@ namespace PathUtils {
     
     // Get filename part of a path
     std::string get_filename(const std::string& path);
+    
+    // Translate Vita paths (app0:/, ux0:/) to standard paths
+    std::string translate_vita_path(const std::string& path);
 }
 
 #endif // PATH_UTILS_H
