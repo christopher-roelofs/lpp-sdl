@@ -34,6 +34,8 @@
 #include "luaplayer.h"
 #include <SDL_image.h>
 #include <string>
+#include <vector>
+#include <algorithm>
 
 // Forward declaration
 extern "C" void update_sdl_controls();
@@ -46,8 +48,26 @@ extern void setScreenViewport(int screen_id);
 extern SDL_Renderer* g_renderer;
 extern TTF_Font* g_defaultFont;
 extern bool g_vita_compat_mode;
+extern lpp_compat_mode_t g_compat_mode;
 
 // LPP texture structure is already defined in luaplayer.h
+
+// Console structure for 3DS compatibility
+struct Console {
+    int screen_id;
+    std::vector<std::string> lines;
+    int max_lines;
+    int font_size;
+    SDL_Color text_color;
+    int x_offset;
+    int y_offset;
+    int line_height;
+    bool valid;
+};
+
+// Storage for console instances
+static std::vector<Console*> consoles;
+static int next_console_id = 1;
 
 // Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
 static std::string translate_vita_path(const char* path) {
@@ -66,6 +86,38 @@ static std::string translate_vita_path(const char* path) {
     }
     
     return result;
+}
+
+// Helper function to get console by Lua userdata
+Console* getConsole(lua_State *L, int index) {
+    Console** console_ptr = (Console**)lua_touserdata(L, index);
+    if (!console_ptr || !*console_ptr || !(*console_ptr)->valid) {
+        return nullptr;
+    }
+    return *console_ptr;
+}
+
+// Helper function to render console text
+void renderConsoleText(const char* text, int x, int y, SDL_Color color) {
+    if (!g_defaultFont || !g_renderer || !text || strlen(text) == 0) {
+        printf("Console render failed: font=%p renderer=%p text=%s\n", g_defaultFont, g_renderer, text ? text : "null");
+        return;
+    }
+    
+    SDL_Surface* text_surface = TTF_RenderText_Blended(g_defaultFont, text, color);
+    if (!text_surface) {
+        printf("Failed to create text surface for: %s\n", text);
+        return;
+    }
+    
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
+    if (text_texture) {
+        SDL_Rect dest_rect = {x, y, text_surface->w, text_surface->h};
+        SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+        SDL_DestroyTexture(text_texture);
+    }
+    
+    SDL_FreeSurface(text_surface);
 }
 
 static int lua_flip(lua_State *L) {
@@ -529,6 +581,23 @@ static const luaL_Reg Color_functions[] = {
 	{0, 0}
 };
 
+// Forward declarations for Console functions
+static int lua_console_new(lua_State *L);
+static int lua_console_show(lua_State *L);
+static int lua_console_clear(lua_State *L);
+static int lua_console_append(lua_State *L);
+static int lua_console_destroy(lua_State *L);
+
+// Console function registration table
+static const luaL_Reg Console_functions[] = {
+    {"new",     lua_console_new},
+    {"show",    lua_console_show},
+    {"clear",   lua_console_clear},
+    {"append",  lua_console_append},
+    {"destroy", lua_console_destroy},
+    {0, 0}
+};
+
 //Register our Screen Functions
 // Screen.waitVblankStart()
 static int lua_waitVblankStart(lua_State *L) {
@@ -585,8 +654,6 @@ static int lua_enableDualScreen(lua_State *L) {
     // Adjust logical size for dual screen (only if not using manual scaling)
     if (g_renderer && g_vita_compat_mode) {
         // Check if we're in 3DS compat mode with manual scaling
-        extern bool g_vita_compat_mode;
-        extern bool threeds_compat_mode; // This would need to be global
         // For now, don't override manual scaling setup
         printf("enableDualScreen: dual screen mode enabled\n");
     } else {
@@ -1343,6 +1410,174 @@ static int lua_screen_drawPixel(lua_State *L) {
     return 0;
 }
 
+// Console.new() - Create a new console
+static int lua_console_new(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    int screen_id = luaL_checkinteger(L, 1);
+    
+    // Create new console
+    Console* console = new Console();
+    console->screen_id = screen_id;
+    console->lines.clear();
+    console->max_lines = 25; // Reasonable default
+    console->font_size = 16;
+    console->text_color = {255, 255, 255, 255}; // White text
+    console->x_offset = 10;
+    console->y_offset = 10;
+    console->line_height = 18;
+    console->valid = true;
+    
+    // Adapt based on screen in 3DS mode
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        if (screen_id == 0) { // TOP_SCREEN
+            console->max_lines = 13; // Top screen has less vertical space in dual screen mode
+            console->x_offset = 5;
+            console->y_offset = 5;
+        } else { // BOTTOM_SCREEN
+            console->max_lines = 12; // Bottom screen
+            console->x_offset = 5;
+            console->y_offset = 5;
+        }
+    }
+    
+    consoles.push_back(console);
+    
+    // Create Lua userdata
+    Console** console_ptr = (Console**)lua_newuserdata(L, sizeof(Console*));
+    *console_ptr = console;
+    
+    return 1;
+}
+
+// Console.show() - Show/render console content
+static int lua_console_show(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    Console* console = getConsole(L, 1);
+    if (!console) {
+        return luaL_error(L, "invalid console");
+    }
+    
+    // Calculate screen offsets for dual screen mode
+    int screen_x_offset = 0;
+    int screen_y_offset = 0;
+    
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        screen_x_offset = getScreenXOffset(console->screen_id);
+        screen_y_offset = getScreenYOffset(console->screen_id);
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(console->screen_id);
+    }
+    
+    // Render console text
+    int y = console->y_offset + screen_y_offset;
+    
+    // Debug: render a test message if console is empty
+    if (console->lines.empty()) {
+        printf("Console is empty, showing placeholder at %d,%d\n", console->x_offset + screen_x_offset, y);
+        renderConsoleText("Console ready. Type to see text here.", console->x_offset + screen_x_offset, y, console->text_color);
+    } else {
+        printf("Console has %zu lines\n", console->lines.size());
+        for (const auto& line : console->lines) {
+            printf("Rendering console line at %d,%d: %s\n", console->x_offset + screen_x_offset, y, line.c_str());
+            renderConsoleText(line.c_str(), console->x_offset + screen_x_offset, y, console->text_color);
+            y += console->line_height;
+            
+            // Stop if we've reached the bottom of the screen area
+            if (y > (screen_y_offset + 240)) break; // Use actual 3DS screen height
+        }
+    }
+    
+    // Reset clipping after rendering
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
+    
+    return 0;
+}
+
+// Console.clear() - Clear console content
+static int lua_console_clear(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    Console* console = getConsole(L, 1);
+    if (!console) {
+        return luaL_error(L, "invalid console");
+    }
+    
+    console->lines.clear();
+    return 0;
+}
+
+// Console.append() - Append text to console
+static int lua_console_append(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 2) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    Console* console = getConsole(L, 1);
+    if (!console) {
+        return luaL_error(L, "invalid console");
+    }
+    
+    const char* text = luaL_checkstring(L, 2);
+    
+    // Add the text as a new line
+    console->lines.push_back(std::string(text));
+    
+    // Remove old lines if we exceed max_lines
+    while ((int)console->lines.size() > console->max_lines) {
+        console->lines.erase(console->lines.begin());
+    }
+    
+    return 0;
+}
+
+// Console.destroy() - Destroy console
+static int lua_console_destroy(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    Console* console = getConsole(L, 1);
+    if (!console) {
+        return 0; // Already destroyed
+    }
+    
+    // Mark as invalid
+    console->valid = false;
+    
+    // Remove from consoles vector
+    auto it = std::find(consoles.begin(), consoles.end(), console);
+    if (it != consoles.end()) {
+        consoles.erase(it);
+    }
+    
+    // Delete the console
+    delete console;
+    
+    // Clear the userdata pointer
+    Console** console_ptr = (Console**)lua_touserdata(L, 1);
+    if (console_ptr) {
+        *console_ptr = nullptr;
+    }
+    
+    return 0;
+}
+
 static int lua_screen_freeImage(lua_State *L) {
     // Screen.freeImage - compatibility wrapper that uses the same logic as Graphics.freeImage
     lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 1);
@@ -1404,4 +1639,9 @@ void luaScreen_init(lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, Color_functions, 0);
 	lua_setglobal(L, "Color");
+	
+	// Register Console functions
+	lua_newtable(L);
+	luaL_setfuncs(L, Console_functions, 0);
+	lua_setglobal(L, "Console");
 }

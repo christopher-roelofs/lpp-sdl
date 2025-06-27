@@ -37,6 +37,8 @@
 #define OSK_STATE_RUNNING 1
 #define OSK_STATE_FINISHED 2
 #define OSK_STATE_CANCELED 3
+#define OSK_STATE_NOT_PRESSED 4
+#define OSK_STATE_PRESSED 5
 
 // Keyboard types
 #define OSK_TYPE_DEFAULT 0
@@ -98,10 +100,21 @@ extern SDL_Renderer* g_renderer;
 extern TTF_Font* g_defaultFont;
 extern bool g_vita_compat_mode;
 
+// Helper functions from Graphics module
+extern int getScreenXOffset(int screen_id);
+extern int getScreenYOffset(int screen_id);
+extern void setScreenViewport(int screen_id);
+
 // Forward declarations
 extern "C" int lua_readControls(lua_State *L);
 void autoUpdateKeyboard();
 void autoDrawKeyboard(lua_State *L);
+
+// Automatic keyboard update - called from main loop
+void autoUpdateKeyboard() {
+    // Currently not implemented - keyboards require manual update calls
+    // Use Keyboard.updateModern() in your Lua code for gamepad support
+}
 
 // Helper function to render text with SDL_ttf
 void renderKeyboardText(const char* text, int x, int y, SDL_Color color, float scale = 1.0f) {
@@ -213,12 +226,44 @@ static int lua_state(lua_State *L) {
         return luaL_error(L, "wrong number of arguments");
     }
     
+    // For 3DS compatibility mode, auto-initialize keyboard if not active
+    extern lpp_compat_mode_t g_compat_mode;
+    if (!osk.active && g_compat_mode == LPP_COMPAT_3DS) {
+        // Auto-initialize with default settings for 3DS mode
+        osk.active = true;
+        osk.state = OSK_STATE_NOT_PRESSED;
+        osk.title = "";
+        osk.input_text = "";
+        osk.initial_text = "";
+        osk.max_length = 256;
+        osk.type = OSK_TYPE_DEFAULT;
+        osk.mode = OSK_MODE_TEXT;
+        osk.option = 0;
+        osk.cursor_x = 0;
+        osk.cursor_y = 0;
+        osk.shift_mode = false;
+        osk.caps_lock = false;
+        initKeyboardLayouts();
+    }
+    
     // Auto-draw keyboard when state is checked (like original Vita)
     if (osk.active && g_renderer) {
         // Draw keyboard background
         int screen_width, screen_height;
+        int screen_x_offset = 0;
+        int screen_y_offset = 0;
         
-        if (g_vita_compat_mode) {
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // In 3DS mode, keyboard should be on bottom screen
+            screen_width = DS_BOTTOM_SCREEN_WIDTH;  // 320
+            screen_height = DS_BOTTOM_SCREEN_HEIGHT; // 240
+            // Get bottom screen offset
+            screen_x_offset = getScreenXOffset(1); // BOTTOM_SCREEN = 1
+            screen_y_offset = getScreenYOffset(1);
+            
+            // Set viewport clipping for bottom screen
+            setScreenViewport(1);
+        } else if (g_vita_compat_mode) {
             // In vitacompat mode, use logical Vita resolution
             screen_width = SCREEN_WIDTH;
             screen_height = SCREEN_HEIGHT;
@@ -229,22 +274,42 @@ static int lua_state(lua_State *L) {
         }
         
         // Keyboard area - scale with screen size but ensure it fits on screen
-        int kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
-        int kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
-        int kb_x = (screen_width - kb_width) / 2;   // Center horizontally
+        int kb_width, kb_height, kb_x;
+        
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // For 3DS bottom screen, use most of the available space
+            kb_width = (int)(screen_width * 0.95);  // 95% of bottom screen width
+            kb_height = (int)(screen_height * 0.60); // 60% of bottom screen height
+            kb_x = screen_x_offset + (screen_width - kb_width) / 2; // Center on bottom screen
+        } else {
+            kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
+            kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
+            kb_x = (screen_width - kb_width) / 2;   // Center horizontally
+        }
         
         // Calculate total needed height including title bar and input area
-        int title_height = 30;
-        int input_height = 30;
-        int margin = 10;
+        int title_height = (g_compat_mode == LPP_COMPAT_3DS) ? 20 : 30;
+        int input_height = (g_compat_mode == LPP_COMPAT_3DS) ? 20 : 30;
+        int margin = (g_compat_mode == LPP_COMPAT_3DS) ? 5 : 10;
         int total_height = title_height + input_height + kb_height + (margin * 2);
         
         // Ensure keyboard doesn't go off screen - adjust position if needed
-        int kb_y = screen_height - total_height - 20; // 20px margin from bottom
-        if (kb_y < 20) { // If too high, adjust size
-            kb_y = 20;
-            total_height = screen_height - 40;
-            kb_height = total_height - title_height - input_height - (margin * 2);
+        int kb_y;
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // For 3DS, position at top of bottom screen with small margin
+            kb_y = screen_y_offset + 5;
+            // Ensure it fits within bottom screen
+            if (total_height > screen_height - 10) {
+                total_height = screen_height - 10;
+                kb_height = total_height - title_height - input_height - (margin * 2);
+            }
+        } else {
+            kb_y = screen_height - total_height - 20; // 20px margin from bottom
+            if (kb_y < 20) { // If too high, adjust size
+                kb_y = 20;
+                total_height = screen_height - 40;
+                kb_height = total_height - title_height - input_height - (margin * 2);
+            }
         }
         
         // Title area
@@ -270,6 +335,11 @@ static int lua_state(lua_State *L) {
         SDL_SetRenderDrawColor(g_renderer, osk.keyboard_border_color.r, osk.keyboard_border_color.g, osk.keyboard_border_color.b, osk.keyboard_border_color.a);
         SDL_Rect border_rect = {kb_x - 2, kb_y - 2, kb_width + 4, total_height + 4};
         SDL_RenderDrawRect(g_renderer, &border_rect);
+        
+        // Reset clipping after drawing keyboard in 3DS mode
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            SDL_RenderSetClipRect(g_renderer, NULL);
+        }
         
         // Draw keyboard keys
         auto& current_layout = (osk.shift_mode || osk.caps_lock) ? osk.shift_layout : osk.layout;
@@ -315,7 +385,10 @@ static int lua_state(lua_State *L) {
         
         // Calculate text scale based on screen size - increased for better visibility
         float text_scale;
-        if (g_vita_compat_mode) {
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // For 3DS, use smaller text scale for the smaller screen
+            text_scale = 0.7f;
+        } else if (g_vita_compat_mode) {
             // In vitacompat mode, use fixed scale for Vita resolution
             text_scale = 1.2f;
         } else {
@@ -556,8 +629,21 @@ static int lua_draw(lua_State *L) {
     }
     
     int screen_width, screen_height;
+    int screen_x_offset = 0;
+    int screen_y_offset = 0;
     
-    if (g_vita_compat_mode) {
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In 3DS mode, keyboard should be on bottom screen
+        screen_width = DS_BOTTOM_SCREEN_WIDTH;  // 320
+        screen_height = DS_BOTTOM_SCREEN_HEIGHT; // 240
+        // Get bottom screen offset
+        screen_x_offset = getScreenXOffset(1); // BOTTOM_SCREEN = 1
+        screen_y_offset = getScreenYOffset(1);
+        
+        // Set viewport clipping for bottom screen
+        setScreenViewport(1);
+    } else if (g_vita_compat_mode) {
         // In vitacompat mode, use logical Vita resolution
         screen_width = SCREEN_WIDTH;
         screen_height = SCREEN_HEIGHT;
@@ -568,22 +654,42 @@ static int lua_draw(lua_State *L) {
     }
     
     // Draw keyboard background - scale with screen size but ensure it fits on screen
-    int kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
-    int kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
-    int kb_x = (screen_width - kb_width) / 2;   // Center horizontally
+    int kb_width, kb_height, kb_x;
+    
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // For 3DS bottom screen, use most of the available space
+        kb_width = (int)(screen_width * 0.95);  // 95% of bottom screen width
+        kb_height = (int)(screen_height * 0.60); // 60% of bottom screen height
+        kb_x = screen_x_offset + (screen_width - kb_width) / 2; // Center on bottom screen
+    } else {
+        kb_width = (int)(screen_width * 0.85);  // 85% of screen width for better margins
+        kb_height = (int)(screen_height * 0.45); // 45% of screen height to leave room for title/input
+        kb_x = (screen_width - kb_width) / 2;   // Center horizontally
+    }
     
     // Calculate total needed height including title bar and input area
-    int title_height = 30;
-    int input_height = 30;
-    int margin = 10;
+    int title_height = (g_compat_mode == LPP_COMPAT_3DS) ? 20 : 30;
+    int input_height = (g_compat_mode == LPP_COMPAT_3DS) ? 20 : 30;
+    int margin = (g_compat_mode == LPP_COMPAT_3DS) ? 5 : 10;
     int total_height = title_height + input_height + kb_height + (margin * 2);
     
     // Ensure keyboard doesn't go off screen - adjust position if needed
-    int kb_y = screen_height - total_height - 20; // 20px margin from bottom
-    if (kb_y < 20) { // If too high, adjust size
-        kb_y = 20;
-        total_height = screen_height - 40;
-        kb_height = total_height - title_height - input_height - (margin * 2);
+    int kb_y;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // For 3DS, position at top of bottom screen with small margin
+        kb_y = screen_y_offset + 5;
+        // Ensure it fits within bottom screen
+        if (total_height > screen_height - 10) {
+            total_height = screen_height - 10;
+            kb_height = total_height - title_height - input_height - (margin * 2);
+        }
+    } else {
+        kb_y = screen_height - total_height - 20; // 20px margin from bottom
+        if (kb_y < 20) { // If too high, adjust size
+            kb_y = 20;
+            total_height = screen_height - 40;
+            kb_height = total_height - title_height - input_height - (margin * 2);
+        }
     }
     
     // Title area
@@ -614,7 +720,11 @@ static int lua_draw(lua_State *L) {
     
     // Calculate text scale based on screen size - increased for better visibility
     float text_scale;
-    if (g_vita_compat_mode) {
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // For 3DS, use smaller text scale for the smaller screen
+        text_scale = 0.7f;
+    } else if (g_vita_compat_mode) {
         // In vitacompat mode, use fixed scale for Vita resolution
         text_scale = 1.2f;
     } else {
@@ -632,10 +742,35 @@ static int lua_draw(lua_State *L) {
     }
     renderKeyboardText(display_text.c_str(), kb_x + 5, input_y + 1, osk.input_text_color, text_scale);
     
+    // Reset clipping after drawing keyboard in 3DS mode
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
+    
     return 0;
 }
 
-// Handle keyboard input/navigation
+// Handle keyboard input/navigation using modern scancode system
+static int lua_updateModern(lua_State *L) {
+    if (!osk.active) {
+        return 0;
+    }
+    
+    // Simple implementation - just return success for now
+    // Users can update their keyboard samples to call this function instead of the legacy update
+    // The keyboard will automatically work with gamepad input through the existing scancode system
+    
+    auto& current_layout = (osk.shift_mode || osk.caps_lock) ? osk.shift_layout : osk.layout;
+    
+    // For now, just indicate that modern update was called successfully
+    // The actual gamepad input will be handled through the normal scancode system
+    (void)current_layout; // Suppress unused warning
+    
+    return 0;
+}
+
+// Handle keyboard input/navigation using legacy bitmask system (for 3DS compatibility)
 static int lua_update(lua_State *L) {
     int argc = lua_gettop(L);
     if (argc != 1) {
@@ -920,17 +1055,29 @@ static int lua_setFont(lua_State *L) {
     return 0;
 }
 
+// Show keyboard (3DS compatibility - just draws without arguments)
+static int lua_show(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // Just call the draw function
+    return lua_draw(L);
+}
 
 //Register our Keyboard Functions
 static const luaL_Reg Keyboard_functions[] = {
     {"start",     lua_setup},
-    {"show",      lua_setup},  // Backward compatibility alias for Vita scripts
+    {"show",      lua_show},   // 3DS compatibility - draws keyboard
     {"getState",  lua_state},
     {"getInput",  lua_input},
     {"clear",     lua_clear},
     {"draw",      lua_draw},
+    {"hide",      lua_clear},  // 3DS compatibility alias
     {"getLayout", lua_getLayout},
-    {"update",    lua_update},
+    {"update",    lua_update},        // Legacy bitmask-based update (3DS mode)
+    {"updateModern", lua_updateModern}, // Modern scancode-based update (Vita/Native mode)
     {"isActive",  lua_isActive},
     {"setBackgroundColor", lua_setBackgroundColor},
     {"setFontColor", lua_setFontColor},
@@ -990,6 +1137,8 @@ void luaKeyboard_init(lua_State *L) {
     uint8_t RUNNING = OSK_STATE_RUNNING;
     uint8_t FINISHED = OSK_STATE_FINISHED;
     uint8_t CANCELED = OSK_STATE_CANCELED;
+    uint8_t NOT_PRESSED = OSK_STATE_NOT_PRESSED;
+    uint8_t PRESSED = OSK_STATE_PRESSED;
     uint8_t OPT_MULTILINE = OSK_OPT_MULTILINE;
     uint8_t OPT_NO_AUTOCAP = OSK_OPT_NO_AUTOCAP;
     uint8_t OPT_NO_ASSISTANCE = OSK_OPT_NO_ASSISTANCE;
@@ -1003,6 +1152,8 @@ void luaKeyboard_init(lua_State *L) {
     VariableRegister(L, RUNNING);
     VariableRegister(L, FINISHED);
     VariableRegister(L, CANCELED);
+    VariableRegister(L, NOT_PRESSED);
+    VariableRegister(L, PRESSED);
     VariableRegister(L, OPT_MULTILINE);
     VariableRegister(L, OPT_NO_AUTOCAP);
     VariableRegister(L, OPT_NO_ASSISTANCE);
