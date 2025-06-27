@@ -473,6 +473,76 @@ static int lua_readC(lua_State *L){
                 current_keys[i] = keyboard_state[i] != 0;
             }
         }
+        
+        // Add separate gamepad support for Vita mode (runs after keyboard, doesn't interfere)
+        if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
+            // Separate timing control for gamepad in Vita mode
+            static Uint32 last_gamepad_time[SDL_NUM_SCANCODES] = {0};
+            static bool gamepad_was_pressed[SDL_NUM_SCANCODES] = {false};
+            Uint32 current_time = SDL_GetTicks();
+            const Uint32 VITA_GAMEPAD_REPEAT_DELAY = 150; // 150ms delay for Vita gamepad
+            
+            // Face buttons - immediate response (no timing control)
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // Cross = Space
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Circle = Backspace
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_Z] = true; // Square = Z
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_X] = true; // Triangle = X
+            }
+            
+            // Shoulder buttons - immediate response
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_Q] = true; // L = Q
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_E] = true; // R = E
+            }
+            
+            // Start/Select buttons - immediate response
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // Start = Return
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_TAB] = true; // Select = Tab
+            }
+            
+            // D-Pad with timing control (only for movement keys)
+            SDL_Scancode dpad_keys[] = {SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT};
+            SDL_GameControllerButton dpad_buttons[] = {
+                SDL_CONTROLLER_BUTTON_DPAD_UP, SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+                SDL_CONTROLLER_BUTTON_DPAD_LEFT, SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+            };
+            
+            for (int i = 0; i < 4; i++) {
+                bool button_pressed = SDL_GameControllerGetButton(controllers[0], dpad_buttons[i]);
+                bool keyboard_pressed = keyboard_state && keyboard_state[dpad_keys[i]];
+                
+                if (button_pressed && !keyboard_pressed) {
+                    // Only apply timing if keyboard is not pressed (gamepad doesn't override keyboard)
+                    if (!gamepad_was_pressed[dpad_keys[i]] || 
+                        (current_time - last_gamepad_time[dpad_keys[i]]) >= VITA_GAMEPAD_REPEAT_DELAY) {
+                        current_keys[dpad_keys[i]] = true;
+                        last_gamepad_time[dpad_keys[i]] = current_time;
+                    }
+                }
+                
+                gamepad_was_pressed[dpad_keys[i]] = button_pressed;
+            }
+            
+            // Triggers
+            if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16384) {
+                current_keys[SDL_SCANCODE_PAGEUP] = true; // L Trigger = PageUp
+            }
+            if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384) {
+                current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
+            }
+        }
     } else {
         // Other modes: Copy current to previous BEFORE gamepad processing, then OR with keyboard
         memcpy(previous_keys, current_keys, sizeof(current_keys));
