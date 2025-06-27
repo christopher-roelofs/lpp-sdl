@@ -82,6 +82,17 @@ static int scroll_offset = 0;
 static const int MAX_VISIBLE_ITEMS = 15;
 static char* selected_file_result = nullptr;
 
+// Compatibility mode selector for file browser
+static int browser_compat_mode_index = 0;
+static const char* browser_compat_modes[] = {
+    "native",
+    "3dscompat-vertical", 
+    "3dscompat-horizontal",
+    "3dscompat-1screen",
+    "vitacompat"
+};
+static const int browser_compat_modes_count = sizeof(browser_compat_modes) / sizeof(browser_compat_modes[0]);
+
 bool is_lua_file(const std::string& filename) {
     size_t dot_pos = filename.find_last_of('.');
     if (dot_pos != std::string::npos) {
@@ -174,12 +185,16 @@ void render_file_browser() {
     // Draw title
     draw_text("Lua File Browser", 20, 20, 255, 255, 255);
     
+    // Draw compatibility mode selector
+    std::string mode_display = "Mode: < " + std::string(browser_compat_modes[browser_compat_mode_index]) + " >";
+    draw_text(mode_display.c_str(), 450, 20, 255, 200, 100);
+    
     // Draw current path
     std::string path_display = "Path: " + current_path;
     draw_text(path_display.c_str(), 20, 50, 200, 200, 200);
     
     // Draw instructions
-    draw_text("Arrow Keys: Navigate | Enter: Select | Escape: Exit", 20, 80, 150, 150, 150);
+    draw_text("Arrow Keys: Navigate | Enter: Select | Escape: Exit | Left/Right: Change Mode", 20, 80, 150, 150, 150);
     
     // Draw file list
     int y_start = 120;
@@ -309,6 +324,22 @@ const char* launch_file_browser(lua_State* L) {
                                 strcpy(selected_file_result, selected.full_path.c_str());
                                 return selected_file_result;
                             }
+                        }
+                        break;
+                        
+                    case SDLK_LEFT:
+                        // Cycle compatibility mode backward
+                        browser_compat_mode_index--;
+                        if (browser_compat_mode_index < 0) {
+                            browser_compat_mode_index = browser_compat_modes_count - 1;
+                        }
+                        break;
+                        
+                    case SDLK_RIGHT:
+                        // Cycle compatibility mode forward
+                        browser_compat_mode_index++;
+                        if (browser_compat_mode_index >= browser_compat_modes_count) {
+                            browser_compat_mode_index = 0;
                         }
                         break;
                 }
@@ -464,6 +495,138 @@ int main(int argc, char* args[]) {
         printf("SDL_ttf could not initialize! TTF_Error: %s\n", TTF_GetError());
         SDL_Quit();
         return 1;
+    }
+
+    // Handle file browser mode early (before renderer setup)
+    if (strcmp(lua_file, "__file_browser__") == 0) {
+        // Set file browser default mode based on command line compatibility mode
+        if (compat_mode == LPP_COMPAT_VITA) {
+            browser_compat_mode_index = 4; // vitacompat
+            printf("File browser: Defaulting to Vita compatibility mode\n");
+        } else if (compat_mode == LPP_COMPAT_3DS) {
+            if (g_3ds_single_screen_mode) {
+                browser_compat_mode_index = 3; // 3dscompat-1screen
+                printf("File browser: Defaulting to 3DS single-screen mode\n");
+            } else if (g_3ds_orientation == LPP_3DS_VERTICAL) {
+                browser_compat_mode_index = 1; // 3dscompat-vertical
+                printf("File browser: Defaulting to 3DS vertical mode\n");
+            } else {
+                browser_compat_mode_index = 2; // 3dscompat-horizontal
+                printf("File browser: Defaulting to 3DS horizontal mode\n");
+            }
+        } else {
+            browser_compat_mode_index = 0; // native (default)
+            printf("File browser: Defaulting to native mode\n");
+        }
+        // Get display resolution for file browser window
+        SDL_DisplayMode browser_display_mode;
+        if (SDL_GetCurrentDisplayMode(0, &browser_display_mode) != 0) {
+            printf("Could not get display mode for file browser: %s\n", SDL_GetError());
+            // Fall back to reasonable defaults
+            browser_display_mode.w = 1024;
+            browser_display_mode.h = 768;
+        }
+        
+        // Use native display resolution for file browser (not console emulation)
+        int browser_width = browser_display_mode.w * 0.8; // 80% of screen width
+        int browser_height = browser_display_mode.h * 0.8; // 80% of screen height
+        if (browser_width < 800) browser_width = 800;   // Minimum width
+        if (browser_height < 600) browser_height = 600; // Minimum height
+        
+        // Create a temporary window and renderer for the file browser using native resolution
+        SDL_Window* temp_window = SDL_CreateWindow("Lua Player Plus SDL - File Browser", 
+                                                  SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+                                                  browser_width, browser_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        if (!temp_window) {
+            printf("Could not create temporary window for file browser: %s\n", SDL_GetError());
+            SDL_Quit();
+            return 1;
+        }
+        
+        SDL_Renderer* temp_renderer = SDL_CreateRenderer(temp_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        if (!temp_renderer) {
+            printf("Could not create temporary renderer for file browser: %s\n", SDL_GetError());
+            SDL_DestroyWindow(temp_window);
+            SDL_Quit();
+            return 1;
+        }
+        
+        // File browser uses native rendering - no logical scaling needed
+        // This allows it to use the full display resolution for better UI experience
+        printf("File browser: Using native resolution %dx%d (no console emulation)\n", browser_width, browser_height);
+        
+        // Load default font for file browser
+        g_defaultFont = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16);
+        if (!g_defaultFont) {
+            // Fallback to other common system fonts
+            g_defaultFont = TTF_OpenFont("/System/Library/Fonts/Helvetica.ttc", 16);
+            if (!g_defaultFont) {
+                g_defaultFont = TTF_OpenFont("/Windows/Fonts/arial.ttf", 16);
+                if (!g_defaultFont) {
+                    printf("Could not load any system font for file browser\n");
+                    SDL_DestroyRenderer(temp_renderer);
+                    SDL_DestroyWindow(temp_window);
+                    SDL_Quit();
+                    return 1;
+                }
+            }
+        }
+        
+        // Set global renderer temporarily for file browser
+        g_window = temp_window;
+        g_renderer = temp_renderer;
+        
+        // Launch file browser
+        const char* selected_file = launch_file_browser(L);
+        
+        // Clean up temporary renderer and window
+        SDL_DestroyRenderer(temp_renderer);
+        SDL_DestroyWindow(temp_window);
+        g_renderer = nullptr;
+        g_window = nullptr;
+        
+        if (selected_file == NULL) {
+            printf("File browser exited without selection.\n");
+            if (g_defaultFont) TTF_CloseFont(g_defaultFont);
+            TTF_Quit();
+            IMG_Quit();
+            SDL_Quit();
+            if (L) lua_close(L);
+            return 0;
+        }
+        
+        lua_file = selected_file;
+        
+        // Apply selected compatibility mode from file browser
+        const char* selected_mode = browser_compat_modes[browser_compat_mode_index];
+        if (strcmp(selected_mode, "vitacompat") == 0) {
+            compat_mode = LPP_COMPAT_VITA;
+            vita_compat_mode = true;
+            printf("Compatibility mode: Vita (%s)\n", selected_mode);
+        } else if (strcmp(selected_mode, "3dscompat-vertical") == 0) {
+            compat_mode = LPP_COMPAT_3DS;
+            g_3ds_orientation = LPP_3DS_VERTICAL;
+            threeds_compat_mode = true;
+            vita_compat_mode = true;
+            printf("Compatibility mode: 3DS Vertical (%s)\n", selected_mode);
+        } else if (strcmp(selected_mode, "3dscompat-horizontal") == 0) {
+            compat_mode = LPP_COMPAT_3DS;
+            g_3ds_orientation = LPP_3DS_HORIZONTAL;
+            threeds_compat_mode = true;
+            vita_compat_mode = true;
+            printf("Compatibility mode: 3DS Horizontal (%s)\n", selected_mode);
+        } else if (strcmp(selected_mode, "3dscompat-1screen") == 0) {
+            compat_mode = LPP_COMPAT_3DS;
+            g_3ds_orientation = LPP_3DS_VERTICAL;
+            g_3ds_single_screen_mode = true;
+            g_3ds_active_screen = 0; // Start with top screen
+            threeds_compat_mode = true;
+            vita_compat_mode = true;
+            printf("Compatibility mode: 3DS Single Screen (%s)\n", selected_mode);
+        } else {
+            // native mode - no changes needed, defaults are already set
+            printf("Compatibility mode: Native (%s)\n", selected_mode);
+        }
     }
 
     // Load the global default font from executable directory
@@ -845,25 +1008,6 @@ int main(int argc, char* args[]) {
 #endif
     
     SDL_RenderPresent(g_renderer);
-
-    // Handle file browser mode
-    if (strcmp(lua_file, "__file_browser__") == 0) {
-        // Launch file browser
-        const char* selected_file = launch_file_browser(L);
-        if (selected_file == NULL) {
-            printf("File browser exited without selection.\n");
-            // Cleanup and exit
-            SDL_DestroyRenderer(g_renderer);
-            SDL_DestroyWindow(g_window);
-            IMG_Quit();
-            if (g_defaultFont) TTF_CloseFont(g_defaultFont);
-            TTF_Quit();
-            SDL_Quit();
-            if (L) lua_close(L);
-            return 0;
-        }
-        lua_file = selected_file;
-    }
 
     // Change working directory to the script's directory so relative asset paths work.
     std::string path_str(lua_file);
