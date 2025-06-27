@@ -41,8 +41,8 @@
 
 // Simple keyboard key constants - just use the SDL scancode values directly
 static SDL_GameController* controllers[4] = {NULL, NULL, NULL, NULL};
-static Sint16 left_analog_x = 0, left_analog_y = 0;
-static Sint16 right_analog_x = 0, right_analog_y = 0;
+static int left_analog_x = 128 * 256, left_analog_y = 128 * 256;  // Initialize to center position (128 in Vita range)
+static int right_analog_x = 128 * 256, right_analog_y = 128 * 256;
 static int mouse_x = 0, mouse_y = 0;
 static bool mouse_pressed = false;
 static bool current_mouse_pressed = false;
@@ -63,11 +63,24 @@ static void update_input_state() {
     
     // Update controller state if available
     if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
-        // Read analog sticks
-        left_analog_x = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTX);
-        left_analog_y = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTY);
-        right_analog_x = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_RIGHTX);
-        right_analog_y = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_RIGHTY);
+        // Read analog sticks and convert from SDL range (-32768 to 32767) to Vita range (0-255)
+        Sint16 sdl_lx = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTX);
+        Sint16 sdl_ly = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTY);
+        Sint16 sdl_rx = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_RIGHTX);
+        Sint16 sdl_ry = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_RIGHTY);
+        
+        // Convert from SDL range (-32768 to 32767) to Vita range (0 to 255), centered at 128
+        left_analog_x = ((sdl_lx + 32768) * 255 / 65535) * 256;
+        left_analog_y = ((sdl_ly + 32768) * 255 / 65535) * 256;
+        right_analog_x = ((sdl_rx + 32768) * 255 / 65535) * 256;
+        right_analog_y = ((sdl_ry + 32768) * 255 / 65535) * 256;
+    } else {
+        // No controller - set analog sticks to neutral position (128 in Vita's 0-255 range)
+        // Since lua_readleft divides by 256, we multiply by 256 here
+        left_analog_x = 128 * 256;   // This will give 128 when divided by 256
+        left_analog_y = 128 * 256;
+        right_analog_x = 128 * 256;
+        right_analog_y = 128 * 256;
     }
     
     // Update mouse state
