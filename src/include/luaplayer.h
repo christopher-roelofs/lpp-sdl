@@ -124,6 +124,7 @@ const char *runScript(const char* script, bool isStringBuffer);
 void luaC_collectgarbage (lua_State *L);
 
 void luaControls_init(lua_State *L);
+void luaControls_set_key_constants(lua_State *L);
 void luaCamera_init(lua_State *L);
 void luaScreen_init(lua_State *L);
 void luaGraphics_init(lua_State *L);

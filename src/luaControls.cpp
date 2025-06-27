@@ -107,10 +107,35 @@ static int lua_readC(lua_State *L){
     // Update current mouse state
     current_mouse_pressed = mouse_pressed;
     
-    // Return frame counter for edge detection (different value each frame)
-    frame_counter++;
-    lua_pushnumber(L, frame_counter);
-    return 1;
+    extern lpp_compat_mode_t g_compat_mode;
+    
+    // In 3DS compatibility mode, return button state bitmask like original 3DS
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        uint32_t button_state = 0;
+        
+        // Map SDL scancodes to 3DS button bits (matching original 3DS bit positions)
+        if (current_keys[SDL_SCANCODE_RETURN]) button_state |= (1 << 0);      // KEY_A = BIT(0)
+        if (current_keys[SDL_SCANCODE_BACKSPACE]) button_state |= (1 << 1);   // KEY_B = BIT(1)
+        if (current_keys[SDL_SCANCODE_LCTRL]) button_state |= (1 << 2);       // KEY_SELECT = BIT(2)
+        if (current_keys[SDL_SCANCODE_LALT]) button_state |= (1 << 3);        // KEY_START = BIT(3)
+        if (current_keys[SDL_SCANCODE_RIGHT]) button_state |= (1 << 4);       // KEY_DRIGHT = BIT(4)
+        if (current_keys[SDL_SCANCODE_LEFT]) button_state |= (1 << 5);        // KEY_DLEFT = BIT(5)
+        if (current_keys[SDL_SCANCODE_UP]) button_state |= (1 << 6);          // KEY_DUP = BIT(6)
+        if (current_keys[SDL_SCANCODE_DOWN]) button_state |= (1 << 7);        // KEY_DDOWN = BIT(7)
+        if (current_keys[SDL_SCANCODE_PAGEDOWN]) button_state |= (1 << 8);    // KEY_R = BIT(8)
+        if (current_keys[SDL_SCANCODE_PAGEUP]) button_state |= (1 << 9);      // KEY_L = BIT(9)
+        if (current_keys[SDL_SCANCODE_SPACE]) button_state |= (1 << 10);      // KEY_X = BIT(10)
+        if (current_keys[SDL_SCANCODE_LSHIFT]) button_state |= (1 << 11);     // KEY_Y = BIT(11)
+        if (current_mouse_pressed) button_state |= (1 << 20);                 // KEY_TOUCH = BIT(20)
+        
+        lua_pushinteger(L, button_state);
+        return 1;
+    } else {
+        // For Vita/Native modes, return frame counter for edge detection (different value each frame)
+        frame_counter++;
+        lua_pushnumber(L, frame_counter);
+        return 1;
+    }
 }
 
 static int lua_readleft(lua_State *L){
@@ -154,31 +179,43 @@ static int lua_check(lua_State *L){
 #ifndef SKIP_ERROR_HANDLING
     if (argc != 2) return luaL_error(L, "wrong number of arguments.");
 #endif
-    int pad = luaL_checkinteger(L, 1);  // Frame counter from Controls.read()
-    int scancode = luaL_checkinteger(L, 2);
+    extern lpp_compat_mode_t g_compat_mode;
     
-    // Check if the scancode key is pressed
-    bool is_pressed = false;
-    if (scancode == 1000) { // KEY_TOUCH special case
-        // For touch, use frame-based state like keyboard keys
-        if (pad == frame_counter) {
-            is_pressed = current_mouse_pressed;
-        } else if (pad == frame_counter - 1) {
-            is_pressed = previous_mouse_pressed;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In 3DS mode, pad is button state bitmask, scancode is button bit value
+        uint32_t pad = luaL_checkinteger(L, 1);    // Button state bitmask from Controls.read()
+        uint32_t button = luaL_checkinteger(L, 2); // Button bit value to check
+        
+        // Use original 3DS logic: bitwise AND check
+        lua_pushboolean(L, ((pad & button) == button));
+    } else {
+        // For Vita/Native modes, use frame-based edge detection
+        int pad = luaL_checkinteger(L, 1);  // Frame counter from Controls.read()
+        int scancode = luaL_checkinteger(L, 2);
+        
+        // Check if the scancode key is pressed
+        bool is_pressed = false;
+        if (scancode == 1000) { // KEY_TOUCH special case
+            // For touch, use frame-based state like keyboard keys
+            if (pad == frame_counter) {
+                is_pressed = current_mouse_pressed;
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_mouse_pressed;
+            }
+            // For any other frame, return false (not pressed)
+        } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+            // If this is the current frame (pad == frame_counter), use current_keys
+            // If this is the previous frame (pad == frame_counter - 1), use previous_keys
+            if (pad == frame_counter) {
+                is_pressed = current_keys[scancode];
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_keys[scancode];
+            }
+            // For any other frame, return false (key not pressed)
         }
-        // For any other frame, return false (not pressed)
-    } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
-        // If this is the current frame (pad == frame_counter), use current_keys
-        // If this is the previous frame (pad == frame_counter - 1), use previous_keys
-        if (pad == frame_counter) {
-            is_pressed = current_keys[scancode];
-        } else if (pad == frame_counter - 1) {
-            is_pressed = previous_keys[scancode];
-        }
-        // For any other frame, return false (key not pressed)
+        
+        lua_pushboolean(L, is_pressed);
     }
-    
-    lua_pushboolean(L, is_pressed);
     return 1;
 }
 
@@ -502,27 +539,52 @@ extern "C" void sdl_mouse_button_up() {
     mouse_pressed = false;
 }
 
+static void set_key_constants(lua_State *L) {
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS bit values (matching original 3DS)
+        lua_pushinteger(L, (1 << 0));lua_setglobal(L, "KEY_A");      // BIT(0)
+        lua_pushinteger(L, (1 << 1));lua_setglobal(L, "KEY_B");      // BIT(1)
+        lua_pushinteger(L, (1 << 10));lua_setglobal(L, "KEY_X");     // BIT(10)
+        lua_pushinteger(L, (1 << 11));lua_setglobal(L, "KEY_Y");     // BIT(11)
+        lua_pushinteger(L, (1 << 9));lua_setglobal(L, "KEY_L");      // BIT(9)
+        lua_pushinteger(L, (1 << 8));lua_setglobal(L, "KEY_R");      // BIT(8)
+        lua_pushinteger(L, (1 << 3));lua_setglobal(L, "KEY_START");  // BIT(3)
+        lua_pushinteger(L, (1 << 2));lua_setglobal(L, "KEY_SELECT"); // BIT(2)
+        lua_pushinteger(L, (1 << 6));lua_setglobal(L, "KEY_DUP");    // BIT(6)
+        lua_pushinteger(L, (1 << 7));lua_setglobal(L, "KEY_DDOWN");  // BIT(7)
+        lua_pushinteger(L, (1 << 5));lua_setglobal(L, "KEY_DLEFT");  // BIT(5)
+        lua_pushinteger(L, (1 << 4));lua_setglobal(L, "KEY_DRIGHT"); // BIT(4)
+        lua_pushinteger(L, (1 << 20));lua_setglobal(L, "KEY_TOUCH"); // BIT(20)
+    } else {
+        // SDL scancodes for Vita/Native modes
+        lua_pushinteger(L, SDL_SCANCODE_RETURN);lua_setglobal(L, "KEY_A");
+        lua_pushinteger(L, SDL_SCANCODE_BACKSPACE);lua_setglobal(L, "KEY_B");
+        lua_pushinteger(L, SDL_SCANCODE_SPACE);lua_setglobal(L, "KEY_X");
+        lua_pushinteger(L, SDL_SCANCODE_LSHIFT);lua_setglobal(L, "KEY_Y");
+        lua_pushinteger(L, SDL_SCANCODE_PAGEUP);lua_setglobal(L, "KEY_L");
+        lua_pushinteger(L, SDL_SCANCODE_PAGEDOWN);lua_setglobal(L, "KEY_R");
+        lua_pushinteger(L, SDL_SCANCODE_LALT);lua_setglobal(L, "KEY_START");
+        lua_pushinteger(L, SDL_SCANCODE_LCTRL);lua_setglobal(L, "KEY_SELECT");
+        lua_pushinteger(L, SDL_SCANCODE_UP);lua_setglobal(L, "KEY_DUP");
+        lua_pushinteger(L, SDL_SCANCODE_DOWN);lua_setglobal(L, "KEY_DDOWN");
+        lua_pushinteger(L, SDL_SCANCODE_LEFT);lua_setglobal(L, "KEY_DLEFT");
+        lua_pushinteger(L, SDL_SCANCODE_RIGHT);lua_setglobal(L, "KEY_DRIGHT");
+        lua_pushinteger(L, 1000);lua_setglobal(L, "KEY_TOUCH"); // Special value for touch
+    }
+}
+
+void luaControls_set_key_constants(lua_State *L) {
+    set_key_constants(L);
+}
+
 void luaControls_init(lua_State *L) {
     lua_newtable(L);
     luaL_setfuncs(L, Controls_functions, 0);
     lua_setglobal(L, "Controls");
     
-    // Add 3DS key constants (mapped to SDL scancodes)
-    lua_pushinteger(L, SDL_SCANCODE_RETURN);lua_setglobal(L, "KEY_A");
-    lua_pushinteger(L, SDL_SCANCODE_BACKSPACE);lua_setglobal(L, "KEY_B");
-    lua_pushinteger(L, SDL_SCANCODE_SPACE);lua_setglobal(L, "KEY_X");
-    lua_pushinteger(L, SDL_SCANCODE_LSHIFT);lua_setglobal(L, "KEY_Y");
-    lua_pushinteger(L, SDL_SCANCODE_PAGEUP);lua_setglobal(L, "KEY_L");
-    lua_pushinteger(L, SDL_SCANCODE_PAGEDOWN);lua_setglobal(L, "KEY_R");
-    lua_pushinteger(L, SDL_SCANCODE_LALT);lua_setglobal(L, "KEY_START");
-    lua_pushinteger(L, SDL_SCANCODE_LCTRL);lua_setglobal(L, "KEY_SELECT");
-    lua_pushinteger(L, SDL_SCANCODE_UP);lua_setglobal(L, "KEY_DUP");
-    lua_pushinteger(L, SDL_SCANCODE_DOWN);lua_setglobal(L, "KEY_DDOWN");
-    lua_pushinteger(L, SDL_SCANCODE_LEFT);lua_setglobal(L, "KEY_DLEFT");
-    lua_pushinteger(L, SDL_SCANCODE_RIGHT);lua_setglobal(L, "KEY_DRIGHT");
-    
-    // Touch support using left mouse button (special constant outside SDL scancode range)
-    lua_pushinteger(L, 1000);lua_setglobal(L, "KEY_TOUCH");
+    // Set initial key constants (will be updated later if needed)
+    set_key_constants(L);
     
     // Initialize game controllers
     for (int i = 0; i < 4; i++) {

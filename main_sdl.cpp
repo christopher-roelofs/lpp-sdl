@@ -660,6 +660,9 @@ int main(int argc, char* args[]) {
     g_vita_compat_mode = vita_compat_mode; // Store legacy flag for backward compatibility
     g_dual_screen_mode = threeds_compat_mode; // Store legacy flag for backward compatibility
     
+    // Update key constants now that compatibility mode is set
+    luaControls_set_key_constants(L);
+    
     if (compat_mode != LPP_COMPAT_NATIVE) {
         // Vita/3DS compatibility mode: Calculate window size maintaining aspect ratio
         float aspect_ratio;
