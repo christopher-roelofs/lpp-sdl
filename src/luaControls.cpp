@@ -543,8 +543,78 @@ static int lua_readC(lua_State *L){
                 current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
             }
         }
+    } else if (g_compat_mode == LPP_COMPAT_NATIVE) {
+        // Native mode: Use same independent keyboard system as Vita
+        memcpy(previous_keys, current_keys, sizeof(current_keys));
+        
+        // Update current keys from SDL keyboard state directly first
+        if (keyboard_state) {
+            for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+                current_keys[i] = keyboard_state[i] != 0;
+            }
+        }
+        
+        // Add gamepad support after keyboard (doesn't interfere with keyboard edge detection)
+        if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
+            // Native gamepad mapping (immediate response, no timing control)
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // Primary action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Secondary action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_X] = true; // X action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_Y] = true; // Y action
+            }
+            
+            // Shoulder buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_Q] = true; // L1/LB = Q
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_E] = true; // R1/RB = E
+            }
+            
+            // Start/Select buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_RETURN] = true; // Start = Enter
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_TAB] = true; // Back/Select = Tab
+            }
+            
+            // Guide button
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_GUIDE)) {
+                current_keys[SDL_SCANCODE_ESCAPE] = true; // Guide = Escape
+            }
+            
+            // D-Pad (immediate response for Native mode)
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+                current_keys[SDL_SCANCODE_UP] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+                current_keys[SDL_SCANCODE_DOWN] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                current_keys[SDL_SCANCODE_LEFT] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                current_keys[SDL_SCANCODE_RIGHT] = true;
+            }
+            
+            // Triggers
+            if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16384) {
+                current_keys[SDL_SCANCODE_PAGEUP] = true; // L Trigger = PageUp
+            }
+            if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384) {
+                current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
+            }
+        }
     } else {
-        // Other modes: Copy current to previous BEFORE gamepad processing, then OR with keyboard
+        // 3DS mode: Keep original combined system for now
         memcpy(previous_keys, current_keys, sizeof(current_keys));
         
         // Update current keys from SDL keyboard state (use OR to combine with gamepad)
