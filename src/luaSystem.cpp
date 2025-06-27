@@ -62,17 +62,26 @@ enum {
 // Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
 static std::string translate_vita_path(const char* path) {
     std::string result(path);
+    bool was_vita_path = false;
     
     // Replace app0:/ with current directory (empty string means relative to current dir)
     size_t pos = result.find("app0:/");
     if (pos != std::string::npos) {
         result.replace(pos, 6, "");  // Remove "app0:/"
+        was_vita_path = true;
     }
     
     // Replace ux0:/ with current directory (user data path)
     pos = result.find("ux0:/");
     if (pos != std::string::npos) {
         result.replace(pos, 5, "");  // Remove "ux0:/"
+        was_vita_path = true;
+    }
+    
+    // Only convert to relative path if it was originally a Vita path
+    // Preserve absolute paths for regular filesystem operations
+    if (was_vita_path && result.length() > 0 && result[0] == '/') {
+        result = result.substr(1); // Remove leading slash to make it relative
     }
     
     return result;
@@ -1394,6 +1403,7 @@ static const luaL_Reg System_functions[] = {
     {"readFile",           lua_readFile},
     {"writeFile",          lua_writeFile},
     {"checkInput",         lua_checkInput},
+    {"getBatteryLife",     lua_getBatteryPercentage},  // Alias for compatibility
     {"getBatteryPercentage", lua_getBatteryPercentage},
     {"getBatteryInfo",     lua_getBatteryInfo},
     {"isBatteryCharging",  lua_isBatteryCharging},

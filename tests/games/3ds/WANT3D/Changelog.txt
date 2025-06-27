@@ -1,0 +1,2 @@
+- Now it works fine on NH 2.5.
+- Added last face location showing during gameover.

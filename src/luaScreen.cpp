@@ -111,6 +111,24 @@ static int lua_flip(lua_State *L) {
                 }
             }
         }
+        // TAB key to switch between screens in 3DS single-screen mode
+        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_TAB && g_3ds_single_screen_mode) {
+            // Switch active screen
+            g_3ds_active_screen = (g_3ds_active_screen == 0) ? 1 : 0;
+            
+            // Use uniform logical size to prevent artifacts
+            int logical_width = DS_TOP_SCREEN_WIDTH;  // Always use 400px width
+            int logical_height = DS_TOP_SCREEN_HEIGHT; // Always use 240px height
+            
+            if (SDL_RenderSetLogicalSize(g_renderer, logical_width, logical_height) == 0) {
+                const char* screen_name = (g_3ds_active_screen == 0) ? "top" : "bottom";
+                printf("Switched to %s screen (%dx%d logical, scaled to fill window)\n", screen_name, logical_width, logical_height);
+                
+                // Reset render state to ensure proper rendering after switch
+                SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+                // Don't reset clipping here - let individual screens handle their own clipping
+            }
+        }
         // Handle window resize events to maintain proper scaling
         if (e.type == SDL_WINDOWEVENT && (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
             // Reapply logical size for both modes
@@ -188,6 +206,8 @@ static int lua_flip(lua_State *L) {
     // Update controls for Lua input
     update_sdl_controls();
 
+    // Single-screen mode now uses dynamic logical sizing per screen
+
     // Present the rendered frame
     if (g_renderer) { // Ensure g_renderer is valid
 #ifdef __APPLE__
@@ -221,6 +241,20 @@ static int lua_flip(lua_State *L) {
             }
         }
 #endif
+        
+        // Add black padding for bottom screen in single-screen mode
+        if (g_3ds_single_screen_mode && g_3ds_active_screen == 1) {
+            SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+            
+            // Draw black padding on left side (0 to 40)
+            SDL_Rect left_padding = {0, 0, 40, DS_TOP_SCREEN_HEIGHT};
+            SDL_RenderFillRect(g_renderer, &left_padding);
+            
+            // Draw black padding on right side (360 to 400) 
+            SDL_Rect right_padding = {360, 0, 40, DS_TOP_SCREEN_HEIGHT};
+            SDL_RenderFillRect(g_renderer, &right_padding);
+        }
+        
         SDL_RenderPresent(g_renderer);
         
         // In 3DS compatibility mode, preserve framebuffer content like the original 3DS
@@ -284,8 +318,47 @@ static int lua_clear(lua_State *L) {
 			// 3DS dual screen mode: clear specific screen area
 			SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
 			
-			if (g_dual_screen_mode) {
-				// Clear only the specified screen area
+			if (g_compat_mode == LPP_COMPAT_3DS) {
+				// In single-screen mode, still clear both screens
+				// Only the display shows one at a time, but both should be kept current
+				
+				// 3DS compatibility mode: clear only the specified screen area
+				SDL_Rect screen_rect;
+				
+				// Get screen offsets and dimensions
+				int x_offset = getScreenXOffset(arg);
+				int y_offset = getScreenYOffset(arg);
+				
+				if (arg == 0) {
+					// TOP_SCREEN
+					screen_rect.x = x_offset;
+					screen_rect.y = y_offset;
+					screen_rect.w = DS_TOP_SCREEN_WIDTH;
+					screen_rect.h = DS_TOP_SCREEN_HEIGHT;
+				} else {
+					// BOTTOM_SCREEN
+					if (g_3ds_single_screen_mode) {
+						// In single-screen mode, first clear the entire logical area to black
+						// to prevent the top screen from showing through
+						SDL_Rect full_clear = {0, 0, DS_TOP_SCREEN_WIDTH, DS_TOP_SCREEN_HEIGHT};
+						SDL_RenderFillRect(g_renderer, &full_clear);
+					}
+					
+					screen_rect.x = x_offset;
+					screen_rect.y = y_offset;
+					screen_rect.w = DS_BOTTOM_SCREEN_WIDTH;
+					screen_rect.h = DS_BOTTOM_SCREEN_HEIGHT;
+				}
+				
+				// Set viewport clipping for this screen
+				setScreenViewport(arg);
+				
+				SDL_RenderFillRect(g_renderer, &screen_rect);
+				
+				// Reset clipping after clearing
+				SDL_RenderSetClipRect(g_renderer, NULL);
+			} else if (g_dual_screen_mode) {
+				// Legacy dual screen mode
 				SDL_Rect screen_rect;
 				screen_rect.x = 0;
 				screen_rect.w = SCREEN_WIDTH;
@@ -595,6 +668,7 @@ static int lua_screen_fillRect(lua_State *L) {
     int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
     // int eye = (argc == 7) ? luaL_checkinteger(L, 7) : 0; // 3D eye (ignored in SDL port)
     
+    
     // Auto-enable dual screen mode if using screen constants
     if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
         g_dual_screen_mode = true;
@@ -634,6 +708,9 @@ static int lua_screen_fillRect(lua_State *L) {
     
     // Apply per-screen scaling and positioning for dual screen mode
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, still render both screens
+        // Only the display shows one at a time, but both should be kept current
+        
         // 3DS dual screen mode: use coordinate offsets (no clipping needed with SDL logical scaling)
         int screen_x_offset = getScreenXOffset(screen);
         int screen_y_offset = getScreenYOffset(screen);
@@ -641,6 +718,9 @@ static int lua_screen_fillRect(lua_State *L) {
         // Add screen offset to position the screen correctly in the logical coordinate space
         rect.x += screen_x_offset;
         rect.y += screen_y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(screen);
     } else {
         // Non-3DS dual screen mode: just add the basic offset
         rect.x += x_offset;
@@ -648,6 +728,11 @@ static int lua_screen_fillRect(lua_State *L) {
     }
     
     SDL_RenderFillRect(g_renderer, &rect);
+    
+    // Reset clipping after drawing
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
     return 0;
 }
 
@@ -663,6 +748,7 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
     int y2 = luaL_checkinteger(L, 4);
     int color = luaL_checkinteger(L, 5);
     int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    
     
     // Auto-enable dual screen mode if using screen constants
     if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
@@ -703,6 +789,9 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
     
     // Apply screen positioning for dual screen mode
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, still render both screens
+        // Only the display shows one at a time, but both should be kept current
+        
         // Use simple coordinate offsets (SDL logical scaling handles the rest)
         int x_offset = getScreenXOffset(screen);
         int y_offset = getScreenYOffset(screen);
@@ -710,6 +799,9 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
         // Add screen offset to position the screen correctly in the logical coordinate space
         rect.x += x_offset;
         rect.y += y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(screen);
     } else {
         // Non-dual screen mode: just add the offset
         rect.x += x_offset;
@@ -717,6 +809,11 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
     }
     
     SDL_RenderDrawRect(g_renderer, &rect);
+    
+    // Reset clipping after drawing
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
     return 0;
 }
 
@@ -732,6 +829,7 @@ static int lua_screen_drawLine(lua_State *L) {
     int y2 = luaL_checkinteger(L, 4);
     int color = luaL_checkinteger(L, 5);
     int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
+    
     
     // Auto-enable dual screen mode if using screen constants
     if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
@@ -768,6 +866,9 @@ static int lua_screen_drawLine(lua_State *L) {
     int scaled_x2 = x2, scaled_y2 = y2;
     
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, still render both screens
+        // Only the display shows one at a time, but both should be kept current
+        
         // Use simple coordinate offsets (SDL logical scaling handles the rest)
         int screen_x_offset = getScreenXOffset(screen);
         int screen_y_offset = getScreenYOffset(screen);
@@ -777,6 +878,9 @@ static int lua_screen_drawLine(lua_State *L) {
         scaled_y1 += screen_y_offset;
         scaled_x2 += screen_x_offset;
         scaled_y2 += screen_y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(screen);
     } else {
         // Non-dual screen mode: just add the offset
         scaled_x1 += x_offset;
@@ -786,6 +890,11 @@ static int lua_screen_drawLine(lua_State *L) {
     }
     
     SDL_RenderDrawLine(g_renderer, scaled_x1, scaled_y1, scaled_x2, scaled_y2);
+    
+    // Reset clipping after drawing
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
     return 0;
 }
 
@@ -799,6 +908,7 @@ static int lua_screen_drawImage(lua_State *L) {
     int y = luaL_checkinteger(L, 2);
     void* texture_ptr = lua_touserdata(L, 3);
     int screen = (argc >= 4) ? luaL_checkinteger(L, 4) : 0; // Default to TOP_SCREEN
+    
     
     if (!texture_ptr) {
         return luaL_error(L, "Invalid texture provided");
@@ -839,6 +949,9 @@ static int lua_screen_drawImage(lua_State *L) {
     
     // Apply screen positioning for dual screen mode
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, still render both screens
+        // Only the display shows one at a time, but both should be kept current
+        
         // Use simple coordinate offsets (SDL logical scaling handles the rest)
         int screen_x_offset = getScreenXOffset(screen);
         int screen_y_offset = getScreenYOffset(screen);
@@ -846,6 +959,9 @@ static int lua_screen_drawImage(lua_State *L) {
         // Add screen offset to position the image correctly in the logical coordinate space
         dest_rect.x += screen_x_offset;
         dest_rect.y += screen_y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(screen);
     } else {
         // Non-dual screen mode: just add the offset
         dest_rect.x += x_offset;
@@ -853,6 +969,11 @@ static int lua_screen_drawImage(lua_State *L) {
     }
     
     SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect);
+    
+    // Reset clipping after drawing
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
     return 0;
 }
 
@@ -870,6 +991,7 @@ static int lua_screen_drawPartialImage(lua_State *L) {
     int src_h = luaL_checkinteger(L, 6);
     void* texture_ptr = lua_touserdata(L, 7);
     int screen = (argc >= 8) ? luaL_checkinteger(L, 8) : 0; // Default to TOP_SCREEN
+    
     
     if (!texture_ptr) {
         return luaL_error(L, "Invalid texture provided");
@@ -907,6 +1029,9 @@ static int lua_screen_drawPartialImage(lua_State *L) {
     
     // Apply screen positioning for dual screen mode
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, still render both screens
+        // Only the display shows one at a time, but both should be kept current
+        
         // Use simple coordinate offsets (SDL logical scaling handles the rest)
         int screen_x_offset = getScreenXOffset(screen);
         int screen_y_offset = getScreenYOffset(screen);
@@ -914,6 +1039,9 @@ static int lua_screen_drawPartialImage(lua_State *L) {
         // Add screen offset to position the partial image correctly in the logical coordinate space
         dest_rect.x += screen_x_offset;
         dest_rect.y += screen_y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(screen);
     } else {
         // Non-dual screen mode: just add the offset
         dest_rect.x += x_offset;
@@ -921,6 +1049,11 @@ static int lua_screen_drawPartialImage(lua_State *L) {
     }
     
     SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, &src_rect, &dest_rect);
+    
+    // Reset clipping after drawing
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
+    }
     return 0;
 }
 
@@ -929,6 +1062,11 @@ static int lua_refresh(lua_State *L) {
     int argc = lua_gettop(L);
     if (argc != 0) {
         return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // Reset clipping rectangle to ensure clean state for new frame
+    if (g_renderer) {
+        SDL_RenderSetClipRect(g_renderer, NULL);
     }
     
     // For SDL port, refresh is essentially a no-op
@@ -1079,10 +1217,19 @@ static int lua_screen_debugPrint(lua_State *L) {
     }
     
 
-    // Get text dimensions
+    // Get text dimensions and apply 3DS-specific scaling
     int text_w = text_surface->w;
     int text_h = text_surface->h;
     SDL_FreeSurface(text_surface);
+
+    // Apply 3DS-specific font scaling to reduce text size for smaller screens
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS screens are much smaller than Vita (400x240 vs 960x544)
+        // Apply scaling factor to make text proportionally smaller
+        float scale_factor = 0.6f; // Reduce text size by 40% for 3DS compatibility
+        text_w = (int)(text_w * scale_factor);
+        text_h = (int)(text_h * scale_factor);
+    }
 
     // Calculate screen offsets
     int x_offset = getScreenXOffset(screen);
@@ -1093,6 +1240,13 @@ static int lua_screen_debugPrint(lua_State *L) {
     
     // Apply screen positioning - use proper screen offsets in 3DS mode
     if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, only render if this is the active screen
+        if (g_3ds_single_screen_mode && screen != g_3ds_active_screen) {
+            // Skip rendering for inactive screen in single-screen mode
+            SDL_DestroyTexture(text_texture);
+            return 0;
+        }
+        
         // 3DS mode: Use coordinate offsets based on screen layout orientation
         int screen_x_offset = getScreenXOffset(screen);
         int screen_y_offset = getScreenYOffset(screen);
@@ -1129,6 +1283,7 @@ static int lua_screen_drawPixel(lua_State *L) {
     uint32_t color = luaL_checkinteger(L, 3);
     int screen = (argc >= 4) ? luaL_checkinteger(L, 4) : 0; // Default to TOP_SCREEN
     // int eye = (argc == 5) ? luaL_checkinteger(L, 5) : 0; // 3D eye ignored in SDL port
+    
     
     // Auto-enable dual screen mode if using screen constants
     if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
@@ -1188,6 +1343,21 @@ static int lua_screen_drawPixel(lua_State *L) {
     return 0;
 }
 
+static int lua_screen_freeImage(lua_State *L) {
+    // Screen.freeImage - compatibility wrapper that uses the same logic as Graphics.freeImage
+    lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 1);
+    if (tex && tex->magic == 0xABADBEEF) {
+        if (tex->texture) {
+            SDL_DestroyTexture((SDL_Texture*)tex->texture);
+        }
+        if (tex->data) { // For animated textures later
+            free(tex->data);
+        }
+        free(tex);
+    }
+    return 0;
+}
+
 static const luaL_Reg Screen_functions[] = {
 	{"clear",            lua_clear},
 	{"flip",             lua_flip},
@@ -1199,6 +1369,7 @@ static const luaL_Reg Screen_functions[] = {
     {"getHeight",        lua_getScreenHeight},
     {"loadImage",        lua_screen_loadimg},
     {"loadBitmap",       lua_screen_loadimg},
+    {"freeImage",        lua_screen_freeImage},
     {"get3DLevel",       lua_get3DLevel},
     {"enable3D",         lua_enable3D},
     {"disable3D",        lua_disable3D},

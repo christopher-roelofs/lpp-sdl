@@ -707,6 +707,20 @@ static int lua_play(lua_State *L) {
 	return 0;
 }
 
+static int lua_playWav(lua_State *L) {
+	// playWav(sound, loop, channel) - compatibility wrapper for Vita games
+	// Channel parameter is ignored in SDL implementation as SDL_mixer handles allocation
+	int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+	if (argc < 2 || argc > 3)
+		return luaL_error(L, "wrong number of arguments");
+#endif
+	
+	// Keep only first 2 parameters and call existing play function
+	lua_settop(L, 2);
+	return lua_play(L);
+}
+
 static int lua_pause(lua_State *L) {
 	void* soundPtr = lua_touserdata(L, 1);
 	if (!soundPtr) {
@@ -944,6 +958,7 @@ static const luaL_Reg Sound_functions[] = {
   {"openOgg",       lua_openSound},
   {"openWav",       lua_openSound},
   {"play",          lua_play},
+  {"playWav",       lua_playWav},
   {"pause",         lua_pause},
   {"resume",        lua_resume},
   {"stop",          lua_stop},

@@ -182,8 +182,8 @@ static int lua_check(lua_State *L){
     return 1;
 }
 
-// Mimic the Vita lerp function for coordinate transformation
-#define lerp(value, from_max, to_max) ((((value*10) * (to_max*10))/(from_max*10))/10)
+// Mimic the Vita lerp function for coordinate transformation - fixed precision
+#define lerp(value, from_max, to_max) ((value * to_max) / from_max)
 
 static int lua_touchpad(lua_State *L){
     int argc = lua_gettop(L);
@@ -210,29 +210,54 @@ static int lua_touchpad(lua_State *L){
                 logical_x = lerp(mouse_x, window_w, logical_w);
                 logical_y = lerp(mouse_y, window_h, logical_h);
                 
-                // For 3DS dual-screen mode, convert to bottom screen coordinates
+                // For 3DS mode, handle coordinate transformation
                 extern lpp_compat_mode_t g_compat_mode;
                 if (g_compat_mode == LPP_COMPAT_3DS) {
+                    extern bool g_3ds_single_screen_mode;
+                    extern int g_3ds_active_screen;
                     extern lpp_3ds_orientation_t g_3ds_orientation;
                     extern int getScreenXOffset(int screen_id);
                     extern int getScreenYOffset(int screen_id);
                     
-                    // Check if the click is on the bottom screen and convert to local coordinates
-                    int bottom_x_offset = getScreenXOffset(1); // BOTTOM_SCREEN
-                    int bottom_y_offset = getScreenYOffset(1);
-                    
-                    if (logical_x >= bottom_x_offset && logical_y >= bottom_y_offset) {
-                        // Click is on bottom screen area - convert to local bottom screen coordinates
-                        logical_x = logical_x - bottom_x_offset;
-                        logical_y = logical_y - bottom_y_offset;
-                        
-                        // Clamp to bottom screen dimensions
-                        if (logical_x > 320) logical_x = 320;
-                        if (logical_y > 240) logical_y = 240;
+                    if (g_3ds_single_screen_mode) {
+                        // Single-screen mode: only bottom screen accepts touch input (like real 3DS)
+                        if (g_3ds_active_screen == 1) {
+                            // Bottom screen is active - adjust coordinates for 320x240 screen centered in 400x240 logical area
+                            int center_offset = (DS_TOP_SCREEN_WIDTH - DS_BOTTOM_SCREEN_WIDTH) / 2; // 40px
+                            logical_x = logical_x - center_offset;
+                            
+                            // Clamp to bottom screen dimensions and validate
+                            if (logical_x < 0 || logical_x > DS_BOTTOM_SCREEN_WIDTH || logical_y < 0 || logical_y > DS_BOTTOM_SCREEN_HEIGHT) {
+                                // Return (0, 0) for out-of-bounds touch (consistent with original lpp-3ds)
+                                lua_pushinteger(L, 0);
+                                lua_pushinteger(L, 0);
+                                return 2;
+                            }
+                        } else {
+                            // Top screen is active - no touch input allowed (3DS top screen has no touch)
+                            lua_pushinteger(L, 0);
+                            lua_pushinteger(L, 0);
+                            return 2;
+                        }
                     } else {
-                        // Click is not on bottom screen area - report no touch
-                        logical_x = -1;
-                        logical_y = -1;
+                        // Dual-screen mode: convert to bottom screen coordinates
+                        int bottom_x_offset = getScreenXOffset(1); // BOTTOM_SCREEN
+                        int bottom_y_offset = getScreenYOffset(1);
+                        
+                        if (logical_x >= bottom_x_offset && logical_y >= bottom_y_offset) {
+                            // Click is on bottom screen area - convert to local bottom screen coordinates
+                            logical_x = logical_x - bottom_x_offset;
+                            logical_y = logical_y - bottom_y_offset;
+                            
+                            // Clamp to bottom screen dimensions
+                            if (logical_x > DS_BOTTOM_SCREEN_WIDTH) logical_x = DS_BOTTOM_SCREEN_WIDTH;
+                            if (logical_y > DS_BOTTOM_SCREEN_HEIGHT) logical_y = DS_BOTTOM_SCREEN_HEIGHT;
+                        } else {
+                            // Click is not on bottom screen area - report no touch (consistent with original lpp-3ds)
+                            lua_pushinteger(L, 0);
+                            lua_pushinteger(L, 0);
+                            return 2;
+                        }
                     }
                 }
             }
@@ -242,9 +267,9 @@ static int lua_touchpad(lua_State *L){
         lua_pushinteger(L, logical_y);
         return 2;
     }
-    // Return invalid coordinates when no touch is detected
-    lua_pushinteger(L, -1);
-    lua_pushinteger(L, -1);
+    // Return (0, 0) when no touch is detected (consistent with original lpp-3ds)
+    lua_pushinteger(L, 0);
+    lua_pushinteger(L, 0);
     return 2;
 }
 
@@ -412,6 +437,7 @@ static const luaL_Reg Controls_functions[] = {
   {"disableGyro",      lua_disablesensors},    
   {"disableAccel",     lua_disablesensors},
   {"getEnterButton",   lua_getenter},
+  {"readCirclePad",    lua_readleft},  // Alias for 3DS compatibility
   {"init",             lua_init}, 
   {0, 0}
 };
@@ -455,7 +481,7 @@ void luaControls_init(lua_State *L) {
     lua_pushinteger(L, SDL_SCANCODE_LSHIFT);lua_setglobal(L, "KEY_Y");
     lua_pushinteger(L, SDL_SCANCODE_PAGEUP);lua_setglobal(L, "KEY_L");
     lua_pushinteger(L, SDL_SCANCODE_PAGEDOWN);lua_setglobal(L, "KEY_R");
-    lua_pushinteger(L, SDL_SCANCODE_TAB);lua_setglobal(L, "KEY_START");
+    lua_pushinteger(L, SDL_SCANCODE_LALT);lua_setglobal(L, "KEY_START");
     lua_pushinteger(L, SDL_SCANCODE_LCTRL);lua_setglobal(L, "KEY_SELECT");
     lua_pushinteger(L, SDL_SCANCODE_UP);lua_setglobal(L, "KEY_DUP");
     lua_pushinteger(L, SDL_SCANCODE_DOWN);lua_setglobal(L, "KEY_DDOWN");

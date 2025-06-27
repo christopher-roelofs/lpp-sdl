@@ -27,6 +27,7 @@ extern "C" {
 
 SDL_Window* g_window = NULL;
 SDL_Renderer* g_renderer = NULL;
+int g_3ds_update_frames = 0; // Frame counter to allow inactive screen updates
 lpp_compat_mode_t g_compat_mode = LPP_COMPAT_NATIVE; // Global compatibility mode
 lpp_3ds_orientation_t g_3ds_orientation = LPP_3DS_HORIZONTAL; // 3DS screen orientation (default: horizontal)
 bool g_vita_compat_mode = false; // Global flag for Vita compatibility mode (deprecated, use g_compat_mode)
@@ -361,6 +362,14 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (vertical dual screen)\n");
+        } else if (strcmp(args[i], "-3dscompat-1screen") == 0) {
+            compat_mode = LPP_COMPAT_3DS;
+            g_3ds_orientation = LPP_3DS_HORIZONTAL; // Default orientation
+            g_3ds_single_screen_mode = true;
+            g_3ds_active_screen = 0; // Start with top screen
+            threeds_compat_mode = true;
+            vita_compat_mode = true;
+            printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
         } else if (strcmp(args[i], "-vitascale") == 0) {
             // Legacy support for old flag name
             compat_mode = LPP_COMPAT_VITA;
@@ -380,6 +389,7 @@ int main(int argc, char* args[]) {
             printf("  -3dscompat               Enable 3DS compatibility mode (horizontal dual screen)\n");
             printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
             printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
+            printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
             printf("\nLegacy Options (deprecated):\n");
             printf("  -vitascale      Legacy alias for -vitacompat\n");
             printf("  -3dsscale       Legacy alias for -3dscompat\n");
@@ -392,6 +402,7 @@ int main(int argc, char* args[]) {
             printf("  %s -vitacompat mygame.lua             # Run with Vita compatibility\n", args[0]);
             printf("  %s -3dscompat mygame.lua              # Run with 3DS compatibility (horizontal)\n", args[0]);
             printf("  %s -3dscompat-vertical mygame.lua     # Run with 3DS compatibility (vertical)\n", args[0]);
+            printf("  %s -3dscompat-1screen mygame.lua      # Run with 3DS single screen mode\n", args[0]);
             printf("  %s mygame.lua                         # Run in native SDL mode (default)\n", args[0]);
             return 0;
         } else if (lua_file == NULL) {
@@ -521,13 +532,16 @@ int main(int argc, char* args[]) {
                 force_single_screen = (display_mode.w <= 800 || display_mode.h <= 600);
             }
             
-            if (force_single_screen) {
-                // Enable single-screen mode for small displays
+            if (force_single_screen || g_3ds_single_screen_mode) {
+                // Enable single-screen mode for small displays or when explicitly requested
                 g_3ds_single_screen_mode = true;
                 g_3ds_active_screen = 0; // Start with top screen
+                // Use top screen dimensions for window sizing (will be properly sized for single screen)
                 aspect_ratio = (float)DS_TOP_SCREEN_WIDTH / (float)DS_TOP_SCREEN_HEIGHT; // 400x240
                 logical_height = DS_TOP_SCREEN_HEIGHT; // 240
-                printf("3DS single-screen mode enabled for small display (%dx%d)\n", display_mode.w, display_mode.h);
+                if (force_single_screen) {
+                    printf("3DS single-screen mode enabled for small display (%dx%d)\n", display_mode.w, display_mode.h);
+                }
                 printf("Use TAB key to switch between top and bottom screens\n");
             } else {
                 // Normal dual screen mode
@@ -577,7 +591,13 @@ int main(int argc, char* args[]) {
         // Ensure window is at least the logical resolution (maintain aspect ratio)
         int min_logical_width;
         if (compat_mode == LPP_COMPAT_3DS) {
-            min_logical_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
+            if (g_3ds_single_screen_mode) {
+                // Single-screen mode: use top screen dimensions
+                min_logical_width = DS_TOP_SCREEN_WIDTH; // 400
+            } else {
+                // Dual-screen mode: use full dual screen dimensions
+                min_logical_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
+            }
         } else {
             min_logical_width = SCREEN_WIDTH;
         }
@@ -587,9 +607,9 @@ int main(int argc, char* args[]) {
             window_height = logical_height;
         }
         
-        // For 3DS mode, ensure we have a large enough window to see both screens clearly
-        if (compat_mode == LPP_COMPAT_3DS) {
-            // Make window at least 1.5x the logical size for better visibility
+        // For 3DS mode, ensure we have a large enough window to see screens clearly
+        if (compat_mode == LPP_COMPAT_3DS && !g_3ds_single_screen_mode) {
+            // Make window at least 1.5x the logical size for better visibility (dual-screen mode only)
             int dual_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
             int dual_height = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_HEIGHT_V : DUAL_SCREEN_HEIGHT_H;
             int min_width = (dual_width * 3) / 2;
@@ -599,11 +619,16 @@ int main(int argc, char* args[]) {
         }
         
         if (compat_mode == LPP_COMPAT_3DS) {
-            int dual_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
-            int dual_height = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_HEIGHT_V : DUAL_SCREEN_HEIGHT_H;
-            const char* orientation_name = (g_3ds_orientation == LPP_3DS_VERTICAL) ? "vertical" : "horizontal";
-            printf("3DS compatibility mode (%s): Window size %dx%d for logical size %dx%d\n", 
-                   orientation_name, window_width, window_height, dual_width, dual_height);
+            if (g_3ds_single_screen_mode) {
+                printf("3DS single-screen mode: Window size %dx%d for logical size %dx%d\n", 
+                       window_width, window_height, DS_TOP_SCREEN_WIDTH, DS_TOP_SCREEN_HEIGHT);
+            } else {
+                int dual_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
+                int dual_height = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_HEIGHT_V : DUAL_SCREEN_HEIGHT_H;
+                const char* orientation_name = (g_3ds_orientation == LPP_3DS_VERTICAL) ? "vertical" : "horizontal";
+                printf("3DS compatibility mode (%s): Window size %dx%d for logical size %dx%d\n", 
+                       orientation_name, window_width, window_height, dual_width, dual_height);
+            }
         } else {
             printf("Vita compatibility mode: Window size %dx%d for logical size %dx%d\n", 
                    window_width, window_height, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -677,6 +702,11 @@ int main(int argc, char* args[]) {
     // Enable alpha blending for proper transparency support
     SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
     
+    
+    
+    // Hide the system cursor to prevent rendering artifacts
+    // SDL_ShowCursor(SDL_DISABLE); // Keep mouse visible by default
+    
     // Additional macOS compatibility fixes
 #ifdef __APPLE__
     // Force refresh rate to avoid timing issues
@@ -703,9 +733,9 @@ int main(int argc, char* args[]) {
         // For 3DS compatibility mode, handle both dual-screen and single-screen modes
         if (compat_mode == LPP_COMPAT_3DS) {
             if (g_3ds_single_screen_mode) {
-                // Single-screen mode: Use SDL logical scaling like Vita mode
-                int logical_width = (g_3ds_active_screen == 0) ? DS_TOP_SCREEN_WIDTH : DS_BOTTOM_SCREEN_WIDTH;
-                int logical_height = (g_3ds_active_screen == 0) ? DS_TOP_SCREEN_HEIGHT : DS_BOTTOM_SCREEN_HEIGHT;
+                // Single-screen mode: Use uniform logical sizing to prevent artifacts
+                int logical_width = DS_TOP_SCREEN_WIDTH;  // Always use 400px width
+                int logical_height = DS_TOP_SCREEN_HEIGHT; // Always use 240px height
                 
                 if (SDL_RenderSetLogicalSize(g_renderer, logical_width, logical_height) != 0) {
                     printf("Warning: Could not set logical size: %s\n", SDL_GetError());
@@ -917,18 +947,17 @@ int main(int argc, char* args[]) {
                     // Switch between top (0) and bottom (1) screens
                     g_3ds_active_screen = (g_3ds_active_screen == 0) ? 1 : 0;
                     
-                    // Update logical resolution for the new screen
+                    // Change logical size to show only the active screen, scaled to fill window
                     int logical_width = (g_3ds_active_screen == 0) ? DS_TOP_SCREEN_WIDTH : DS_BOTTOM_SCREEN_WIDTH;
                     int logical_height = (g_3ds_active_screen == 0) ? DS_TOP_SCREEN_HEIGHT : DS_BOTTOM_SCREEN_HEIGHT;
                     
                     if (SDL_RenderSetLogicalSize(g_renderer, logical_width, logical_height) == 0) {
                         const char* screen_name = (g_3ds_active_screen == 0) ? "top" : "bottom";
-                        printf("Switched to %s screen (%dx%d)\n", screen_name, logical_width, logical_height);
+                        printf("Switched to %s screen (%dx%d logical, scaled to fill window)\n", screen_name, logical_width, logical_height);
                         
-                        // Clear screen to avoid artifacts
+                        // Clear the render target to prevent overlap (but don't present immediately)
                         SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
                         SDL_RenderClear(g_renderer);
-                        SDL_RenderPresent(g_renderer);
                     }
                 }
             }

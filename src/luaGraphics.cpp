@@ -45,6 +45,9 @@ extern SDL_Window* g_window;
 extern SDL_Renderer* g_renderer;
 extern bool g_dual_screen_mode;
 
+// Global current screen for 3DS compatibility
+static int g_current_screen = 0; // Default to TOP_SCREEN
+
 // SDL Porting Placeholders
 typedef void vita2d_pgf;
 typedef void vita2d_font;
@@ -82,6 +85,15 @@ int getScreenXOffset(int screen_id) {
         return 0; // Single screen mode: no offset
     }
     
+    // In single-screen mode, position screens appropriately
+    if (g_3ds_single_screen_mode) {
+        if (screen_id == 1) {
+            // Bottom screen: center it in the 400px logical width
+            return (DS_TOP_SCREEN_WIDTH - DS_BOTTOM_SCREEN_WIDTH) / 2; // 40px offset to center 320px in 400px
+        }
+        return 0; // Top screen at 0,0
+    }
+    
     // Orientation-aware screen offsets (using logical coordinates)
     if (g_3ds_orientation == LPP_3DS_VERTICAL) {
         // Vertical layout: both screens use same X offset (0 for top, centered for bottom)
@@ -102,6 +114,11 @@ int getScreenYOffset(int screen_id) {
     // Check if we're in 3DS compatibility mode
     if (g_compat_mode != LPP_COMPAT_3DS) {
         return 0; // Single screen mode: no offset
+    }
+    
+    // In single-screen mode, both screens render at Y=0
+    if (g_3ds_single_screen_mode) {
+        return 0; // Both screens at Y=0
     }
     
     // Orientation-aware screen offsets (using logical coordinates)
@@ -132,20 +149,51 @@ void setScreenViewport(int screen_id) {
     extern SDL_Renderer* g_renderer;
     extern lpp_compat_mode_t g_compat_mode;
     
-    // For 3DS mode with SDL logical scaling, disable clipping entirely
-    // SDL handles the coordinate translation and screen positioning automatically
-    if (g_compat_mode == LPP_COMPAT_3DS || !g_renderer) {
-        SDL_RenderSetClipRect(g_renderer, NULL);
+    if (!g_renderer) {
         return;
     }
     
-    // Only enable clipping for other dual screen modes that need manual scaling
-    if (!g_dual_screen_mode) {
-        SDL_RenderSetClipRect(g_renderer, NULL);
+    // For 3DS mode, set clipping rectangles to prevent rendering outside screen boundaries
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, only clip if this screen is not the active one
+        if (g_3ds_single_screen_mode) {
+            if (screen_id != g_3ds_active_screen) {
+                // Inactive screen: clip to nothing (hide it)
+                SDL_Rect clip_rect = {0, 0, 0, 0}; // Empty clip rect hides everything
+                SDL_RenderSetClipRect(g_renderer, &clip_rect);
+            } else {
+                // Active screen: no clipping (full visibility)
+                SDL_RenderSetClipRect(g_renderer, NULL);
+            }
+            return;
+        }
+        
+        SDL_Rect clip_rect;
+        
+        // Get screen offsets and dimensions
+        int x_offset = getScreenXOffset(screen_id);
+        int y_offset = getScreenYOffset(screen_id);
+        
+        // Set clipping rectangle to exact screen bounds to allow all content within screen
+        if (screen_id == 0) {
+            // Top screen
+            clip_rect.x = x_offset;
+            clip_rect.y = y_offset;
+            clip_rect.w = DS_TOP_SCREEN_WIDTH;
+            clip_rect.h = DS_TOP_SCREEN_HEIGHT;
+        } else {
+            // Bottom screen
+            clip_rect.x = x_offset;
+            clip_rect.y = y_offset;
+            clip_rect.w = DS_BOTTOM_SCREEN_WIDTH;
+            clip_rect.h = DS_BOTTOM_SCREEN_HEIGHT;
+        }
+        
+        SDL_RenderSetClipRect(g_renderer, &clip_rect);
         return;
     }
     
-    // Legacy manual scaling viewport (currently unused)
+    // For other modes, disable clipping
     SDL_RenderSetClipRect(g_renderer, NULL);
 }
 
@@ -466,8 +514,8 @@ static int lua_pixel(lua_State *L) {
 static int lua_rect(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 5)
-		return luaL_error(L, "Argument error: graphics.fillRect(x1, x2, y1, y2, color) expected.");
+	if (argc != 5 && argc != 6)
+		return luaL_error(L, "Argument error: graphics.fillRect(x1, x2, y1, y2, color [, screen]) expected.");
 #endif
     // Vita API uses (x1, x2, y1, y2, color) format
     int x1 = luaL_checkinteger(L, 1);
@@ -475,6 +523,9 @@ static int lua_rect(lua_State *L) {
     int y1 = luaL_checkinteger(L, 3);
     int y2 = luaL_checkinteger(L, 4);
     uint32_t color = get_color_from_lua(L, 5);
+    
+    // Handle optional screen parameter for 3DS compatibility
+    int screen = (argc == 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
 
     if (g_renderer) {
         // Convert from Vita (x1,x2,y1,y2) to SDL (x,y,w,h) format
@@ -485,6 +536,22 @@ static int lua_rect(lua_State *L) {
         
         // Add bounds checking to prevent drawing outside screen
         if (w <= 0 || h <= 0) return 0; // Invalid dimensions
+        
+        // Apply screen offsets for 3DS mode
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            // In single-screen mode, skip rendering if this isn't the active screen
+            if (g_3ds_single_screen_mode && screen != g_3ds_active_screen) {
+                return 0; // Skip rendering for inactive screen
+            }
+            
+            int x_offset = getScreenXOffset(screen);
+            int y_offset = getScreenYOffset(screen);
+            x += x_offset;
+            y += y_offset;
+            
+            // Set viewport clipping for this screen
+            setScreenViewport(screen);
+        }
         
         // Get appropriate screen boundaries based on mode
         int screen_width = g_vita_compat_mode ? SCREEN_WIDTH : NATIVE_LOGICAL_WIDTH;
@@ -672,9 +739,15 @@ static int lua_circle(lua_State *L) {
 static int lua_init(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 0)
+	if (argc != 0 && argc != 1)
 		return luaL_error(L, "wrong number of arguments");
 #endif
+	
+	// Handle optional screen parameter for 3DS compatibility
+	if (argc == 1) {
+		// Screen parameter provided (3DS mode) - set current screen context
+		g_current_screen = luaL_checkinteger(L, 1);
+	}
 #ifdef PARANOID
 	if (draw_state)
 		return luaL_error(L, "initBlend can't be called inside a blending phase.");
@@ -803,6 +876,22 @@ static int lua_drawimg(lua_State *L) {
         return luaL_error(L, "Invalid texture provided to drawImage");
     }
 
+    // Apply screen offsets for 3DS mode using current screen context
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, skip rendering if this isn't the active screen
+        if (g_3ds_single_screen_mode && g_current_screen != g_3ds_active_screen) {
+            return 0; // Skip rendering for inactive screen
+        }
+        
+        int x_offset = getScreenXOffset(g_current_screen);
+        int y_offset = getScreenYOffset(g_current_screen);
+        x += x_offset;
+        y += y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(g_current_screen);
+    }
+
     SDL_Texture* sdl_tex = (SDL_Texture*)tex->texture;
     
     // Handle optional color parameter for alpha blending
@@ -848,8 +937,29 @@ static int lua_drawimg_rotate(lua_State *L) {
     lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 3);
     float angle = luaL_checknumber(L, 4);
 
-    if (tex && tex->magic == 0xABADBEEF && g_renderer) {
-        SDL_Rect dest_rect = { (int)x, (int)y, tex->w, tex->h };
+    if (!tex || tex->magic != 0xABADBEEF) {
+        return luaL_error(L, "Invalid texture provided to drawRotateImage");
+    }
+
+    // Apply screen offsets for 3DS mode using current screen context
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, skip rendering if this isn't the active screen
+        if (g_3ds_single_screen_mode && g_current_screen != g_3ds_active_screen) {
+            return 0; // Skip rendering for inactive screen
+        }
+        
+        int x_offset = getScreenXOffset(g_current_screen);
+        int y_offset = getScreenYOffset(g_current_screen);
+        x += x_offset;
+        y += y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(g_current_screen);
+    }
+
+    if (g_renderer) {
+        // Note: Vita drawRotateImage uses (x,y) as center, SDL uses top-left corner
+        SDL_Rect dest_rect = { (int)x - tex->w/2, (int)y - tex->h/2, tex->w, tex->h };
         // The angle in vita2d is in radians, SDL_RenderCopyEx expects degrees.
         double angle_degrees = angle * 180.0 / M_PI;
         SDL_RenderCopyEx(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect, angle_degrees, NULL, SDL_FLIP_NONE);
@@ -870,7 +980,27 @@ static int lua_drawimg_scale(lua_State *L) {
     float x_scale = luaL_checknumber(L, 4);
     float y_scale = luaL_checknumber(L, 5);
 
-    if (tex && tex->magic == 0xABADBEEF && g_renderer) {
+    if (!tex || tex->magic != 0xABADBEEF) {
+        return luaL_error(L, "Invalid texture provided to drawScaleImage");
+    }
+
+    // Apply screen offsets for 3DS mode using current screen context
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // In single-screen mode, skip rendering if this isn't the active screen
+        if (g_3ds_single_screen_mode && g_current_screen != g_3ds_active_screen) {
+            return 0; // Skip rendering for inactive screen
+        }
+        
+        int x_offset = getScreenXOffset(g_current_screen);
+        int y_offset = getScreenYOffset(g_current_screen);
+        x += x_offset;
+        y += y_offset;
+        
+        // Set viewport clipping for this screen
+        setScreenViewport(g_current_screen);
+    }
+
+    if (g_renderer) {
         SDL_Rect dest_rect = { (int)x, (int)y, (int)(tex->w * x_scale), (int)(tex->h * y_scale) };
         SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect);
     }
@@ -888,13 +1018,30 @@ static int lua_drawimg_part(lua_State *L) {
 	if (!draw_state)
 		return luaL_error(L, "drawPartialImage can't be called outside a blending phase.");
 #endif
+	
 	float x = luaL_checknumber(L, 1);
 	float y = luaL_checknumber(L, 2);
-	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 3);
-	int st_x = luaL_checkinteger(L, 4);
-	int st_y = luaL_checkinteger(L, 5);
-	int width = luaL_checkinteger(L, 6);
-	int height = luaL_checkinteger(L, 7);
+	
+	lpp_texture* text;
+	int st_x, st_y, width, height;
+	
+	// Check if 3rd parameter is userdata (SDL order) or number (3DS order)
+	if (lua_isuserdata(L, 3)) {
+		// SDL order: x, y, texture, st_x, st_y, width, height [, color]
+		text = (lpp_texture*)lua_touserdata(L, 3);
+		st_x = luaL_checkinteger(L, 4);
+		st_y = luaL_checkinteger(L, 5);
+		width = luaL_checkinteger(L, 6);
+		height = luaL_checkinteger(L, 7);
+	} else {
+		// 3DS order: x, y, st_x, st_y, width, height, texture [, color]
+		st_x = luaL_checkinteger(L, 3);
+		st_y = luaL_checkinteger(L, 4);
+		width = luaL_checkinteger(L, 5);
+		height = luaL_checkinteger(L, 6);
+		text = (lpp_texture*)lua_touserdata(L, 7);
+	}
+	
 #ifndef SKIP_ERROR_HANDLING
 	if (!text || text->magic != 0xABADBEEF)
 		return luaL_error(L, "attempt to access wrong memory block type.");
@@ -922,14 +1069,33 @@ static int lua_drawimg_full(lua_State *L) {
 #endif
 	float x = luaL_checknumber(L, 1);
 	float y = luaL_checknumber(L, 2);
-	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 3);
-	int st_x = luaL_checkinteger(L, 4);
-	int st_y = luaL_checkinteger(L, 5);
-	float width = luaL_checknumber(L, 6);
-	float height = luaL_checknumber(L, 7);
-	float radius = luaL_checknumber(L, 8);
-	float x_scale = luaL_checknumber(L, 9);
-	float y_scale = luaL_checknumber(L, 10);
+	
+	lpp_texture* text;
+	int st_x, st_y;
+	float width, height, radius, x_scale, y_scale;
+	
+	// Check if 3rd parameter is userdata (SDL order) or number (3DS order)
+	if (lua_isuserdata(L, 3)) {
+		// SDL order: x, y, texture, st_x, st_y, width, height, radius, x_scale, y_scale
+		text = (lpp_texture*)lua_touserdata(L, 3);
+		st_x = luaL_checkinteger(L, 4);
+		st_y = luaL_checkinteger(L, 5);
+		width = luaL_checknumber(L, 6);
+		height = luaL_checknumber(L, 7);
+		radius = luaL_checknumber(L, 8);
+		x_scale = luaL_checknumber(L, 9);
+		y_scale = luaL_checknumber(L, 10);
+	} else {
+		// 3DS order: x, y, st_x, st_y, width, height, radius, x_scale, y_scale, texture
+		st_x = luaL_checkinteger(L, 3);
+		st_y = luaL_checkinteger(L, 4);
+		width = luaL_checknumber(L, 5);
+		height = luaL_checknumber(L, 6);
+		radius = luaL_checknumber(L, 7);
+		x_scale = luaL_checknumber(L, 8);
+		y_scale = luaL_checknumber(L, 9);
+		text = (lpp_texture*)lua_touserdata(L, 10);
+	}
 #ifndef SKIP_ERROR_HANDLING
 	if (text->magic != 0xABADBEEF)
 		return luaL_error(L, "attempt to access wrong memory block type.");
@@ -957,11 +1123,28 @@ static int lua_drawimg_full(lua_State *L) {
 	src_rect.h = (int)height;
 	
 	// Destination rectangle (where to draw, with scaling)
+	// Note: Vita drawImageExtended uses (x,y) as center, SDL uses top-left corner
 	SDL_Rect dest_rect;
-	dest_rect.x = (int)x;
-	dest_rect.y = (int)y;
 	dest_rect.w = (int)(width * x_scale);
 	dest_rect.h = (int)(height * y_scale);
+	dest_rect.x = (int)x - dest_rect.w / 2;  // Center the image horizontally
+	dest_rect.y = (int)y - dest_rect.h / 2;  // Center the image vertically
+	
+	// Apply screen offsets for 3DS mode using current screen context
+	if (g_compat_mode == LPP_COMPAT_3DS) {
+		// In single-screen mode, skip rendering if this isn't the active screen
+		if (g_3ds_single_screen_mode && g_current_screen != g_3ds_active_screen) {
+			return 0; // Skip rendering for inactive screen
+		}
+		
+		int x_offset = getScreenXOffset(g_current_screen);
+		int y_offset = getScreenYOffset(g_current_screen);
+		dest_rect.x += x_offset;
+		dest_rect.y += y_offset;
+		
+		// Set viewport clipping for this screen
+		setScreenViewport(g_current_screen);
+	}
 	
 	// Center point for rotation
 	SDL_Point center;
@@ -1304,13 +1487,26 @@ static int lua_fprint(lua_State *L) {
 
         // Apply screen offsets for 3DS mode
         if (g_compat_mode == LPP_COMPAT_3DS) {
+            // In single-screen mode, skip rendering if this isn't the active screen
+            if (g_3ds_single_screen_mode && screen != g_3ds_active_screen) {
+                continue; // Skip rendering text for inactive screen
+            }
+            
             int screen_x_offset = getScreenXOffset(screen);
             int screen_y_offset = getScreenYOffset(screen);
             dest_rect.x += screen_x_offset;
             dest_rect.y += screen_y_offset;
+            
+            // Set viewport clipping for this screen
+            setScreenViewport(screen);
         }
 
         SDL_RenderCopy(g_renderer, text_texture, NULL, &dest_rect);
+        
+        // Reset clipping after drawing
+        if (g_compat_mode == LPP_COMPAT_3DS) {
+            SDL_RenderSetClipRect(g_renderer, NULL);
+        }
 
         SDL_DestroyTexture(text_texture);
         SDL_FreeSurface(text_surface);
@@ -1652,6 +1848,7 @@ static const luaL_Reg Graphics_functions[] = {
 	{"getImageHeight",      lua_getheight},
 	{"getImageWidth",       lua_getwidth},
 	{"getPixel",            lua_gpixel},
+	{"init",                lua_init},  // Alias for initBlend for compatibility
 	{"initBlend",           lua_init},
 	{"initRescaler",        lua_rescaleron},
 	{"loadAnimatedImage",   lua_loadanimg},
