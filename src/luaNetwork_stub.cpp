@@ -32,6 +32,9 @@
 #include <map>
 #include <thread>
 #include <fstream>
+#include <atomic>
+#include <mutex>
+#include <memory>
 #include <ifaddrs.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -67,6 +70,40 @@ enum {
 // Network state
 static bool network_initialized = false;
 static CURL* curl_handle = nullptr;
+
+// Async operation states
+enum AsyncState {
+    ASYNC_IDLE = 0,
+    ASYNC_RUNNING = 1,
+    ASYNC_COMPLETED = 2,
+    ASYNC_FAILED = 3
+};
+
+// Async operation structure
+struct AsyncOperation {
+    std::atomic<AsyncState> state;
+    std::string url;
+    std::string filepath;
+    std::string useragent;
+    std::string postdata;
+    std::string result_string;
+    int method;
+    std::thread worker_thread;
+    std::mutex result_mutex;
+    
+    AsyncOperation() : state(ASYNC_IDLE), method(GET_METHOD) {}
+    
+    ~AsyncOperation() {
+        if (worker_thread.joinable()) {
+            worker_thread.join();
+        }
+    }
+};
+
+// Async operation management
+static std::map<int, std::unique_ptr<AsyncOperation>> async_operations;
+static std::mutex async_mutex;
+static int next_async_id = 1;
 
 // String download structure
 struct NetString {
@@ -104,6 +141,112 @@ static size_t WriteFileCallback(void* contents, size_t size, size_t nmemb, FILE*
     return written;
 }
 
+// Async worker function for string downloads
+static void async_string_worker(AsyncOperation* op) {
+    op->state = ASYNC_RUNNING;
+    
+    CURL* local_curl = curl_easy_init();
+    if (!local_curl) {
+        op->state = ASYNC_FAILED;
+        return;
+    }
+    
+    NetString response;
+    
+    curl_easy_setopt(local_curl, CURLOPT_URL, op->url.c_str());
+    curl_easy_setopt(local_curl, CURLOPT_WRITEFUNCTION, WriteStringCallback);
+    curl_easy_setopt(local_curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(local_curl, CURLOPT_USERAGENT, op->useragent.c_str());
+    curl_easy_setopt(local_curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(local_curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(local_curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(local_curl, CURLOPT_TIMEOUT, 30L);
+    
+    switch (op->method) {
+        case POST_METHOD:
+            curl_easy_setopt(local_curl, CURLOPT_POST, 1L);
+            if (!op->postdata.empty()) {
+                curl_easy_setopt(local_curl, CURLOPT_POSTFIELDS, op->postdata.c_str());
+                curl_easy_setopt(local_curl, CURLOPT_POSTFIELDSIZE, op->postdata.length());
+            }
+            break;
+        case HEAD_METHOD:
+            curl_easy_setopt(local_curl, CURLOPT_NOBODY, 1L);
+            break;
+        default: // GET_METHOD
+            curl_easy_setopt(local_curl, CURLOPT_HTTPGET, 1L);
+            break;
+    }
+    
+    CURLcode res = curl_easy_perform(local_curl);
+    curl_easy_cleanup(local_curl);
+    
+    {
+        std::lock_guard<std::mutex> lock(op->result_mutex);
+        if (res == CURLE_OK) {
+            op->result_string = std::string(response.ptr);
+            op->state = ASYNC_COMPLETED;
+        } else {
+            op->result_string = "";
+            op->state = ASYNC_FAILED;
+        }
+    }
+}
+
+// Async worker function for file downloads
+static void async_file_worker(AsyncOperation* op) {
+    op->state = ASYNC_RUNNING;
+    
+    CURL* local_curl = curl_easy_init();
+    if (!local_curl) {
+        op->state = ASYNC_FAILED;
+        return;
+    }
+    
+    FILE* fp = fopen(op->filepath.c_str(), "wb");
+    if (!fp) {
+        curl_easy_cleanup(local_curl);
+        op->state = ASYNC_FAILED;
+        return;
+    }
+    
+    curl_easy_setopt(local_curl, CURLOPT_URL, op->url.c_str());
+    curl_easy_setopt(local_curl, CURLOPT_WRITEFUNCTION, WriteFileCallback);
+    curl_easy_setopt(local_curl, CURLOPT_WRITEDATA, fp);
+    curl_easy_setopt(local_curl, CURLOPT_USERAGENT, op->useragent.c_str());
+    curl_easy_setopt(local_curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(local_curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(local_curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(local_curl, CURLOPT_TIMEOUT, 30L);
+    
+    switch (op->method) {
+        case POST_METHOD:
+            curl_easy_setopt(local_curl, CURLOPT_POST, 1L);
+            if (!op->postdata.empty()) {
+                curl_easy_setopt(local_curl, CURLOPT_POSTFIELDS, op->postdata.c_str());
+                curl_easy_setopt(local_curl, CURLOPT_POSTFIELDSIZE, op->postdata.length());
+            }
+            break;
+        case HEAD_METHOD:
+            curl_easy_setopt(local_curl, CURLOPT_NOBODY, 1L);
+            break;
+        default: // GET_METHOD
+            curl_easy_setopt(local_curl, CURLOPT_HTTPGET, 1L);
+            break;
+    }
+    
+    CURLcode res = curl_easy_perform(local_curl);
+    fclose(fp);
+    curl_easy_cleanup(local_curl);
+    
+    if (res == CURLE_OK) {
+        op->state = ASYNC_COMPLETED;
+    } else {
+        unlink(op->filepath.c_str()); // Delete failed download
+        op->state = ASYNC_FAILED;
+    }
+}
+
 // Network.init - Initialize networking
 static int lua_init(lua_State *L) {
     if (network_initialized) {
@@ -133,6 +276,12 @@ static int lua_init(lua_State *L) {
 static int lua_term(lua_State *L) {
     if (!network_initialized) {
         return 0;
+    }
+    
+    // Clean up all async operations
+    {
+        std::lock_guard<std::mutex> lock(async_mutex);
+        async_operations.clear(); // Destructors will join threads
     }
     
     if (curl_handle) {
@@ -378,6 +527,121 @@ static int lua_requestFile(lua_State *L) {
     return 0;
 }
 
+// Network.requestStringAsync - Start async string download
+static int lua_requestStringAsync(lua_State *L) {
+    if (!network_initialized) {
+        return luaL_error(L, "Network not initialized");
+    }
+    
+    const char* url = luaL_checkstring(L, 1);
+    const char* useragent = lua_gettop(L) >= 2 ? luaL_optstring(L, 2, "lpp-vita") : "lpp-vita";
+    int method = lua_gettop(L) >= 3 ? luaL_optinteger(L, 3, GET_METHOD) : GET_METHOD;
+    const char* postdata = lua_gettop(L) >= 4 ? luaL_optstring(L, 4, nullptr) : nullptr;
+    
+    std::lock_guard<std::mutex> lock(async_mutex);
+    
+    int async_id = next_async_id++;
+    auto op = std::make_unique<AsyncOperation>();
+    op->url = url;
+    op->useragent = useragent;
+    op->method = method;
+    if (postdata) {
+        op->postdata = postdata;
+    }
+    
+    // Start the async operation in a new thread
+    AsyncOperation* op_ptr = op.get();
+    op->worker_thread = std::thread(async_string_worker, op_ptr);
+    
+    async_operations[async_id] = std::move(op);
+    
+    lua_pushinteger(L, async_id);
+    return 1;
+}
+
+// Network.downloadFileAsync - Start async file download
+static int lua_downloadFileAsync(lua_State *L) {
+    if (!network_initialized) {
+        return luaL_error(L, "Network not initialized");
+    }
+    
+    const char* url = luaL_checkstring(L, 1);
+    const char* filepath = luaL_checkstring(L, 2);
+    const char* useragent = lua_gettop(L) >= 3 ? luaL_optstring(L, 3, "lpp-vita") : "lpp-vita";
+    int method = lua_gettop(L) >= 4 ? luaL_optinteger(L, 4, GET_METHOD) : GET_METHOD;
+    const char* postdata = lua_gettop(L) >= 5 ? luaL_optstring(L, 5, nullptr) : nullptr;
+    
+    std::lock_guard<std::mutex> lock(async_mutex);
+    
+    int async_id = next_async_id++;
+    auto op = std::make_unique<AsyncOperation>();
+    op->url = url;
+    op->filepath = filepath;
+    op->useragent = useragent;
+    op->method = method;
+    if (postdata) {
+        op->postdata = postdata;
+    }
+    
+    // Start the async operation in a new thread
+    AsyncOperation* op_ptr = op.get();
+    op->worker_thread = std::thread(async_file_worker, op_ptr);
+    
+    async_operations[async_id] = std::move(op);
+    
+    lua_pushinteger(L, async_id);
+    return 1;
+}
+
+// Network.getAsyncState - Check async operation status
+static int lua_getAsyncState(lua_State *L) {
+    int async_id = luaL_checkinteger(L, 1);
+    
+    std::lock_guard<std::mutex> lock(async_mutex);
+    auto it = async_operations.find(async_id);
+    if (it == async_operations.end()) {
+        lua_pushinteger(L, ASYNC_FAILED);
+        return 1;
+    }
+    
+    lua_pushinteger(L, static_cast<int>(it->second->state.load()));
+    return 1;
+}
+
+// Network.getAsyncResult - Get async operation result
+static int lua_getAsyncResult(lua_State *L) {
+    int async_id = luaL_checkinteger(L, 1);
+    
+    std::lock_guard<std::mutex> lock(async_mutex);
+    auto it = async_operations.find(async_id);
+    if (it == async_operations.end()) {
+        lua_pushstring(L, "");
+        return 1;
+    }
+    
+    AsyncOperation* op = it->second.get();
+    AsyncState state = op->state.load();
+    
+    if (state == ASYNC_COMPLETED) {
+        std::lock_guard<std::mutex> result_lock(op->result_mutex);
+        lua_pushstring(L, op->result_string.c_str());
+        
+        // Clean up completed operation
+        async_operations.erase(it);
+        return 1;
+    } else if (state == ASYNC_FAILED) {
+        lua_pushstring(L, "");
+        
+        // Clean up failed operation
+        async_operations.erase(it);
+        return 1;
+    }
+    
+    // Still running or idle
+    lua_pushstring(L, "");
+    return 1;
+}
+
 // Network.isWifiEnabled - Check if network is available
 static int lua_isConnected(lua_State *L) {
     if (!network_initialized) {
@@ -413,15 +677,19 @@ static int lua_stopFTP(lua_State *L) {
 
 //Register our Network Functions
 static const luaL_Reg Network_functions[] = {
-  {"init",          lua_init},
-  {"term",          lua_term},
-  {"requestString", lua_requestString},
-  {"requestFile",   lua_requestFile}, 
-  {"getIPAddress",  lua_getip},
-  {"getMacAddress", lua_getmac},
-  {"isWifiEnabled", lua_isConnected},
-  {"startFTP",      lua_startFTP},
-  {"stopFTP",       lua_stopFTP},
+  {"init",               lua_init},
+  {"term",               lua_term},
+  {"requestString",      lua_requestString},
+  {"requestFile",        lua_requestFile}, 
+  {"requestStringAsync", lua_requestStringAsync},
+  {"downloadFileAsync",  lua_downloadFileAsync},
+  {"getAsyncState",      lua_getAsyncState},
+  {"getAsyncResult",     lua_getAsyncResult},
+  {"getIPAddress",       lua_getip},
+  {"getMacAddress",      lua_getmac},
+  {"isWifiEnabled",      lua_isConnected},
+  {"startFTP",           lua_startFTP},
+  {"stopFTP",            lua_stopFTP},
   {0, 0}
 };
 
@@ -432,4 +700,8 @@ void luaNetwork_init(lua_State *L) {
 	VariableRegister(L, GET_METHOD);
 	VariableRegister(L, POST_METHOD);
 	VariableRegister(L, HEAD_METHOD);
+	VariableRegister(L, ASYNC_IDLE);
+	VariableRegister(L, ASYNC_RUNNING);
+	VariableRegister(L, ASYNC_COMPLETED);
+	VariableRegister(L, ASYNC_FAILED);
 }
