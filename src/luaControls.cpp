@@ -189,9 +189,23 @@ static int lua_touchpad(lua_State *L){
     int argc = lua_gettop(L);
     if (argc != 0) return luaL_error(L, "wrong number of arguments.");
     update_input_state();
+    
+    // Debug output for mouse state
+    extern lpp_compat_mode_t g_compat_mode;
+    static int debug_counter = 0;
+    if ((debug_counter++ % 60) == 0) { // Print every 60th call to avoid spam
+        printf("[DEBUG] Touch check: mouse_pressed=%s, pos=(%d,%d), compat_mode=%d\n", 
+               mouse_pressed ? "true" : "false", mouse_x, mouse_y, g_compat_mode);
+    }
+    
     if (mouse_pressed) {
         int logical_x = mouse_x;
         int logical_y = mouse_y;
+        
+        // Debug output for touch processing
+        if ((debug_counter % 60) == 1) { // Print every 60th touch to avoid spam
+            printf("[DEBUG] Touch detected: raw=(%d,%d), compat_mode=%d\n", mouse_x, mouse_y, g_compat_mode);
+        }
         
         if (g_renderer) {
             int logical_w, logical_h;
@@ -210,7 +224,7 @@ static int lua_touchpad(lua_State *L){
                 logical_x = lerp(mouse_x, window_w, logical_w);
                 logical_y = lerp(mouse_y, window_h, logical_h);
                 
-                // For 3DS mode, handle coordinate transformation
+                // Handle platform-specific coordinate transformation
                 extern lpp_compat_mode_t g_compat_mode;
                 if (g_compat_mode == LPP_COMPAT_3DS) {
                     extern bool g_3ds_single_screen_mode;
@@ -259,18 +273,27 @@ static int lua_touchpad(lua_State *L){
                             return 2;
                         }
                     }
+                    
+                    // Return transformed 3DS coordinates
+                    lua_pushinteger(L, logical_x);
+                    lua_pushinteger(L, logical_y);
+                    return 2;
                 }
+                // For Vita/Native mode, use simple coordinate passthrough
             }
+        }
+        
+        // Debug output for final coordinates
+        if ((debug_counter % 60) == 2) { // Print every 60th touch to avoid spam
+            printf("[DEBUG] Returning coordinates: (%d,%d)\n", logical_x, logical_y);
         }
         
         lua_pushinteger(L, logical_x);
         lua_pushinteger(L, logical_y);
         return 2;
     }
-    // Return (0, 0) when no touch is detected (consistent with original lpp-3ds)
-    lua_pushinteger(L, 0);
-    lua_pushinteger(L, 0);
-    return 2;
+    // Return nothing when no touch is detected (consistent with original lpp-vita)
+    return 0;
 }
 
 static int lua_rumble(lua_State *L){
