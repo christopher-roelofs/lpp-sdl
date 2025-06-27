@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <thread>
 #include <atomic>
+#include "include/path_utils.h"
 
 // Zip support
 extern "C" {
@@ -59,28 +60,35 @@ enum {
 // Maximum async tasks
 #define ASYNC_TASKS_MAX 1
 
-// Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
+// Helper function to translate console-specific paths for cross-platform compatibility
 static std::string translate_vita_path(const char* path) {
+    extern lpp_compat_mode_t g_compat_mode;
     std::string result(path);
-    bool was_vita_path = false;
+    bool was_console_path = false;
     
-    // Replace app0:/ with current directory (empty string means relative to current dir)
+    // Handle Vita-specific paths
     size_t pos = result.find("app0:/");
     if (pos != std::string::npos) {
         result.replace(pos, 6, "");  // Remove "app0:/"
-        was_vita_path = true;
+        was_console_path = true;
     }
     
-    // Replace ux0:/ with current directory (user data path)
     pos = result.find("ux0:/");
     if (pos != std::string::npos) {
         result.replace(pos, 5, "");  // Remove "ux0:/"
-        was_vita_path = true;
+        was_console_path = true;
     }
     
-    // Only convert to relative path if it was originally a Vita path
+    // Handle 3DS-specific paths: convert absolute paths to relative for desktop compatibility
+    if (g_compat_mode == LPP_COMPAT_3DS && !was_console_path && result.length() > 0 && result[0] == '/') {
+        // 3DS games often use absolute paths like "/save.dat" which need to be relative on desktop
+        result = result.substr(1); // Remove leading slash to make it relative
+        was_console_path = true;
+    }
+    
+    // Only convert to relative path if it was originally a console-specific path
     // Preserve absolute paths for regular filesystem operations
-    if (was_vita_path && result.length() > 0 && result[0] == '/') {
+    if (was_console_path && result.length() > 0 && result[0] == '/') {
         result = result.substr(1); // Remove leading slash to make it relative
     }
     
@@ -101,7 +109,7 @@ static void addFileToZip(zipFile zf, const char* parent_path, const char* file_p
     std::string filename = base_name ? (base_name + 1) : file_path;
     
     if (parent_path && strlen(parent_path) > 0) {
-        zip_path = std::string(parent_path) + "/" + filename;
+        zip_path = PathUtils::join(parent_path, filename);
     } else {
         zip_path = filename;
     }
@@ -134,7 +142,7 @@ static void addDirToZip(zipFile zf, const char* parent_path, const char* dir_pat
             continue;
         }
         
-        std::string full_path = translated_path + "/" + entry->d_name;
+        std::string full_path = PathUtils::join(translated_path, entry->d_name);
         
         struct stat st;
         if (stat(full_path.c_str(), &st) == 0) {
@@ -151,7 +159,7 @@ static void addDirToZip(zipFile zf, const char* parent_path, const char* dir_pat
             
             if (S_ISDIR(st.st_mode)) {
                 // For subdirectories, include the subdirectory name in the path
-                std::string subdir_zip_path = zip_parent_path + "/" + entry->d_name;
+                std::string subdir_zip_path = PathUtils::join(zip_parent_path, entry->d_name);
                 addDirToZip(zf, subdir_zip_path.c_str(), full_path.c_str(), compression_level);
             } else {
                 addFileToZip(zf, zip_parent_path.c_str(), full_path.c_str(), compression_level);
@@ -172,6 +180,8 @@ static int lua_doesFileExist(lua_State *L) {
     
     // Translate Vita paths (app0:/ -> current directory)
     std::string translated_path = translate_vita_path(path);
+    // Convert Unix-style paths to platform-specific separators
+    translated_path = PathUtils::unix_to_platform(translated_path);
     
     struct stat buffer;
     lua_pushboolean(L, (stat(translated_path.c_str(), &buffer) == 0));
@@ -313,6 +323,8 @@ static int lua_openFile(lua_State *L) {
     
     // Translate Vita paths (app0:/ -> current directory)  
     std::string translated_path = translate_vita_path(path);
+    // Convert Unix-style paths to platform-specific separators
+    translated_path = PathUtils::unix_to_platform(translated_path);
     const char *mode_str = NULL;
 
     if (lua_isstring(L, 2)) {
@@ -606,6 +618,7 @@ static int lua_isBatteryCharging(lua_State *L) {
 static int lua_deleteFile(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     std::string translated_path = translate_vita_path(path);
+    translated_path = PathUtils::unix_to_platform(translated_path);
     bool success = (unlink(translated_path.c_str()) == 0);
     lua_pushboolean(L, success);
     return 1;
@@ -676,6 +689,7 @@ static int lua_wait(lua_State *L) {
 static int lua_doesDirExist(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     std::string translated_path = translate_vita_path(path);
+    translated_path = PathUtils::unix_to_platform(translated_path);
     
     struct stat buffer;
     bool exists = (stat(translated_path.c_str(), &buffer) == 0 && S_ISDIR(buffer.st_mode));
@@ -694,6 +708,7 @@ static int lua_listDirectory(lua_State *L) {
     
     // Translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
     std::string translated_path = translate_vita_path(path);
+    translated_path = PathUtils::unix_to_platform(translated_path);
     
     // Create a table to return
     lua_newtable(L);
@@ -772,6 +787,8 @@ static int lua_dofile_vita(lua_State *L) {
     
     const char *path = luaL_checkstring(L, 1);
     std::string translated_path = translate_vita_path(path);
+    // Convert Unix-style paths to platform-specific separators
+    translated_path = PathUtils::unix_to_platform(translated_path);
     
     // Use luaL_dofile with the translated path
     int status = luaL_dofile(L, translated_path.c_str());
@@ -794,6 +811,7 @@ static int lua_dofile_vita(lua_State *L) {
 static int lua_statFile(lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
     std::string translated_path = translate_vita_path(path);
+    translated_path = PathUtils::unix_to_platform(translated_path);
     
     struct stat st;
     if (stat(translated_path.c_str(), &st) != 0) {
@@ -894,7 +912,9 @@ static int lua_copyFile(lua_State *L) {
     const char *dest_path = luaL_checkstring(L, 2);
     
     std::string translated_src = translate_vita_path(src_path);
+    translated_src = PathUtils::unix_to_platform(translated_src);
     std::string translated_dest = translate_vita_path(dest_path);
+    translated_dest = PathUtils::unix_to_platform(translated_dest);
     
     FILE *src_file = fopen(translated_src.c_str(), "rb");
     if (!src_file) {
@@ -954,7 +974,9 @@ static int lua_rename(lua_State *L) {
     const char *new_path = luaL_checkstring(L, 2);
     
     std::string translated_old = translate_vita_path(old_path);
+    translated_old = PathUtils::unix_to_platform(translated_old);
     std::string translated_new = translate_vita_path(new_path);
+    translated_new = PathUtils::unix_to_platform(translated_new);
     
     int result = rename(translated_old.c_str(), translated_new.c_str());
     lua_pushboolean(L, result == 0);
@@ -981,7 +1003,7 @@ static bool remove_directory_recursive(const std::string& path) {
             continue;
         }
         
-        std::string full_path = path + "/" + entry->d_name;
+        std::string full_path = PathUtils::join(path, entry->d_name);
         struct stat st;
         
         if (stat(full_path.c_str(), &st) == 0) {
@@ -1389,6 +1411,62 @@ static int lua_currentDirectory(lua_State *L) {
     }
 }
 
+// Path utility functions for Lua scripts
+
+// Path.join(base, relative) - Join two path components using correct platform separator
+static int lua_pathJoin(lua_State *L) {
+    const char *base = luaL_checkstring(L, 1);
+    const char *relative = luaL_checkstring(L, 2);
+    
+    std::string result = PathUtils::join(std::string(base), std::string(relative));
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
+// Path.normalize(path) - Normalize a path to use correct platform separators
+static int lua_pathNormalize(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    std::string result = PathUtils::normalize(std::string(path));
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
+// Path.getSeparator() - Get the platform-specific path separator
+static int lua_pathGetSeparator(lua_State *L) {
+    char sep = PathUtils::get_separator();
+    char sep_str[2] = {sep, '\0'};
+    lua_pushstring(L, sep_str);
+    return 1;
+}
+
+// Path.isAbsolute(path) - Check if a path is absolute
+static int lua_pathIsAbsolute(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    bool result = PathUtils::is_absolute(std::string(path));
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+// Path.getDirectory(path) - Get directory part of a path
+static int lua_pathGetDirectory(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    std::string result = PathUtils::get_directory(std::string(path));
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
+// Path.getFilename(path) - Get filename part of a path
+static int lua_pathGetFilename(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    
+    std::string result = PathUtils::get_filename(std::string(path));
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -1445,6 +1523,16 @@ static const luaL_Reg FileHandle_methods[] = {
     {NULL, NULL}
 };
 
+static const luaL_Reg Path_functions[] = {
+    {"join",         lua_pathJoin},
+    {"normalize",    lua_pathNormalize},
+    {"getSeparator", lua_pathGetSeparator},
+    {"isAbsolute",   lua_pathIsAbsolute},
+    {"getDirectory", lua_pathGetDirectory},
+    {"getFilename",  lua_pathGetFilename},
+    {NULL, NULL}
+};
+
 void luaSystem_init(lua_State *L) {
     // Create metatable for file handles
     luaL_newmetatable(L, LUA_FILEHANDLE);
@@ -1457,6 +1545,11 @@ void luaSystem_init(lua_State *L) {
     lua_newtable(L);
     luaL_setfuncs(L, System_functions, 0);
     lua_setglobal(L, "System");
+    
+    // Create Path table for cross-platform path utilities
+    lua_newtable(L);
+    luaL_setfuncs(L, Path_functions, 0);
+    lua_setglobal(L, "Path");
     
     // Set file mode constants
     lua_pushinteger(L, 0); lua_setglobal(L, "FREAD");

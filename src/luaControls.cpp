@@ -293,8 +293,17 @@ static int lua_touchpad(lua_State *L){
         lua_pushinteger(L, logical_y);
         return 2;
     }
-    // Return nothing when no touch is detected (consistent with original lpp-vita)
-    return 0;
+    // Return different values based on compatibility mode when no touch is detected
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // 3DS mode: return (0, 0) when no touch (expected by 3DS games)
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+        return 2;
+    } else {
+        // Vita/Native mode: return nil when no touch (original behavior)
+        return 0;
+    }
 }
 
 static int lua_rumble(lua_State *L){
