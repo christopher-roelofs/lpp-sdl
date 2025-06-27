@@ -602,20 +602,16 @@ static int lua_check(lua_State *L){
         // Check if the scancode key is pressed
         bool is_pressed = false;
         if (scancode == 1000) { // KEY_TOUCH special case
-            // For touch, use frame-based state like keyboard keys
+            // Edge detection for touch: return true only when touch started this frame
             if (pad == frame_counter) {
-                is_pressed = current_mouse_pressed;
-            } else if (pad == frame_counter - 1) {
-                is_pressed = previous_mouse_pressed;
+                is_pressed = current_mouse_pressed && !previous_mouse_pressed;
             }
             // For any other frame, return false (not pressed)
         } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
-            // If this is the current frame (pad == frame_counter), use current_keys
-            // If this is the previous frame (pad == frame_counter - 1), use previous_keys
+            // Edge detection: return true only when key is pressed this frame but wasn't pressed last frame
             if (pad == frame_counter) {
-                is_pressed = current_keys[scancode];
-            } else if (pad == frame_counter - 1) {
-                is_pressed = previous_keys[scancode];
+                // Current frame: check if key was just pressed (edge detection)
+                is_pressed = current_keys[scancode] && !previous_keys[scancode];
             }
             // For any other frame, return false (key not pressed)
         }
