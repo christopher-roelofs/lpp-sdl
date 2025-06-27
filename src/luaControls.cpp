@@ -192,8 +192,9 @@ static int lua_touchpad(lua_State *L){
     
     // Debug output for mouse state
     extern lpp_compat_mode_t g_compat_mode;
+    extern bool g_debug_mode;
     static int debug_counter = 0;
-    if ((debug_counter++ % 60) == 0) { // Print every 60th call to avoid spam
+    if (g_debug_mode && (debug_counter++ % 60) == 0) { // Print every 60th call to avoid spam
         printf("[DEBUG] Touch check: mouse_pressed=%s, pos=(%d,%d), compat_mode=%d\n", 
                mouse_pressed ? "true" : "false", mouse_x, mouse_y, g_compat_mode);
     }
@@ -203,7 +204,7 @@ static int lua_touchpad(lua_State *L){
         int logical_y = mouse_y;
         
         // Debug output for touch processing
-        if ((debug_counter % 60) == 1) { // Print every 60th touch to avoid spam
+        if (g_debug_mode && (debug_counter % 60) == 1) { // Print every 60th touch to avoid spam
             printf("[DEBUG] Touch detected: raw=(%d,%d), compat_mode=%d\n", mouse_x, mouse_y, g_compat_mode);
         }
         
@@ -284,7 +285,7 @@ static int lua_touchpad(lua_State *L){
         }
         
         // Debug output for final coordinates
-        if ((debug_counter % 60) == 2) { // Print every 60th touch to avoid spam
+        if (g_debug_mode && (debug_counter % 60) == 2) { // Print every 60th touch to avoid spam
             printf("[DEBUG] Returning coordinates: (%d,%d)\n", logical_x, logical_y);
         }
         

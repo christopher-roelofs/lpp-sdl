@@ -327,19 +327,11 @@ function Cookie.show()
 	Graphics.drawImageExtended(CENTER_OF_COOKIE_X, CENTER_OF_COOKIE_Y, Texture["cookie"], 0, 0, 256, 256, 0, 1+Cookie.formula,1+Cookie.formula)
 end
 function Cookie.touch()
-	-- Debug output for cookie touch detection
-	if Touch["x"]~=nil and Touch["y"]~=nil then
-		if Touch["x"]>CENTER_OF_COOKIE_X-128 and Touch["x"]<CENTER_OF_COOKIE_X+128 and Touch["y"]>CENTER_OF_COOKIE_Y-128 and Touch["y"]<CENTER_OF_COOKIE_Y+128 then
-			print("[COOKIE DEBUG] Touch in cookie area: (" .. Touch["x"] .. "," .. Touch["y"] .. "), Now=" .. tostring(Touch["Now"]) .. ", CursorQuan=" .. tostring(Upgrade["CursorQuan"]))
-		end
-	end
-	
 	if Touch["x"]~=nil and Touch["Now"]=="N" and Touch["x"]>CENTER_OF_COOKIE_X-128 and Touch["x"]<CENTER_OF_COOKIE_X+128 and Touch["y"]>CENTER_OF_COOKIE_Y-128 and Touch["y"]<CENTER_OF_COOKIE_Y+128 then
 		Touch["Now"] = "Cookie"
 		Cookie.tmp = 1
 		Cookie.count = Cookie.count + 1 * Upgrade["CursorQuan"]
 		Cookie.total = Cookie.total + 1 * Upgrade["CursorQuan"]
-		print("[COOKIE DEBUG] Cookie clicked! Count now: " .. Cookie.count)
 	end
 	if SpdOf.tmp==1 then
 		if Cookie.tmp==1 then
@@ -588,9 +580,7 @@ function Upgrade.cps()
 end
 function Game.save()
 	savefile = System.openFile("data/ccsave.sav",FCREATE)
-	print("[SAVE DEBUG] Saving cursors: " .. tostring(Button["Cursorcount"]) .. ", grandmas: " .. tostring(Button["Grandmacount"]))
 	savestring = Cookie.count.."#"..Cookie.total.."#"..Button["Cursorcount"].."#"..Button["Grandmacount"].."#"..Button["Farmcount"].."#"..Button["Minecount"].."#"..Button["Factorycount"].."#"..Button["Bankcount"].."#"..Button["Templecount"].."#"..Button["WizardTowercount"].."#"..Button["Shipmentcount"].."#"..Button["AlchemyLabcount"].."#"..Button["Portalcount"].."#"..Button["TimeMachinecount"].."#"..Button["AntimatterCondensercount"].."#"..Button["Prismcount"].."#"
-	print("[SAVE DEBUG] Save string before encryption: " .. savestring)
 	savestring = crypt(savestring,enc1)
 	savestringlen = string.len(savestring)
 	System.writeFile(savefile,savestring,savestringlen)
@@ -612,24 +602,17 @@ function Game.save()
 	
 end
 function Game.continue()
-	print("[SAVE DEBUG] Checking for save file: data/ccsave.sav")
 	if System.doesFileExist("data/ccsave.sav") then
-		print("[SAVE DEBUG] Loading save file: data/ccsave.sav")
 		savefile = System.openFile("data/ccsave.sav", FREAD)
 		size = System.sizeFile(savefile)
 		file = System.readFile(savefile, size)
-		print("[SAVE DEBUG] Raw file content length: " .. string.len(file))
 		file = crypt(file,enc1,true)
-		print("[SAVE DEBUG] Decrypted content: " .. tostring(file))
 		System.closeFile(savefile)
 		savearray = Game.explode("#",file,size)
-		print("[SAVE DEBUG] Parsed cookies: count=" .. tostring(savearray[1]) .. ", total=" .. tostring(savearray[2]))
 		Cookie.count = tonumber(savearray[1]) or 0
 		Cookie.total = tonumber(savearray[2]) or 0
-		print("[SAVE DEBUG] Loaded cookies: count=" .. Cookie.count .. ", total=" .. Cookie.total)
 		Button["Cursorcount"] = tonumber(savearray[3]) or 0
 		Button["Grandmacount"] = tonumber(savearray[4]) or 0
-		print("[SAVE DEBUG] Loaded cursors: " .. Button["Cursorcount"] .. ", grandmas: " .. Button["Grandmacount"])
 		Button["Farmcount"] = tonumber(savearray[5]) or 0
 		Button["Minecount"] = tonumber(savearray[6]) or 0
 		Button["Factorycount"] = tonumber(savearray[7]) or 0
@@ -642,8 +625,6 @@ function Game.continue()
 		Button["TimeMachinecount"] = tonumber(savearray[14]) or 0
 		Button["AntimatterCondensercount"] = tonumber(savearray[15]) or 0
 		Button["Prismcount"] = tonumber(savearray[16]) or 0
-	else
-		print("[SAVE DEBUG] Save file data/ccsave.sav not found")
 	end
 	if System.doesFileExist("data/ccupsave.sav") then
 		savefile = System.openFile("data/ccupsave.sav", FREAD)

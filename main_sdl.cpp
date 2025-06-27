@@ -34,6 +34,7 @@ bool g_vita_compat_mode = false; // Global flag for Vita compatibility mode (dep
 bool g_dual_screen_mode = false; // Global flag for 3DS dual screen mode (deprecated, use g_compat_mode)
 bool g_3ds_single_screen_mode = false; // Global flag for 3DS single-screen mode on small displays
 int g_3ds_active_screen = 0; // Currently active screen in single-screen mode (0=top, 1=bottom)
+bool g_debug_mode = false; // Global flag for debug output
 float g_scale_x = 1.0f; // Manual scaling factor for dual screen X
 float g_scale_y = 1.0f; // Manual scaling factor for dual screen Y
 float g_top_screen_scale_x = 1.0f; // Top screen X scaling factor
@@ -381,6 +382,9 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (legacy -3dsscale flag)\n");
+        } else if (strcmp(args[i], "-debug") == 0) {
+            g_debug_mode = true;
+            printf("Debug mode enabled\n");
         } else if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
             printf("Lua Player Plus SDL - Compatibility Usage:\n");
             printf("  %s [options] <lua_file>\n\n", args[0]);
@@ -394,6 +398,7 @@ int main(int argc, char* args[]) {
             printf("  -vitascale      Legacy alias for -vitacompat\n");
             printf("  -3dsscale       Legacy alias for -3dscompat\n");
             printf("\nOther Options:\n");
+            printf("  -debug          Enable debug output\n");
             printf("  -h, --help      Show this help message\n");
             printf("\nIf no lua file is specified, the program will:\n");
             printf("  1. Look for index.lua in the current directory\n");
