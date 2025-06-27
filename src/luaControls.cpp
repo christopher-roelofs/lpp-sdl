@@ -203,27 +203,44 @@ static void update_input_state() {
     // Update keyboard state
     keyboard_state = SDL_GetKeyboardState(NULL);
     
-    // Clear gamepad-mapped keys first (so they don't stick if button is released)
-    // Clear keys used for both Vita and 3DS gamepad mapping
-    current_keys[SDL_SCANCODE_SPACE] = false;      // Cross/X
-    current_keys[SDL_SCANCODE_BACKSPACE] = false;  // Circle/B
-    current_keys[SDL_SCANCODE_Z] = false;          // Square (Vita only)
-    current_keys[SDL_SCANCODE_X] = false;          // Triangle (Vita only)
-    current_keys[SDL_SCANCODE_Q] = false;          // L (Vita only)
-    current_keys[SDL_SCANCODE_E] = false;          // R (Vita only)
-    current_keys[SDL_SCANCODE_RETURN] = false;     // Start/A
-    current_keys[SDL_SCANCODE_TAB] = false;        // Select (Vita only)
-    current_keys[SDL_SCANCODE_UP] = false;         // D-Pad Up
-    current_keys[SDL_SCANCODE_DOWN] = false;       // D-Pad Down
-    current_keys[SDL_SCANCODE_LEFT] = false;       // D-Pad Left
-    current_keys[SDL_SCANCODE_RIGHT] = false;      // D-Pad Right
-    current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger (Vita only)
-    current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger (Vita only)
-    current_keys[SDL_SCANCODE_Q] = false;          // L (3DS/Vita)
-    current_keys[SDL_SCANCODE_E] = false;          // R (3DS/Vita)
-    current_keys[SDL_SCANCODE_LSHIFT] = false;     // Y (3DS only)
-    current_keys[SDL_SCANCODE_LALT] = false;       // Start (3DS only)
-    current_keys[SDL_SCANCODE_LCTRL] = false;      // Select (3DS only)
+    // Clear gamepad-mapped keys before processing for modes that use gamepad
+    extern lpp_compat_mode_t g_compat_mode;
+    
+    if (g_compat_mode == LPP_COMPAT_3DS) {
+        // Clear 3DS gamepad-mapped keys so they can be properly set/cleared by gamepad logic
+        current_keys[SDL_SCANCODE_SPACE] = false;      // X
+        current_keys[SDL_SCANCODE_BACKSPACE] = false;  // B
+        current_keys[SDL_SCANCODE_RETURN] = false;     // A
+        current_keys[SDL_SCANCODE_LSHIFT] = false;     // Y
+        current_keys[SDL_SCANCODE_Q] = false;          // L
+        current_keys[SDL_SCANCODE_E] = false;          // R
+        current_keys[SDL_SCANCODE_LALT] = false;       // Start
+        current_keys[SDL_SCANCODE_LCTRL] = false;      // Select
+        current_keys[SDL_SCANCODE_UP] = false;         // D-Pad Up
+        current_keys[SDL_SCANCODE_DOWN] = false;       // D-Pad Down
+        current_keys[SDL_SCANCODE_LEFT] = false;       // D-Pad Left
+        current_keys[SDL_SCANCODE_RIGHT] = false;      // D-Pad Right
+        current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger
+        current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger
+    } else if (g_compat_mode == LPP_COMPAT_NATIVE) {
+        // Clear Native gamepad-mapped keys so they can be properly set/cleared by gamepad logic
+        current_keys[SDL_SCANCODE_SPACE] = false;      // Primary action
+        current_keys[SDL_SCANCODE_BACKSPACE] = false;  // Secondary action
+        current_keys[SDL_SCANCODE_X] = false;          // X action
+        current_keys[SDL_SCANCODE_Y] = false;          // Y action
+        current_keys[SDL_SCANCODE_Q] = false;          // L
+        current_keys[SDL_SCANCODE_E] = false;          // R
+        current_keys[SDL_SCANCODE_RETURN] = false;     // Start
+        current_keys[SDL_SCANCODE_TAB] = false;        // Select
+        current_keys[SDL_SCANCODE_ESCAPE] = false;     // Guide
+        current_keys[SDL_SCANCODE_UP] = false;         // D-Pad Up
+        current_keys[SDL_SCANCODE_DOWN] = false;       // D-Pad Down
+        current_keys[SDL_SCANCODE_LEFT] = false;       // D-Pad Left
+        current_keys[SDL_SCANCODE_RIGHT] = false;      // D-Pad Right
+        current_keys[SDL_SCANCODE_PAGEUP] = false;     // L Trigger
+        current_keys[SDL_SCANCODE_PAGEDOWN] = false;   // R Trigger
+    }
+    // Vita mode: No key clearing needed since we're not using gamepad
 
     // Update controller state if available
     if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
@@ -296,90 +313,36 @@ static void update_input_state() {
             // SDL uses Xbox naming (A=bottom, B=right, X=left, Y=top)
             // 3DS uses Nintendo layout (A=right, B=bottom, X=top, Y=left)
             // So we need to translate: SDL_B->3DS_A, SDL_A->3DS_B, SDL_Y->3DS_X, SDL_X->3DS_Y
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                current_keys[SDL_SCANCODE_RETURN] = true; // SDL B (right) = 3DS A = Return (KEY_A maps to Return in 3DS mode)
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                current_keys[SDL_SCANCODE_BACKSPACE] = true; // SDL A (bottom) = 3DS B = Backspace (KEY_B maps to Backspace in 3DS mode)
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                current_keys[SDL_SCANCODE_SPACE] = true; // SDL Y (top) = 3DS X = Space (KEY_X maps to Space in 3DS mode)
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                current_keys[SDL_SCANCODE_LSHIFT] = true; // SDL X (left) = 3DS Y = LShift (KEY_Y maps to LShift in 3DS mode)
-            }
+            current_keys[SDL_SCANCODE_RETURN] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B); // SDL B (right) = 3DS A = Return (KEY_A maps to Return in 3DS mode)
+            current_keys[SDL_SCANCODE_BACKSPACE] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A); // SDL A (bottom) = 3DS B = Backspace (KEY_B maps to Backspace in 3DS mode)
+            current_keys[SDL_SCANCODE_SPACE] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y); // SDL Y (top) = 3DS X = Space (KEY_X maps to Space in 3DS mode)
+            current_keys[SDL_SCANCODE_LSHIFT] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X); // SDL X (left) = 3DS Y = LShift (KEY_Y maps to LShift in 3DS mode)
             
             // Shoulder buttons
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
-                current_keys[SDL_SCANCODE_Q] = true; // L = Q (KEY_L maps to Q in 3DS mode)
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
-                current_keys[SDL_SCANCODE_E] = true; // R = E (KEY_R maps to E in 3DS mode)
-            }
+            current_keys[SDL_SCANCODE_Q] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER); // L = Q (KEY_L maps to Q in 3DS mode)
+            current_keys[SDL_SCANCODE_E] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER); // R = E (KEY_R maps to E in 3DS mode)
             
             // Start/Select buttons
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
-                current_keys[SDL_SCANCODE_LALT] = true; // Start = LAlt (KEY_START maps to LAlt in 3DS mode)
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
-                current_keys[SDL_SCANCODE_LCTRL] = true; // Select = LCtrl (KEY_SELECT maps to LCtrl in 3DS mode)
-            }
+            current_keys[SDL_SCANCODE_LALT] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START); // Start = LAlt (KEY_START maps to LAlt in 3DS mode)
+            current_keys[SDL_SCANCODE_LCTRL] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK); // Select = LCtrl (KEY_SELECT maps to LCtrl in 3DS mode)
         } else {
-            // Vita gamepad mapping - map to PlayStation button layout
-            // SDL uses Xbox naming (A=bottom, B=right, X=left, Y=top)
-            // Vita uses PlayStation layout (Cross=bottom, Circle=right, Square=left, Triangle=top)
-            // So mapping is: SDL_A->Cross, SDL_B->Circle, SDL_X->Square, SDL_Y->Triangle
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                current_keys[SDL_SCANCODE_SPACE] = true; // SDL A (bottom) = Cross = Space
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                current_keys[SDL_SCANCODE_BACKSPACE] = true; // SDL B (right) = Circle = Backspace
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                current_keys[SDL_SCANCODE_Z] = true; // SDL X (left) = Square = Z
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                current_keys[SDL_SCANCODE_X] = true; // SDL Y (top) = Triangle = X
-            }
-            
-            // Shoulder buttons
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
-                current_keys[SDL_SCANCODE_Q] = true; // L = Q
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
-                current_keys[SDL_SCANCODE_E] = true; // R = E
-            }
-            
-            // Start/Select buttons
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
-                current_keys[SDL_SCANCODE_RETURN] = true; // Start = Return
-            }
-            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
-                current_keys[SDL_SCANCODE_TAB] = true; // Select = Tab
-            }
+            // Vita mode: NO GAMEPAD SUPPORT - keyboard only for now
+            // This removes the overly fast movement issue until gamepad timing can be properly implemented
         }
         
-        // D-Pad
-        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_UP)) {
-            current_keys[SDL_SCANCODE_UP] = true;
-        }
-        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
-            current_keys[SDL_SCANCODE_DOWN] = true;
-        }
-        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
-            current_keys[SDL_SCANCODE_LEFT] = true;
-        }
-        if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
-            current_keys[SDL_SCANCODE_RIGHT] = true;
+        // D-Pad mapping - only for non-Vita modes
+        extern lpp_compat_mode_t g_compat_mode;
+        if (g_compat_mode != LPP_COMPAT_VITA) {
+            // Native and 3DS modes get gamepad D-Pad support
+            current_keys[SDL_SCANCODE_UP] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_UP);
+            current_keys[SDL_SCANCODE_DOWN] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+            current_keys[SDL_SCANCODE_LEFT] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+            current_keys[SDL_SCANCODE_RIGHT] = SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
         }
         
         // Triggers (map to L/R as well for compatibility)
-        if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16384) { // > 50%
-            current_keys[SDL_SCANCODE_PAGEUP] = true; // L Trigger = PageUp
-        }
-        if (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384) { // > 50%
-            current_keys[SDL_SCANCODE_PAGEDOWN] = true; // R Trigger = PageDown
-        }
+        current_keys[SDL_SCANCODE_PAGEUP] = (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16384); // L Trigger = PageUp
+        current_keys[SDL_SCANCODE_PAGEDOWN] = (SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16384); // R Trigger = PageDown
     } else if (fallback_joysticks[0] && SDL_JoystickGetAttached(fallback_joysticks[0])) {
         // Fallback: Use raw joystick input for unrecognized controllers
         if (frame_counter % 300 == 0) { // Print debug info every 5 seconds at 60fps
@@ -493,20 +456,32 @@ static int lua_readC(lua_State *L){
 #endif
     }
     
-    // Copy current keys to previous keys
-    memcpy(previous_keys, current_keys, sizeof(current_keys));
-    
-    // Copy current mouse state to previous mouse state
+    // Save previous state for edge detection
     previous_mouse_pressed = current_mouse_pressed;
     
     update_input_state();
     
-    // Update current keys from SDL keyboard state
-    // Note: Don't overwrite gamepad mappings that were set in update_input_state()
-    if (keyboard_state) {
-        for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
-            // Use OR operation to combine keyboard and gamepad states
-            current_keys[i] = current_keys[i] || (keyboard_state[i] != 0);
+    // For Vita mode, we need to handle keyboard differently since there's no gamepad clearing
+    extern lpp_compat_mode_t g_compat_mode;
+    if (g_compat_mode == LPP_COMPAT_VITA) {
+        // Vita mode: Copy current to previous BEFORE updating with keyboard state
+        memcpy(previous_keys, current_keys, sizeof(current_keys));
+        
+        // Update current keys from SDL keyboard state directly (no OR needed since no gamepad)
+        if (keyboard_state) {
+            for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+                current_keys[i] = keyboard_state[i] != 0;
+            }
+        }
+    } else {
+        // Other modes: Copy current to previous BEFORE gamepad processing, then OR with keyboard
+        memcpy(previous_keys, current_keys, sizeof(current_keys));
+        
+        // Update current keys from SDL keyboard state (use OR to combine with gamepad)
+        if (keyboard_state) {
+            for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+                current_keys[i] = current_keys[i] || (keyboard_state[i] != 0);
+            }
         }
     }
     
@@ -539,6 +514,7 @@ static int lua_readC(lua_State *L){
     } else {
         // For Vita/Native modes, return frame counter for edge detection (different value each frame)
         frame_counter++;
+        
         lua_pushnumber(L, frame_counter);
         return 1;
     }
@@ -594,30 +570,119 @@ static int lua_check(lua_State *L){
         
         // Use original 3DS logic: bitwise AND check
         lua_pushboolean(L, ((pad & button) == button));
-    } else {
-        // For Vita/Native modes, use frame-based edge detection
+    } else if (g_compat_mode == LPP_COMPAT_VITA) {
+        // Vita mode - frame-based edge detection (matches old working version)
         int pad = luaL_checkinteger(L, 1);  // Frame counter from Controls.read()
         int scancode = luaL_checkinteger(L, 2);
         
         // Check if the scancode key is pressed
         bool is_pressed = false;
         if (scancode == 1000) { // KEY_TOUCH special case
-            // Edge detection for touch: return true only when touch started this frame
+            // For touch, use frame-based state like keyboard keys
             if (pad == frame_counter) {
-                is_pressed = current_mouse_pressed && !previous_mouse_pressed;
+                is_pressed = current_mouse_pressed;
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_mouse_pressed;
             }
             // For any other frame, return false (not pressed)
         } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
-            // Edge detection: return true only when key is pressed this frame but wasn't pressed last frame
+            // If this is the current frame (pad == frame_counter), use current_keys
+            // If this is the previous frame (pad == frame_counter - 1), use previous_keys
             if (pad == frame_counter) {
-                // Current frame: check if key was just pressed (edge detection)
-                is_pressed = current_keys[scancode] && !previous_keys[scancode];
+                is_pressed = current_keys[scancode];
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_keys[scancode];
+            }
+            // For any other frame, return false (key not pressed)
+        }
+        
+        lua_pushboolean(L, is_pressed);
+    } else {
+        // Native mode - frame-based edge detection (matches old working version)
+        int pad = luaL_checkinteger(L, 1);  // Frame counter from Controls.read()
+        int scancode = luaL_checkinteger(L, 2);
+        
+        // Check if the scancode key is pressed
+        bool is_pressed = false;
+        if (scancode == 1000) { // KEY_TOUCH special case
+            // For touch, use frame-based state like keyboard keys
+            if (pad == frame_counter) {
+                is_pressed = current_mouse_pressed;
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_mouse_pressed;
+            }
+            // For any other frame, return false (not pressed)
+        } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+            // If this is the current frame (pad == frame_counter), use current_keys
+            // If this is the previous frame (pad == frame_counter - 1), use previous_keys
+            if (pad == frame_counter) {
+                is_pressed = current_keys[scancode];
+            } else if (pad == frame_counter - 1) {
+                is_pressed = previous_keys[scancode];
             }
             // For any other frame, return false (key not pressed)
         }
         
         lua_pushboolean(L, is_pressed);
     }
+    return 1;
+}
+
+// Modern input functions for Native mode
+static int lua_justPressed(lua_State *L){
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1) return luaL_error(L, "wrong number of arguments.");
+#endif
+    int scancode = luaL_checkinteger(L, 1);
+    
+    // Edge detection: return true only when key is pressed this frame but wasn't pressed last frame
+    bool just_pressed = false;
+    if (scancode == 1000) { // KEY_TOUCH special case
+        just_pressed = current_mouse_pressed && !previous_mouse_pressed;
+    } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+        just_pressed = current_keys[scancode] && !previous_keys[scancode];
+    }
+    
+    lua_pushboolean(L, just_pressed);
+    return 1;
+}
+
+static int lua_justReleased(lua_State *L){
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1) return luaL_error(L, "wrong number of arguments.");
+#endif
+    int scancode = luaL_checkinteger(L, 1);
+    
+    // Release detection: return true only when key is not pressed this frame but was pressed last frame
+    bool just_released = false;
+    if (scancode == 1000) { // KEY_TOUCH special case
+        just_released = !current_mouse_pressed && previous_mouse_pressed;
+    } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+        just_released = !current_keys[scancode] && previous_keys[scancode];
+    }
+    
+    lua_pushboolean(L, just_released);
+    return 1;
+}
+
+static int lua_isPressed(lua_State *L){
+    int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+    if (argc != 1) return luaL_error(L, "wrong number of arguments.");
+#endif
+    int scancode = luaL_checkinteger(L, 1);
+    
+    // State-based: return current key state
+    bool is_pressed = false;
+    if (scancode == 1000) { // KEY_TOUCH special case
+        is_pressed = current_mouse_pressed;
+    } else if (scancode >= 0 && scancode < SDL_NUM_SCANCODES) {
+        is_pressed = current_keys[scancode];
+    }
+    
+    lua_pushboolean(L, is_pressed);
     return 1;
 }
 
@@ -947,6 +1012,9 @@ static const luaL_Reg Controls_functions[] = {
   {"rumble",           lua_rumble},
   {"setLightbar",      lua_lightbar},
   {"check",            lua_check},    
+  {"justPressed",      lua_justPressed},     // Modern edge detection
+  {"justReleased",     lua_justReleased},    // Modern release detection  
+  {"isPressed",        lua_isPressed},       // Modern state detection
   {"readTouch",        lua_touchpad},    
   {"readRetroTouch",   lua_touchpad2},    
   {"lockHomeButton",   lua_lock},    
@@ -1161,12 +1229,11 @@ void luaControls_init(lua_State *L) {
     lua_pushinteger(L, SDL_SCANCODE_KP_0); lua_setglobal(L, "SDLK_KP_0");
     lua_pushinteger(L, SDL_SCANCODE_KP_PERIOD); lua_setglobal(L, "SDLK_KP_PERIOD");
     
-    // Backward compatibility: Map SCE_CTRL codes to SDLK keys for old Vita scripts
-    // Use the actual runtime scancode values that are generated by key presses
-    lua_pushinteger(L, 82); lua_setglobal(L, "SCE_CTRL_UP");     // Runtime UP scancode
-    lua_pushinteger(L, 81); lua_setglobal(L, "SCE_CTRL_DOWN");   // Runtime DOWN scancode  
-    lua_pushinteger(L, 80); lua_setglobal(L, "SCE_CTRL_LEFT");   // Runtime LEFT scancode
-    lua_pushinteger(L, 79); lua_setglobal(L, "SCE_CTRL_RIGHT");  // Runtime RIGHT scancode
+    // Backward compatibility: Map SCE_CTRL codes to SDL scancodes for old Vita scripts
+    lua_pushinteger(L, SDL_SCANCODE_UP); lua_setglobal(L, "SCE_CTRL_UP");
+    lua_pushinteger(L, SDL_SCANCODE_DOWN); lua_setglobal(L, "SCE_CTRL_DOWN");
+    lua_pushinteger(L, SDL_SCANCODE_LEFT); lua_setglobal(L, "SCE_CTRL_LEFT");
+    lua_pushinteger(L, SDL_SCANCODE_RIGHT); lua_setglobal(L, "SCE_CTRL_RIGHT");
     lua_pushinteger(L, SDL_SCANCODE_SPACE); lua_setglobal(L, "SCE_CTRL_CROSS");
     lua_pushinteger(L, SDL_SCANCODE_BACKSPACE); lua_setglobal(L, "SCE_CTRL_CIRCLE");
     lua_pushinteger(L, SDL_SCANCODE_Z); lua_setglobal(L, "SCE_CTRL_SQUARE");

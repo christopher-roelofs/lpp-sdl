@@ -142,6 +142,7 @@ loadAudioFiles()
 
 -- Main loop
 local running = true
+local prev_pad = 0
 while running do
     -- Clear screen and initialize graphics
     Graphics.initBlend()
@@ -300,26 +301,22 @@ while running do
     -- Handle input
     local pad = Controls.read()
     
-    if Controls.check(pad, SDLK_1) then
+    -- Edge detection using previous frame input
+    
+    if Controls.check(pad, SDLK_1) and not Controls.check(prev_pad, SDLK_1) then
         playSound(mp3_sound, "MP3", true)  -- Play MP3 with looping
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_2) then
+    elseif Controls.check(pad, SDLK_2) and not Controls.check(prev_pad, SDLK_2) then
         playSound(ogg_sound, "OGG", false)  -- Play OGG without looping
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_3) then
+    elseif Controls.check(pad, SDLK_3) and not Controls.check(prev_pad, SDLK_3) then
         playSound(wav_sound, "WAV", true)  -- Play WAV with looping
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_4) then
+    elseif Controls.check(pad, SDLK_4) and not Controls.check(prev_pad, SDLK_4) then
         playSound(midi_sound, "MIDI", true)  -- Play MIDI with looping
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_M) then
+    elseif Controls.check(pad, SDLK_M) and not Controls.check(prev_pad, SDLK_M) then
         show_metadata = not show_metadata
         print("Metadata view: " .. (show_metadata and "ON" or "OFF"))
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_S) then
+    elseif Controls.check(pad, SDLK_S) and not Controls.check(prev_pad, SDLK_S) then
         stopAllAudio()
-        System.wait(200)  -- Debounce
-    elseif Controls.check(pad, SDLK_ESCAPE) then
+    elseif Controls.check(pad, SDLK_ESCAPE) and not Controls.check(prev_pad, SDLK_ESCAPE) then
         running = false
     end
     
@@ -327,6 +324,9 @@ while running do
     Graphics.termBlend()
     Screen.flip()
     System.wait(16)  -- ~60 FPS
+    
+    -- Store current frame as previous for next iteration (at end of loop like Vita Tetris)
+    prev_pad = pad
 end
 
 -- Cleanup
