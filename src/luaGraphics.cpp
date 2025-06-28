@@ -954,14 +954,34 @@ static int lua_drawimg_rotate(lua_State *L) {
 static int lua_drawimg_scale(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 5)
+	if (argc != 5 && argc != 6)
 		return luaL_error(L, "wrong number of arguments");
 #endif
     float x = luaL_checknumber(L, 1);
     float y = luaL_checknumber(L, 2);
-    lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 3);
-    float x_scale = luaL_checknumber(L, 4);
-    float y_scale = luaL_checknumber(L, 5);
+    
+    lpp_texture* tex;
+    float x_scale, y_scale;
+    uint32_t color = 0xFFFFFFFF; // Default: white (no tint)
+    
+    // Check if 3rd parameter is userdata (image) or number (scale)
+    if (lua_isuserdata(L, 3)) {
+        // Standard order: drawScaleImage(x, y, image, x_scale, y_scale [, color])
+        tex = (lpp_texture*)lua_touserdata(L, 3);
+        x_scale = luaL_checknumber(L, 4);
+        y_scale = luaL_checknumber(L, 5);
+        if (argc == 6) {
+            color = luaL_checkinteger(L, 6);
+        }
+    } else {
+        // Vita order: drawScaleImage(x, y, x_scale, y_scale, image [, color])
+        x_scale = luaL_checknumber(L, 3);
+        y_scale = luaL_checknumber(L, 4);
+        tex = (lpp_texture*)lua_touserdata(L, 5);
+        if (argc == 6) {
+            color = luaL_checkinteger(L, 6);
+        }
+    }
 
     if (!tex || tex->magic != 0xABADBEEF) {
         return luaL_error(L, "Invalid texture provided to drawScaleImage");
@@ -984,8 +1004,26 @@ static int lua_drawimg_scale(lua_State *L) {
     }
 
     if (g_renderer) {
+        SDL_Texture* texture = (SDL_Texture*)tex->texture;
+        
+        // Apply color modulation if specified
+        if (color != 0xFFFFFFFF) {
+            uint8_t r = (color >> 24) & 0xFF;
+            uint8_t g = (color >> 16) & 0xFF;
+            uint8_t b = (color >> 8) & 0xFF;
+            uint8_t a = color & 0xFF;
+            SDL_SetTextureColorMod(texture, r, g, b);
+            SDL_SetTextureAlphaMod(texture, a);
+        }
+        
         SDL_Rect dest_rect = { (int)x, (int)y, (int)(tex->w * x_scale), (int)(tex->h * y_scale) };
-        SDL_RenderCopy(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect);
+        SDL_RenderCopy(g_renderer, texture, NULL, &dest_rect);
+        
+        // Reset color modulation to default
+        if (color != 0xFFFFFFFF) {
+            SDL_SetTextureColorMod(texture, 255, 255, 255);
+            SDL_SetTextureAlphaMod(texture, 255);
+        }
     }
 
     return 0;
