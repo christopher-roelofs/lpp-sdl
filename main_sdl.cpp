@@ -726,6 +726,7 @@ int main(int argc, char* args[]) {
     luaSound_init(L);
     luaSystem_init(L);
     luaNetwork_init(L);
+    luaSocket_init(L);
     luaTimer_init(L);
     luaKeyboard_init(L);
     luaRender_init(L);

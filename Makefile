@@ -12,6 +12,7 @@ SOURCES := main_sdl.cpp \
            src/luaKeyboard_onscreen.cpp \
            src/luaMic_stub.cpp \
            src/luaNetwork_stub.cpp \
+           src/luaSocket.cpp \
            src/luaRegistry_stub.cpp \
            src/luaRender.cpp \
            src/luaScreen.cpp \
