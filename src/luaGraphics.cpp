@@ -199,8 +199,8 @@ void setScreenViewport(int screen_id) {
 }
 
 extern "C"{
-//#include <png.h>      // Missing dependency - TODO: install libpng-dev  
-//#include <libimagequant.h>  // Missing dependency - TODO: install libimagequant-dev
+#include <png.h>      // libpng-dev available
+//#include <libimagequant.h>  // Missing dependency - TODO: install libimagequant-dev (not available in this environment)
 #include "gifdec.h"
 };
 
@@ -811,9 +811,95 @@ static int lua_saveimg(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
 	if (argc != 2 && argc != 3)
-		return luaL_error(L, "wrong number of arguments");
+		return luaL_error(L, "Graphics.saveImage(image, filename, [format]): wrong number of arguments");
 #endif
-	// Porting to SDL
+	
+	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 1);
+	const char* filename = luaL_checkstring(L, 2);
+	int format = (argc == 3) ? luaL_checkinteger(L, 3) : FORMAT_BMP; // Default to BMP
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (text->magic != 0xABADBEEF)
+		return luaL_error(L, "attempt to access wrong memory block type.");
+#endif
+	
+	if (!text->data) {
+		return luaL_error(L, "Cannot save image: texture has no pixel data");
+	}
+	
+	// Translate Vita paths
+	std::string translated_path = PathUtils::translate_vita_path(filename);
+	
+	if (format == FORMAT_BMP) {
+		// Save as BMP using SDL_image
+		SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+			text->data, text->w, text->h, 32, text->w * 4,
+			0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
+		);
+		
+		if (surface) {
+			// Flip surface for BMP format (BMP stores bottom-to-top)
+			SDL_Surface* flipped = SDL_CreateRGBSurface(0, text->w, text->h, 32,
+				0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+			if (flipped) {
+				Uint32* src_pixels = (Uint32*)surface->pixels;
+				Uint32* dst_pixels = (Uint32*)flipped->pixels;
+				for (int y = 0; y < text->h; y++) {
+					memcpy(&dst_pixels[(text->h - 1 - y) * text->w], 
+						   &src_pixels[y * text->w], text->w * 4);
+				}
+				SDL_SaveBMP(flipped, translated_path.c_str());
+				SDL_FreeSurface(flipped);
+			}
+			SDL_FreeSurface(surface);
+		}
+	} else if (format == FORMAT_PNG) {
+		// Save as PNG using libpng
+		FILE* fp = fopen(translated_path.c_str(), "wb");
+		if (!fp) {
+			return luaL_error(L, "Cannot open file for writing: %s", translated_path.c_str());
+		}
+		
+		png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+		if (!png) {
+			fclose(fp);
+			return luaL_error(L, "PNG write struct creation failed");
+		}
+		
+		png_infop info = png_create_info_struct(png);
+		if (!info) {
+			png_destroy_write_struct(&png, NULL);
+			fclose(fp);
+			return luaL_error(L, "PNG info struct creation failed");
+		}
+		
+		if (setjmp(png_jmpbuf(png))) {
+			png_destroy_write_struct(&png, &info);
+			fclose(fp);
+			return luaL_error(L, "PNG write error");
+		}
+		
+		png_init_io(png, fp);
+		png_set_IHDR(png, info, text->w, text->h, 8, PNG_COLOR_TYPE_RGBA,
+					 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+		png_write_info(png, info);
+		
+		// Write pixel data (PNG stores top-to-bottom, same as our data)
+		png_bytep* row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * text->h);
+		for (int y = 0; y < text->h; y++) {
+			row_pointers[y] = (png_byte*)text->data + (y * text->w * 4);
+		}
+		
+		png_write_image(png, row_pointers);
+		png_write_end(png, NULL);
+		
+		png_destroy_write_struct(&png, &info);
+		fclose(fp);
+		free(row_pointers);
+	} else {
+		return luaL_error(L, "Unsupported image format: %d (use FORMAT_BMP or FORMAT_PNG)", format);
+	}
+	
 	return 0;
 }
 
@@ -2025,6 +2111,11 @@ void luaGraphics_init(lua_State *L) {
     // VariableRegister(L, MEM_RAM);
     VariableRegister(L, FILTER_POINT);
     VariableRegister(L, FILTER_LINEAR);
+    
+    // Register image format constants
+    VariableRegister(L, FORMAT_BMP);
+    VariableRegister(L, FORMAT_PNG);
+    VariableRegister(L, FORMAT_JPG);
 
     // Create Graphics global table
     lua_newtable(L);

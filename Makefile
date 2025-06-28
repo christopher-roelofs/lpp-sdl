@@ -1,6 +1,6 @@
 CXX := g++
 CXXFLAGS := -std=c++17 -Wall $(shell sdl2-config --cflags) $(shell pkg-config --cflags luajit) $(shell pkg-config --cflags opencv4) $(shell pkg-config --cflags libavformat libavcodec libavutil libswscale) $(shell pkg-config --cflags mpg123) -I./src/include -I/opt/homebrew/include -DWANT_FASTWAV -DWANT_FMMIDI
-LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs opencv4) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz
+LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs opencv4) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz -lpng
 
 TARGET := lpp_sdl
 SOURCES := main_sdl.cpp \

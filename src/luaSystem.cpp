@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <thread>
 #include <atomic>
+#include <algorithm>
 #include "include/path_utils.h"
 
 // Zip support
@@ -706,6 +707,89 @@ static int lua_wait(lua_State *L) {
     int ms = microseconds / 1000;
     if (ms < 1) ms = 1; // Minimum 1ms delay
     SDL_Delay(ms);
+    return 0;
+}
+
+// System.takeScreenshot() - Capture and save current screen
+static int lua_screenshot(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc < 1 || argc > 2) {
+        return luaL_error(L, "System.takeScreenshot(filename, [format]): wrong number of arguments");
+    }
+    
+    const char* filename = luaL_checkstring(L, 1);
+    bool unused_param = (argc == 2) ? lua_toboolean(L, 2) : false; // Second param ignored for compatibility
+    (void)unused_param; // Suppress unused warning
+    
+    // Translate console path (Vita/3DS paths to SDL paths)
+    std::string translated_path = translate_console_path(filename);
+    
+    extern SDL_Renderer* g_renderer;
+    if (!g_renderer) {
+        return luaL_error(L, "No renderer available for screenshot");
+    }
+    
+    // Get renderer output size
+    int width, height;
+    if (SDL_GetRendererOutputSize(g_renderer, &width, &height) != 0) {
+        return luaL_error(L, "Failed to get renderer size: %s", SDL_GetError());
+    }
+    
+    // Create surface to hold screenshot data
+    SDL_Surface* screenshot = SDL_CreateRGBSurface(0, width, height, 32,
+        0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    if (!screenshot) {
+        return luaL_error(L, "Failed to create screenshot surface: %s", SDL_GetError());
+    }
+    
+    // Save current clip rect state to restore later
+    SDL_Rect clip_rect;
+    SDL_bool clip_enabled = SDL_RenderIsClipEnabled(g_renderer);
+    if (clip_enabled) {
+        SDL_RenderGetClipRect(g_renderer, &clip_rect);
+    }
+    
+    // Temporarily disable clipping to ensure all screen content is visible
+    SDL_RenderSetClipRect(g_renderer, NULL);
+    
+    // Read pixels from renderer (now captures all content without clipping)
+    int read_result = SDL_RenderReadPixels(g_renderer, NULL, SDL_PIXELFORMAT_ARGB8888, 
+                                         screenshot->pixels, screenshot->pitch);
+    
+    // Restore original clip rect state
+    if (clip_enabled) {
+        SDL_RenderSetClipRect(g_renderer, &clip_rect);
+    }
+    
+    if (read_result != 0) {
+        SDL_FreeSurface(screenshot);
+        return luaL_error(L, "Failed to read pixels: %s", SDL_GetError());
+    }
+    
+    // Determine format based on file extension
+    std::string path_str(translated_path);
+    std::string ext = path_str.substr(path_str.find_last_of(".") + 1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    
+    int result = 0;
+    if (ext == "bmp") {
+        result = SDL_SaveBMP(screenshot, translated_path.c_str());
+    } else if (ext == "png") {
+        // For PNG, we'd need to use IMG_SavePNG or implement libpng saving
+        // For now, fall back to BMP and warn
+        printf("Warning: PNG format requested but saving as BMP instead\n");
+        result = SDL_SaveBMP(screenshot, translated_path.c_str());
+    } else {
+        // Default to BMP for unknown extensions
+        result = SDL_SaveBMP(screenshot, translated_path.c_str());
+    }
+    
+    SDL_FreeSurface(screenshot);
+    
+    if (result != 0) {
+        return luaL_error(L, "Failed to save screenshot: %s", SDL_GetError());
+    }
+    
     return 0;
 }
 
@@ -1538,6 +1622,7 @@ static const luaL_Reg System_functions[] = {
     {"powerTick",          lua_powerTick},
     {"setBusSpeed",        lua_setBusSpeed},
     {"wait",               lua_wait},
+    {"takeScreenshot",     lua_screenshot},
     {"doesDirExist",       lua_doesDirExist},
     {"listDirectory",      lua_listDirectory},
     {"getTime",            lua_getTime},
