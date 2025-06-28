@@ -42,6 +42,7 @@ Available commands:
   pwd                  - Show current directory
   info                 - Show system information
   clear                - Clear the screen
+  lua <code>           - Execute Lua code directly
   exit                 - Exit the REPL
   quit                 - Exit the REPL
 
@@ -52,6 +53,9 @@ Examples:
   dir
   info
   clear
+  lua print('Hello from Lua!')
+  lua local name = System.input('Name: '); print('Hi ' .. name)
+  lua for i=1,3 do print('Line ' .. i) end
 
 lpp-sdl> cd samples/sdl/Console
 Changed to directory: ./samples/sdl/Console
@@ -79,12 +83,13 @@ Exiting console REPL...
 - **File navigation**: `cd`, `pwd`, `list` (aliases: `ls`, `dir`) commands for exploring directories
 - **File viewing**: `cat <file>` command to display file contents with line numbers
 - **Script execution**: `run` (alias: `load`) command to execute Lua scripts from any location
+- **Direct Lua execution**: `lua <code>` command to execute Lua code directly in the REPL
 - **System information**: `info` command shows platform details and available features
 - **Screen management**: `clear` command to clear the console screen
 - **Command aliases**: Familiar shell aliases (`ls`/`dir` for `list`, `load` for `run`)
 - **Help system**: Built-in `help` command with examples and command reference
-- **Tab completion**: Commands and paths (future enhancement)
-- **History**: Command history navigation (future enhancement)
+- **Tab completion**: Commands and paths with readline support
+- **Command history**: Persistent history with up/down arrow navigation
 
 ## Sample Scripts
 
@@ -176,6 +181,33 @@ A comprehensive demonstration of user input capabilities:
 - Data collection utilities
 - Menu-driven automation tools
 - User-friendly command-line applications
+
+### 5. **lua_repl_demo.lua** - Direct Lua Execution Demo
+```bash
+./lpp_sdl -headless samples/sdl/Console/lua_repl_demo.lua
+```
+
+Demonstrates the powerful `lua` command for executing Lua code directly in the REPL:
+- Direct access to all System.* functions from the command line
+- Interactive programming and testing
+- Quick calculations and data processing
+- File operations and system calls
+- Integration with readline for enhanced editing
+
+**Example Usage:**
+```bash
+lpp-sdl> lua print('Hello from Lua!')
+lpp-sdl> lua local name = System.input('Name: '); print('Hi ' .. name)
+lpp-sdl> lua for i=1,5 do print('Count:', i) end
+lpp-sdl> lua local files = System.listDirectory('.'); print('Files:', #files)
+```
+
+**Use Cases:**
+- Testing Lua code snippets before scripting
+- Quick file system operations
+- Interactive data processing
+- Real-time calculations and utilities
+- Debugging and development workflow
 
 ## Features Demonstrated
 

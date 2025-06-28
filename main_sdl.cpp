@@ -626,7 +626,7 @@ const char* launch_file_browser(lua_State* L) {
 static char* command_completion_generator(const char* text, int state) {
     static const char* commands[] = {
         "help", "list", "ls", "dir", "cd", "pwd", "run", "load", 
-        "cat", "clear", "info", "exit", "quit", nullptr
+        "cat", "clear", "info", "lua", "exit", "quit", nullptr
     };
     
     static int list_index, len;
@@ -840,6 +840,7 @@ const char* launch_console_repl(lua_State* L) {
         printf("  pwd                  - Show current directory\n");
         printf("  info                 - Show system information\n");
         printf("  clear                - Clear the screen\n");
+        printf("  lua <code>           - Execute Lua code directly\n");
         printf("  exit                 - Exit the REPL\n");
         printf("  quit                 - Exit the REPL\n");
 #ifdef USE_READLINE
@@ -856,6 +857,9 @@ const char* launch_console_repl(lua_State* L) {
         printf("  cd samples/sdl/Console\n");
         printf("  dir\n");
         printf("  info\n");
+        printf("  lua print('Hello from Lua!')\n");
+        printf("  lua local name = System.input('Name: '); print('Hi ' .. name)\n");
+        printf("  lua for i=1,3 do print('Line ' .. i) end\n");
     };
     
 #ifdef USE_READLINE
@@ -1035,7 +1039,22 @@ const char* launch_console_repl(lua_State* L) {
             printf("Features: File Operations, Timer, System, Network\n");
             printf("Graphics: Disabled (headless mode)\n");
             printf("Audio: Disabled (headless mode)\n");
-            printf("Console Commands: help, list/ls/dir, cd, pwd, run/load, cat, clear, info, exit\n");
+            printf("Console Commands: help, list/ls/dir, cd, pwd, run/load, cat, clear, info, lua, exit\n");
+        }
+        else if (strcmp(command, "lua") == 0) {
+            if (!argument) {
+                printf("Error: lua requires Lua code argument\n");
+                printf("Example: lua print('Hello World')\n");
+                printf("Example: lua local x = System.input('Name: '); print('Hi ' .. x)\n");
+                continue;
+            }
+            
+            // Execute Lua code
+            int result = luaL_dostring(L, argument);
+            if (result != LUA_OK) {
+                printf("Lua error: %s\n", lua_tostring(L, -1));
+                lua_pop(L, 1);
+            }
         }
         else if (strcmp(command, "exit") == 0 || strcmp(command, "quit") == 0) {
             printf("Exiting console REPL...\n");
