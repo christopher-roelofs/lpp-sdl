@@ -768,16 +768,40 @@ static int lua_loadimg(lua_State *L) {
     // Translate Vita paths (app0:/ -> current directory)
     std::string translated_path = PathUtils::translate_vita_path(path);
     
-    SDL_Texture* sdl_texture = IMG_LoadTexture(g_renderer, translated_path.c_str());
-    if (!sdl_texture) {
+    // Load surface first to get pixel data for getPixel functionality
+    SDL_Surface* surface = IMG_Load(translated_path.c_str());
+    if (!surface) {
         return luaL_error(L, "Error loading image: %s", IMG_GetError());
+    }
+    
+    // Create texture from surface
+    SDL_Texture* sdl_texture = SDL_CreateTextureFromSurface(g_renderer, surface);
+    if (!sdl_texture) {
+        SDL_FreeSurface(surface);
+        return luaL_error(L, "Error creating texture: %s", SDL_GetError());
     }
 
     lpp_texture* tex = (lpp_texture*)malloc(sizeof(lpp_texture));
     tex->magic = 0xABADBEEF;
     tex->texture = (void*)sdl_texture;
-    SDL_QueryTexture(sdl_texture, NULL, NULL, &tex->w, &tex->h);
-    tex->data = NULL;
+    tex->w = surface->w;
+    tex->h = surface->h;
+    
+    // Store pixel data for getPixel functionality
+    int size = surface->w * surface->h * 4; // RGBA
+    tex->data = malloc(size);
+    
+    // Convert surface to ABGR8888 format for consistent pixel access (matches 3DS byte order)
+    SDL_Surface* rgba_surface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ABGR8888, 0);
+    if (rgba_surface) {
+        memcpy(tex->data, rgba_surface->pixels, size);
+        SDL_FreeSurface(rgba_surface);
+    } else {
+        // Fallback: copy original surface data
+        memcpy(tex->data, surface->pixels, size);
+    }
+    
+    SDL_FreeSurface(surface);
 
     lua_pushlightuserdata(L, tex);
     return 1;
@@ -1733,18 +1757,42 @@ static int lua_gpixel(lua_State *L) {
 		return luaL_error(L, "wrong number of arguments");
 #endif
 	int x = luaL_checkinteger(L, 1);
-	(void)x;
 	int y = luaL_checkinteger(L, 2);
-	(void)y;
 	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 3);
 #ifndef SKIP_ERROR_HANDLING
 	if (text->magic != 0xABADBEEF)
 		return luaL_error(L, "attempt to access wrong memory block type.");
 #endif
-	// SDL doesn't provide direct pixel access like Vita2D
-	// This would require reading pixels from texture which is expensive
-	// For now, return 0 (black) as placeholder
-	lua_pushinteger(L, 0);
+	
+	if (!text->data) {
+		lua_pushinteger(L, 0); // Return black if no pixel data
+		return 1;
+	}
+	
+	// Check bounds
+	if (x < 0 || y < 0 || x >= text->w || y >= text->h) {
+		lua_pushinteger(L, 0); // Return black for out of bounds
+		return 1;
+	}
+	
+	// Get pixel from stored RGBA data
+	Uint32* pixels = (Uint32*)text->data;
+	Uint32 pixel = pixels[y * text->w + x];
+	
+	// Extract ABGR components (ABGR8888 format: A=bits 24-31, B=bits 16-23, G=bits 8-15, R=bits 0-7)
+	Uint8 r = (pixel >> 0) & 0xFF;
+	Uint8 g = (pixel >> 8) & 0xFF;
+	Uint8 b = (pixel >> 16) & 0xFF;
+	Uint8 a = (pixel >> 24) & 0xFF;
+	
+	// Force alpha to 255 for compatibility with 3DS behavior (BMPs don't have alpha)
+	a = 255;
+	
+	// Pack into RGBA format that matches Color.new() format (RGBA: R=bits 0-7, G=bits 8-15, B=bits 16-23, A=bits 24-31)
+	// Pure green (0,255,0) should be 65280 = 0xFF00
+	uint32_t color = r | (g << 8) | (b << 16) | (a << 24);
+	
+	lua_pushinteger(L, (int32_t)color);
 	return 1;
 }
 
