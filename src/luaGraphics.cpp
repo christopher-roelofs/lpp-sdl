@@ -1086,7 +1086,7 @@ static int lua_drawimg_part(lua_State *L) {
 static int lua_drawimg_full(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 11 && argc != 10)
+	if (argc != 11 && argc != 10 && argc != 9)
 		return luaL_error(L, "wrong number of arguments");
 #endif
 #ifdef PARANOID
@@ -1100,8 +1100,18 @@ static int lua_drawimg_full(lua_State *L) {
 	int st_x, st_y;
 	float width, height, radius, x_scale, y_scale;
 	
-	// Check if 3rd parameter is userdata (SDL order) or number (3DS order)
-	if (lua_isuserdata(L, 3)) {
+	// Check for SuperHeroChronicles variant (9 or 10 args with texture at end)
+	if ((argc == 9 || argc == 10) && lua_isuserdata(L, argc - (argc == 10 ? 1 : 0))) {
+		// SuperHeroChronicles order: x, y, st_x, st_y, width, height, x_scale, y_scale, texture, [color]
+		st_x = luaL_checkinteger(L, 3);
+		st_y = luaL_checkinteger(L, 4);
+		width = luaL_checknumber(L, 5);
+		height = luaL_checknumber(L, 6);
+		x_scale = luaL_checknumber(L, 7);
+		y_scale = luaL_checknumber(L, 8);
+		text = (lpp_texture*)lua_touserdata(L, 9);
+		radius = 0.0f; // No radius parameter in this variant
+	} else if (lua_isuserdata(L, 3)) {
 		// SDL order: x, y, texture, st_x, st_y, width, height, radius, x_scale, y_scale
 		text = (lpp_texture*)lua_touserdata(L, 3);
 		st_x = luaL_checkinteger(L, 4);
@@ -1128,8 +1138,10 @@ static int lua_drawimg_full(lua_State *L) {
 #endif
 	
 	// Handle color tinting if provided
-	if (argc == 11) {
-		uint32_t color = luaL_checkinteger(L, 11);
+	if (argc == 11 || (argc == 10 && lua_isuserdata(L, 9))) {
+		// Standard 11-arg version or SuperHeroChronicles 10-arg version
+		int color_arg = (argc == 11) ? 11 : 10;
+		uint32_t color = luaL_checkinteger(L, color_arg);
 		uint8_t r = (color) & 0xFF;
 		uint8_t g = (color >> 8) & 0xFF;
 		uint8_t b = (color >> 16) & 0xFF;
@@ -1149,12 +1161,12 @@ static int lua_drawimg_full(lua_State *L) {
 	src_rect.h = (int)height;
 	
 	// Destination rectangle (where to draw, with scaling)
-	// Note: Vita drawImageExtended uses (x,y) as center, SDL uses top-left corner
+	// Note: Both Vita drawImageExtended and drawPartialImage use (x,y) as top-left corner
 	SDL_Rect dest_rect;
 	dest_rect.w = (int)(width * x_scale);
 	dest_rect.h = (int)(height * y_scale);
-	dest_rect.x = (int)x - dest_rect.w / 2;  // Center the image horizontally
-	dest_rect.y = (int)y - dest_rect.h / 2;  // Center the image vertically
+	dest_rect.x = (int)x;  // Use x as top-left corner (matches original lpp-vita)
+	dest_rect.y = (int)y;  // Use y as top-left corner (matches original lpp-vita)
 	
 	// Apply screen offsets for 3DS mode using current screen context
 	if (g_compat_mode == LPP_COMPAT_3DS) {
