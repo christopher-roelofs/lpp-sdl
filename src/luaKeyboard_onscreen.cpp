@@ -35,6 +35,7 @@
 // Keyboard constants
 #define OSK_STATE_NONE 0
 #define OSK_STATE_RUNNING 1
+#define OSK_STATE_ACTIVE 1  // Alias for RUNNING (Vita compatibility)
 #define OSK_STATE_FINISHED 2
 #define OSK_STATE_CANCELED 3
 #define OSK_STATE_NOT_PRESSED 4
@@ -1058,11 +1059,36 @@ static int lua_setFont(lua_State *L) {
 // Show keyboard (3DS compatibility - just draws without arguments)
 static int lua_show(lua_State *L) {
     int argc = lua_gettop(L);
-    if (argc != 0) {
-        return luaL_error(L, "wrong number of arguments");
+    
+    // Vita compatibility: If arguments are provided, act like Keyboard.start()
+    if (argc > 0) {
+        // Get title (required)
+        const char* title = luaL_checkstring(L, 1);
+        
+        // Get initial text (optional)
+        const char* init_text = "";
+        if (argc >= 2) {
+            init_text = luaL_checkstring(L, 2);
+        }
+        
+        // Initialize keyboard with Vita-style parameters
+        osk.active = true;
+        osk.state = OSK_STATE_ACTIVE;
+        osk.title = title;
+        osk.input_text = init_text;
+        osk.max_length = 256; // Default max length
+        osk.cursor_x = 0;
+        osk.cursor_y = 0;
+        osk.shift_mode = false;
+        osk.caps_lock = false;
+        
+        // Initialize keyboard layouts
+        initKeyboardLayouts();
+        
+        return 0;
     }
     
-    // Just call the draw function
+    // 3DS compatibility: If no arguments, just draw
     return lua_draw(L);
 }
 

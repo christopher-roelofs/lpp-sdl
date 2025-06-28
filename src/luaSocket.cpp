@@ -41,6 +41,12 @@
 
 #include "luaplayer.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #define stringify(str) #str
 #define VariableRegister(lua, value) do { lua_pushinteger(lua, value); lua_setglobal (lua, stringify(value)); } while(0)
 
@@ -68,8 +74,10 @@ typedef struct {
 // Socket.init - Initialize socket system
 static int lua_init(lua_State *L) {
     printf("Socket.init() called\n");
+    fflush(stdout);
     if (socket_initialized) {
         printf("Socket system already initialized\n");
+        fflush(stdout);
         return 0; // Already initialized
     }
     
@@ -110,6 +118,7 @@ static int lua_connect(lua_State *L) {
     int port = luaL_checkinteger(L, 2);
     
     printf("Socket.connect() called: %s:%d\n", hostname, port);
+    fflush(stdout);
     
     // Resolve hostname
     struct addrinfo hints, *result;
@@ -141,8 +150,14 @@ static int lua_connect(lua_State *L) {
     
     freeaddrinfo(result);
     
-    // Keep socket in blocking mode for simpler IRC client logic
-    // Non-blocking can be added later if needed
+    // Set socket to non-blocking mode to prevent GUI freeze
+#ifdef _WIN32
+    u_long mode = 1;
+    ioctlsocket(sockfd, FIONBIO, &mode);
+#else
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+#endif
     
     // Create Socket struct and return pointer as integer
     Socket* sock = (Socket*)malloc(sizeof(Socket));
@@ -156,6 +171,7 @@ static int lua_connect(lua_State *L) {
     sock->serverSocket = false;
     
     printf("Socket connected successfully, ptr: %p\n", (void*)sock);
+    fflush(stdout);
     lua_pushinteger(L, (lua_Integer)(uintptr_t)sock);
     return 1;
 }
@@ -224,13 +240,29 @@ static int lua_receive(lua_State *L) {
     ssize_t bytes_received = recv(sock->sock, buffer, max_size, 0);
     if (bytes_received < 0) {
         int error = GET_SOCKET_ERROR();
-        printf("Socket receive error: %d\n", error);
-        free(buffer);
-        lua_pushstring(L, ""); // Return empty string on error for IRC compatibility
+        // Handle non-blocking socket would-block condition
+        if (error == SOCKET_ERROR_WOULD_BLOCK || error == EWOULDBLOCK) {
+            free(buffer);
+            // Add small delay to prevent CPU spinning in tight loops
+#ifdef _WIN32
+            Sleep(10); // 10ms delay on Windows
+#else
+            usleep(10000); // 10ms delay on Unix (10,000 microseconds)
+#endif
+            lua_pushstring(L, ""); // Return empty string when no data available
+            return 1;
+        } else {
+            printf("Socket receive error: %d\n", error);
+            free(buffer);
+            lua_pushstring(L, ""); // Return empty string on error for IRC compatibility
+            return 1;
+        }
     } else if (bytes_received == 0) {
         // Connection closed
         printf("Socket connection closed\n");
+        free(buffer);
         lua_pushstring(L, "");
+        return 1;
     } else {
         // Null terminate and return string
         buffer[bytes_received] = '\0';

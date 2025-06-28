@@ -659,6 +659,40 @@ static int lua_setGpuXbarSpeed(lua_State *L) {
     return 1;
 }
 
+// Get username (Vita compatibility)
+static int lua_getUsername(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // Try to get username from environment
+    const char* username = getenv("USER");
+    if (!username) {
+        username = getenv("USERNAME"); // Windows
+    }
+    if (!username) {
+        username = "user"; // Default fallback
+    }
+    
+    lua_pushstring(L, username);
+    return 1;
+}
+
+// Power tick (Vita compatibility - prevents system sleep)
+static int lua_powerTick(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // On desktop, we don't need to prevent sleep, but we can use SDL's built-in functionality
+    // SDL_DisableScreenSaver() prevents screensaver, which is similar behavior
+    // This is already called in main, so this is just a stub for compatibility
+    
+    return 0;
+}
+
 static int lua_setBusSpeed(lua_State *L) {
     // SDL doesn't have bus speed control, just return success
     lua_pushboolean(L, true);
@@ -667,7 +701,10 @@ static int lua_setBusSpeed(lua_State *L) {
 
 // System.wait() - Sleep function for tetromino compatibility
 static int lua_wait(lua_State *L) {
-    int ms = luaL_checkinteger(L, 1);
+    int microseconds = luaL_checkinteger(L, 1);
+    // Convert microseconds to milliseconds for Vita compatibility
+    int ms = microseconds / 1000;
+    if (ms < 1) ms = 1; // Minimum 1ms delay
     SDL_Delay(ms);
     return 0;
 }
@@ -1497,6 +1534,8 @@ static const luaL_Reg System_functions[] = {
     {"setCpuSpeed",        lua_setCpuSpeed},
     {"setGpuSpeed",        lua_setGpuSpeed},
     {"setGpuXbarSpeed",    lua_setGpuXbarSpeed},
+    {"getUsername",        lua_getUsername},
+    {"powerTick",          lua_powerTick},
     {"setBusSpeed",        lua_setBusSpeed},
     {"wait",               lua_wait},
     {"doesDirExist",       lua_doesDirExist},
