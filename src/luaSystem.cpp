@@ -22,6 +22,12 @@ extern "C" {
 #include "include/unzip.h"
 }
 
+// Archive support (if enabled)
+#ifdef USE_LIBARCHIVE
+#include <archive.h>
+#include <archive_entry.h>
+#endif
+
 // Platform-specific includes for disk space
 #if defined(_WIN32)
 #include <windows.h>
@@ -1513,6 +1519,132 @@ static int lua_addToZip(lua_State *L) {
     }
 }
 
+#ifdef USE_LIBARCHIVE
+// System.unarchive(archive_path, destination_path)
+static int lua_unarchive(lua_State *L) {
+    const char* archive_path = luaL_checkstring(L, 1);
+    const char* dest_path = luaL_checkstring(L, 2);
+    
+    std::string translated_archive = translate_console_path(archive_path);
+    std::string translated_dest = translate_console_path(dest_path);
+    
+    struct archive *a;
+    struct archive *ext;
+    struct archive_entry *entry;
+    int flags;
+    int r;
+    
+    // Select which attributes we want to restore
+    flags = ARCHIVE_EXTRACT_TIME;
+    flags |= ARCHIVE_EXTRACT_PERM;
+    flags |= ARCHIVE_EXTRACT_ACL;
+    flags |= ARCHIVE_EXTRACT_FFLAGS;
+    
+    a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+    
+    ext = archive_write_disk_new();
+    archive_write_disk_set_options(ext, flags);
+    archive_write_disk_set_standard_lookup(ext);
+    
+    if ((r = archive_read_open_filename(a, translated_archive.c_str(), 10240))) {
+        archive_read_free(a);
+        archive_write_free(ext);
+        lua_pushboolean(L, false);
+        lua_pushstring(L, archive_error_string(a));
+        return 2;
+    }
+    
+    for (;;) {
+        r = archive_read_next_header(a, &entry);
+        if (r == ARCHIVE_EOF)
+            break;
+        if (r < ARCHIVE_OK) {
+            archive_read_free(a);
+            archive_write_free(ext);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, archive_error_string(a));
+            return 2;
+        }
+        
+        // Prepend destination path to entry pathname
+        std::string entry_path = translated_dest + "/" + archive_entry_pathname(entry);
+        archive_entry_set_pathname(entry, entry_path.c_str());
+        
+        r = archive_write_header(ext, entry);
+        if (r < ARCHIVE_OK) {
+            continue; // Skip problematic entries
+        } else if (archive_entry_size(entry) > 0) {
+            const void *buff;
+            size_t size;
+            la_int64_t offset;
+            
+            for (;;) {
+                r = archive_read_data_block(a, &buff, &size, &offset);
+                if (r == ARCHIVE_EOF)
+                    break;
+                if (r < ARCHIVE_OK) {
+                    break;
+                }
+                r = archive_write_data_block(ext, buff, size, offset);
+                if (r < ARCHIVE_OK) {
+                    break;
+                }
+            }
+        }
+        r = archive_write_finish_entry(ext);
+    }
+    
+    archive_read_close(a);
+    archive_read_free(a);
+    archive_write_close(ext);
+    archive_write_free(ext);
+    
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+// System.detectArchiveFormat(archive_path)
+static int lua_detectArchiveFormat(lua_State *L) {
+    const char* archive_path = luaL_checkstring(L, 1);
+    std::string translated_archive = translate_console_path(archive_path);
+    
+    struct archive *a;
+    struct archive_entry *entry;
+    int r;
+    
+    a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+    
+    if ((r = archive_read_open_filename(a, translated_archive.c_str(), 10240))) {
+        archive_read_free(a);
+        lua_pushnil(L);
+        lua_pushstring(L, archive_error_string(a));
+        return 2;
+    }
+    
+    // Try to read first header to detect format
+    r = archive_read_next_header(a, &entry);
+    
+    const char* format_name = "unknown";
+    if (r >= ARCHIVE_OK) {
+        format_name = archive_format_name(a);
+        // Ensure format_name is valid and not null
+        if (!format_name || strlen(format_name) == 0) {
+            format_name = "unknown";
+        }
+    }
+    
+    archive_read_close(a);
+    archive_read_free(a);
+    
+    lua_pushstring(L, format_name ? format_name : "unknown");
+    return 1;
+}
+#endif
+
 // System.getAsyncState()
 static int lua_getAsyncState(lua_State *L) {
     lua_pushinteger(L, asyncResult);
@@ -1685,6 +1817,10 @@ static const luaL_Reg System_functions[] = {
     {"extractFromZipAsync", lua_extractFromZipAsync},
     {"compressZip",        lua_compressZip},
     {"addToZip",           lua_addToZip},
+#ifdef USE_LIBARCHIVE
+    {"unarchive",          lua_unarchive},
+    {"detectArchiveFormat", lua_detectArchiveFormat},
+#endif
     {"getAsyncState",      lua_getAsyncState},
     {"getAsyncResult",     lua_getAsyncResult},
     {"setGamepadLayout",   lua_setGamepadLayout},
