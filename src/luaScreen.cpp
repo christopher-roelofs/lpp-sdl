@@ -307,7 +307,11 @@ static int lua_flip(lua_State *L) {
             SDL_RenderFillRect(g_renderer, &right_padding);
         }
         
-        SDL_RenderPresent(g_renderer);
+        // In Vita compatibility mode, Graphics.termBlend() handles presentation
+        // Skip SDL_RenderPresent() here to prevent double presentation and flashing
+        if (g_compat_mode != LPP_COMPAT_VITA) {
+            SDL_RenderPresent(g_renderer);
+        }
         
         // In 3DS compatibility mode, preserve framebuffer content like the original 3DS
         // This prevents content from being cleared between frames

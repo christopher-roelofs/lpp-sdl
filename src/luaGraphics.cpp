@@ -753,7 +753,12 @@ static int lua_term(lua_State *L) {
 	else
 		draw_state = false;
 #endif
-	// Porting to SDL
+	
+	// Vita compatibility: Some games expect termBlend to present the frame
+	if (g_compat_mode == LPP_COMPAT_VITA && g_renderer) {
+		SDL_RenderPresent(g_renderer);
+	}
+	
 	return 0;
 }
 

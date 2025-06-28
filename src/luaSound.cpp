@@ -959,6 +959,7 @@ static const luaL_Reg Sound_functions[] = {
   {"term",          lua_term},
   {"open",          lua_openMusic},
   {"openMusic",     lua_openMusic},
+  {"openMp3",       lua_openMusic},  // Vita compatibility
   {"openOgg",       lua_openSound},
   {"openWav",       lua_openSound},
   {"play",          lua_play},

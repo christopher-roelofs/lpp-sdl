@@ -716,6 +716,25 @@ int main(int argc, char* args[]) {
         return 1;
     }
     luaL_openlibs(L); // Open standard libraries
+    
+    // Override require to handle Vita paths
+    const char* require_override = R"(
+        local original_require = require
+        function require(modname)
+            -- Handle Vita paths
+            if modname:match("^app0:/") then
+                -- Remove app0:/ prefix and .lua extension if present
+                local fixed_path = modname:gsub("^app0:/", ""):gsub("%.lua$", "")
+                return original_require(fixed_path)
+            end
+            return original_require(modname)
+        end
+    )";
+    
+    if (luaL_dostring(L, require_override) != 0) {
+        printf("Failed to override require function: %s\n", lua_tostring(L, -1));
+    }
+    
     luaSystem_init(L);
     luaTimer_init(L);
 
