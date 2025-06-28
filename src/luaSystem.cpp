@@ -68,16 +68,17 @@ static std::string translate_console_path(const char* path) {
     bool was_console_path = (result != path);
     
     // Handle 3DS-specific paths: convert absolute paths to relative for desktop compatibility
-    // Only convert simple absolute paths (like "/save.dat"), not full system paths
-    if (g_compat_mode == LPP_COMPAT_3DS && !was_console_path && result.length() > 0 && result[0] == '/') {
+    // Only convert simple absolute paths (like "/save.dat"), not full system paths or root directory
+    if (g_compat_mode == LPP_COMPAT_3DS && !was_console_path && result.length() > 1 && result[0] == '/') {
         // Check if this is a simple 3DS-style path (no subdirectories) vs a full system path
         size_t second_slash = result.find('/', 1);
         if (second_slash == std::string::npos) {
             // Simple path like "/save.dat" - convert to relative
+            // But preserve root directory "/" unchanged
             result = result.substr(1); // Remove leading slash to make it relative
             was_console_path = true;
         }
-        // Full paths like "/home/user/..." are left unchanged
+        // Full paths like "/home/user/..." and root "/" are left unchanged
     }
     
     // Only convert to relative path if it was originally a console-specific path
@@ -366,10 +367,13 @@ static int lua_openFile(lua_State *L) {
 static int lua_closeFile(lua_State *L) {
     FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
     if (*ud) {
-        fclose(*ud);
+        int result = fclose(*ud);
         *ud = NULL;
+        lua_pushboolean(L, result == 0);
+        return 1;
     }
-    return 0;
+    lua_pushboolean(L, false);
+    return 1;
 }
 
 // System.sizeFile(filehandle)
@@ -869,9 +873,29 @@ static int lua_listDirectory(lua_State *L) {
             lua_pushnumber(L, (lua_Number)st.st_size);
             lua_settable(L, -3);
             
-            // Add directory flag
+            // Add directory flag (legacy compatibility)
             lua_pushstring(L, "directory");
             lua_pushboolean(L, S_ISDIR(st.st_mode));
+            lua_settable(L, -3);
+            
+            // Add type field (file/directory)
+            lua_pushstring(L, "type");
+            lua_pushstring(L, S_ISDIR(st.st_mode) ? "directory" : "file");
+            lua_settable(L, -3);
+            
+            // Add modification time
+            lua_pushstring(L, "mtime");
+            lua_pushnumber(L, (lua_Number)st.st_mtime);
+            lua_settable(L, -3);
+            
+            // Add access time
+            lua_pushstring(L, "atime");
+            lua_pushnumber(L, (lua_Number)st.st_atime);
+            lua_settable(L, -3);
+            
+            // Add creation time (same as mtime on Unix systems)
+            lua_pushstring(L, "ctime");
+            lua_pushnumber(L, (lua_Number)st.st_ctime);
             lua_settable(L, -3);
         } else {
             // If stat fails, set defaults
@@ -881,6 +905,22 @@ static int lua_listDirectory(lua_State *L) {
             
             lua_pushstring(L, "directory");
             lua_pushboolean(L, false);
+            lua_settable(L, -3);
+            
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "unknown");
+            lua_settable(L, -3);
+            
+            lua_pushstring(L, "mtime");
+            lua_pushnumber(L, 0);
+            lua_settable(L, -3);
+            
+            lua_pushstring(L, "atime");
+            lua_pushnumber(L, 0);
+            lua_settable(L, -3);
+            
+            lua_pushstring(L, "ctime");
+            lua_pushnumber(L, 0);
             lua_settable(L, -3);
         }
         
