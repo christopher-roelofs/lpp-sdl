@@ -1161,12 +1161,22 @@ static int lua_drawimg_full(lua_State *L) {
 	src_rect.h = (int)height;
 	
 	// Destination rectangle (where to draw, with scaling)
-	// Note: Both Vita drawImageExtended and drawPartialImage use (x,y) as top-left corner
 	SDL_Rect dest_rect;
 	dest_rect.w = (int)(width * x_scale);
 	dest_rect.h = (int)(height * y_scale);
-	dest_rect.x = (int)x;  // Use x as top-left corner (matches original lpp-vita)
-	dest_rect.y = (int)y;  // Use y as top-left corner (matches original lpp-vita)
+	
+	// Different coordinate systems based on argument pattern:
+	// 9-10 args (SuperHeroChronicles variant): top-left positioning
+	// 11 args (standard format): center positioning for backwards compatibility
+	if (argc == 9 || (argc == 10 && lua_isuserdata(L, 9))) {
+		// SuperHeroChronicles variant: use top-left positioning
+		dest_rect.x = (int)x;
+		dest_rect.y = (int)y;
+	} else {
+		// Standard format: use center positioning (original behavior)
+		dest_rect.x = (int)x - dest_rect.w / 2;
+		dest_rect.y = (int)y - dest_rect.h / 2;
+	}
 	
 	// Apply screen offsets for 3DS mode using current screen context
 	if (g_compat_mode == LPP_COMPAT_3DS) {
