@@ -35,17 +35,23 @@ Type 'help' for available commands.
 lpp-sdl> help
 Available commands:
   help                 - Show this help message
-  list                 - List files and directories in current directory
+  list, ls, dir        - List files and directories in current directory
   cd <directory>       - Change to directory (use .. for parent)
-  run <file.lua>       - Run a Lua script
+  run, load <file.lua> - Run a Lua script
+  cat <file>           - Display file contents
   pwd                  - Show current directory
+  info                 - Show system information
+  clear                - Clear the screen
   exit                 - Exit the REPL
   quit                 - Exit the REPL
 
 Examples:
   run samples/sdl/Console/index.lua
+  cat samples/sdl/Console/README.md
   cd samples/sdl/Console
-  list
+  dir
+  info
+  clear
 
 lpp-sdl> cd samples/sdl/Console
 Changed to directory: ./samples/sdl/Console
@@ -70,9 +76,13 @@ Exiting console REPL...
 ```
 
 ### REPL Features
-- **File navigation**: `cd`, `pwd`, `list` commands for exploring directories
-- **Script execution**: `run` command to execute Lua scripts from any location
-- **Help system**: Built-in `help` command with examples
+- **File navigation**: `cd`, `pwd`, `list` (aliases: `ls`, `dir`) commands for exploring directories
+- **File viewing**: `cat <file>` command to display file contents with line numbers
+- **Script execution**: `run` (alias: `load`) command to execute Lua scripts from any location
+- **System information**: `info` command shows platform details and available features
+- **Screen management**: `clear` command to clear the console screen
+- **Command aliases**: Familiar shell aliases (`ls`/`dir` for `list`, `load` for `run`)
+- **Help system**: Built-in `help` command with examples and command reference
 - **Tab completion**: Commands and paths (future enhancement)
 - **History**: Command history navigation (future enhancement)
 

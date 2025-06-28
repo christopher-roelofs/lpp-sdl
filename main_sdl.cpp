@@ -690,16 +690,21 @@ const char* launch_console_repl(lua_State* L) {
     auto show_help = []() {
         printf("\nAvailable commands:\n");
         printf("  help                 - Show this help message\n");
-        printf("  list                 - List files and directories in current directory\n");
+        printf("  list, ls, dir        - List files and directories in current directory\n");
         printf("  cd <directory>       - Change to directory (use .. for parent)\n");
-        printf("  run <file.lua>       - Run a Lua script\n");
+        printf("  run, load <file.lua> - Run a Lua script\n");
+        printf("  cat <file>           - Display file contents\n");
         printf("  pwd                  - Show current directory\n");
+        printf("  info                 - Show system information\n");
+        printf("  clear                - Clear the screen\n");
         printf("  exit                 - Exit the REPL\n");
         printf("  quit                 - Exit the REPL\n");
         printf("\nExamples:\n");
         printf("  run samples/sdl/Console/index.lua\n");
+        printf("  cat samples/sdl/Console/README.md\n");
         printf("  cd samples/sdl/Console\n");
-        printf("  list\n");
+        printf("  dir\n");
+        printf("  info\n");
     };
     
     char input[512];
@@ -726,7 +731,7 @@ const char* launch_console_repl(lua_State* L) {
         if (strcmp(command, "help") == 0) {
             show_help();
         }
-        else if (strcmp(command, "list") == 0) {
+        else if (strcmp(command, "list") == 0 || strcmp(command, "ls") == 0 || strcmp(command, "dir") == 0) {
             list_directory();
         }
         else if (strcmp(command, "pwd") == 0) {
@@ -756,9 +761,9 @@ const char* launch_console_repl(lua_State* L) {
                 printf("Error: Directory '%s' does not exist\n", argument);
             }
         }
-        else if (strcmp(command, "run") == 0) {
+        else if (strcmp(command, "run") == 0 || strcmp(command, "load") == 0) {
             if (!argument) {
-                printf("Error: run requires a Lua file argument\n");
+                printf("Error: %s requires a Lua file argument\n", command);
                 continue;
             }
             
@@ -793,6 +798,64 @@ const char* launch_console_repl(lua_State* L) {
             } else {
                 printf("Error: File '%s' does not exist\n", argument);
             }
+        }
+        else if (strcmp(command, "cat") == 0) {
+            if (!argument) {
+                printf("Error: cat requires a file argument\n");
+                continue;
+            }
+            
+            std::string file_path;
+            if (argument[0] == '/') {
+                // Absolute path
+                file_path = argument;
+            } else {
+                // Relative path
+                file_path = current_dir + "/" + argument;
+            }
+            
+            // Check if file exists and is readable
+            if (access(file_path.c_str(), F_OK) == 0) {
+                struct stat st;
+                if (stat(file_path.c_str(), &st) == 0 && !S_ISDIR(st.st_mode)) {
+                    // It's a file, try to read it
+                    FILE* file = fopen(file_path.c_str(), "r");
+                    if (file) {
+                        printf("\n--- Contents of %s ---\n", argument);
+                        char line[1024];
+                        int line_number = 1;
+                        while (fgets(line, sizeof(line), file)) {
+                            printf("%4d: %s", line_number++, line);
+                        }
+                        fclose(file);
+                        printf("--- End of file ---\n");
+                    } else {
+                        printf("Error: Cannot read file '%s' (permission denied)\n", argument);
+                    }
+                } else {
+                    printf("Error: '%s' is a directory, not a file\n", argument);
+                }
+            } else {
+                printf("Error: File '%s' does not exist\n", argument);
+            }
+        }
+        else if (strcmp(command, "clear") == 0) {
+            // Clear screen using ANSI escape codes
+            printf("\033[2J\033[H");
+            printf("=== LPP-SDL Console REPL ===\n");
+            printf("Type 'help' for available commands.\n");
+        }
+        else if (strcmp(command, "info") == 0) {
+            printf("\n=== System Information ===\n");
+            printf("Platform: Linux SDL2\n");
+            printf("Mode: Console/Headless\n");
+            printf("Current Directory: %s\n", current_dir.c_str());
+            printf("LPP-SDL Version: Console REPL\n");
+            printf("Lua Engine: LuaJIT\n");
+            printf("Features: File Operations, Timer, System, Network\n");
+            printf("Graphics: Disabled (headless mode)\n");
+            printf("Audio: Disabled (headless mode)\n");
+            printf("Console Commands: help, list/ls/dir, cd, pwd, run/load, cat, clear, info, exit\n");
         }
         else if (strcmp(command, "exit") == 0 || strcmp(command, "quit") == 0) {
             printf("Exiting console REPL...\n");

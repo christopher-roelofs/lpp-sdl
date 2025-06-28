@@ -260,15 +260,19 @@ Type 'help' for available commands.
 lpp-sdl> help
 Available commands:
   help                 - Show this help message
-  list                 - List files and directories
+  list, ls, dir        - List files and directories
   cd <directory>       - Change directory
-  run <file.lua>       - Run a Lua script
+  run, load <file.lua> - Run a Lua script
+  cat <file>           - Display file contents
   pwd                  - Show current directory
+  info                 - Show system information
+  clear                - Clear the screen
   exit                 - Exit the REPL
 
 lpp-sdl> cd samples/sdl/Console
-lpp-sdl> list
-lpp-sdl> run index.lua
+lpp-sdl> dir
+lpp-sdl> cat README.md
+lpp-sdl> load index.lua
 ```
 
 ### Sample Scripts
