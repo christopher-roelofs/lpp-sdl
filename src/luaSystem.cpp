@@ -34,6 +34,11 @@ extern "C" {
 #include <readline/history.h>
 #endif
 
+// For password input
+#if defined(__linux__) || defined(__APPLE__)
+#include <termios.h>
+#endif
+
 // Platform-specific includes for disk space
 #if defined(_WIN32)
 #include <windows.h>
@@ -1671,46 +1676,145 @@ static int lua_getAsyncResult(lua_State *L) {
 // System.input([prompt])
 static int lua_input(lua_State *L) {
     const char* prompt = "";
+    const char* input_type = "normal";
+    
     if (lua_gettop(L) >= 1) {
         prompt = luaL_checkstring(L, 1);
     }
+    if (lua_gettop(L) >= 2) {
+        input_type = luaL_checkstring(L, 2);
+    }
+    
+    bool hidden = (strcmp(input_type, "password") == 0);
     
 #ifdef USE_READLINE
-    // Use readline for enhanced input with line editing
-    char* input = readline(prompt);
-    
-    if (!input) {
+    if (hidden) {
+        // Password input - disable echo and display asterisks
+        if (strlen(prompt) > 0) {
+            printf("%s", prompt);
+            fflush(stdout);
+        }
+        
+        std::string password;
+        int ch;
+        
+#if defined(__linux__) || defined(__APPLE__)
+        // Set terminal to raw mode for immediate character input
+        struct termios old_termios, new_termios;
+        tcgetattr(STDIN_FILENO, &old_termios);
+        new_termios = old_termios;
+        new_termios.c_lflag &= ~(ECHO | ICANON); // Disable echo and canonical mode
+        new_termios.c_cc[VMIN] = 1;  // Read one character at a time
+        new_termios.c_cc[VTIME] = 0; // No timeout
+        tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
+#endif
+        
+        while ((ch = getchar()) != '\n' && ch != '\r' && ch != EOF) {
+            if (ch == 127 || ch == 8) { // Backspace/Delete
+                if (!password.empty()) {
+                    password.pop_back();
+                    printf("\b \b"); // Move back, print space, move back again
+                    fflush(stdout);
+                }
+            } else if (ch >= 32 && ch <= 126) { // Printable ASCII characters
+                password += (char)ch;
+                printf("*");
+                fflush(stdout);
+            }
+            // Ignore other control characters
+        }
+        
+#if defined(__linux__) || defined(__APPLE__)
+        // Restore terminal settings
+        tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
+#endif
+        printf("\n");
+        
+        lua_pushstring(L, password.c_str());
+        return 1;
+    } else {
+        // Normal input with readline
+        char* input = readline(prompt);
+        
+        if (!input) {
+            // EOF or error
+            lua_pushnil(L);
+            return 1;
+        }
+        
+        // Add to history if non-empty
+        if (strlen(input) > 0) {
+            add_history(input);
+        }
+        
+        lua_pushstring(L, input);
+        free(input);
+        return 1;
+    }
+#else
+    if (hidden) {
+        // Password input - fallback without readline
+        if (strlen(prompt) > 0) {
+            printf("%s", prompt);
+            fflush(stdout);
+        }
+        
+        std::string password;
+        int ch;
+        
+#if defined(__linux__) || defined(__APPLE__)
+        // Set terminal to raw mode for immediate character input
+        struct termios old_termios, new_termios;
+        tcgetattr(STDIN_FILENO, &old_termios);
+        new_termios = old_termios;
+        new_termios.c_lflag &= ~(ECHO | ICANON); // Disable echo and canonical mode
+        new_termios.c_cc[VMIN] = 1;  // Read one character at a time
+        new_termios.c_cc[VTIME] = 0; // No timeout
+        tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
+#endif
+        
+        while ((ch = getchar()) != '\n' && ch != '\r' && ch != EOF) {
+            if (ch == 127 || ch == 8) { // Backspace/Delete
+                if (!password.empty()) {
+                    password.pop_back();
+                    printf("\b \b");
+                    fflush(stdout);
+                }
+            } else if (ch >= 32 && ch <= 126) { // Printable ASCII characters
+                password += (char)ch;
+                printf("*");
+                fflush(stdout);
+            }
+            // Ignore other control characters
+        }
+        
+#if defined(__linux__) || defined(__APPLE__)
+        // Restore terminal settings
+        tcsetattr(STDIN_FILENO, TCSANOW, &old_termios);
+#endif
+        printf("\n");
+        
+        lua_pushstring(L, password.c_str());
+        return 1;
+    } else {
+        // Normal fallback input
+        if (strlen(prompt) > 0) {
+            printf("%s", prompt);
+            fflush(stdout);
+        }
+        
+        char input[1024];
+        if (fgets(input, sizeof(input), stdin)) {
+            // Remove newline
+            input[strcspn(input, "\n")] = 0;
+            lua_pushstring(L, input);
+            return 1;
+        }
+        
         // EOF or error
         lua_pushnil(L);
         return 1;
     }
-    
-    // Add to history if non-empty
-    if (strlen(input) > 0) {
-        add_history(input);
-    }
-    
-    lua_pushstring(L, input);
-    free(input);
-    return 1;
-#else
-    // Fallback to simple input
-    if (strlen(prompt) > 0) {
-        printf("%s", prompt);
-        fflush(stdout);
-    }
-    
-    char input[1024];
-    if (fgets(input, sizeof(input), stdin)) {
-        // Remove newline
-        input[strcspn(input, "\n")] = 0;
-        lua_pushstring(L, input);
-        return 1;
-    }
-    
-    // EOF or error
-    lua_pushnil(L);
-    return 1;
 #endif
 }
 

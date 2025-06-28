@@ -24,6 +24,7 @@ print()
 
 print("3. Interactive input:")
 print("   lpp-sdl> lua local name = System.input('Your name: '); print('Hello', name)")
+print("   lpp-sdl> lua local pass = System.input('Password: ', 'password'); print('Length:', #pass)")
 print("   lpp-sdl> lua local age = tonumber(System.input('Age: ')); print('In 10 years:', age + 10)")
 print()
 
