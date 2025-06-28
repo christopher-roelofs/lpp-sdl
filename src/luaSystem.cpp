@@ -68,10 +68,16 @@ static std::string translate_console_path(const char* path) {
     bool was_console_path = (result != path);
     
     // Handle 3DS-specific paths: convert absolute paths to relative for desktop compatibility
+    // Only convert simple absolute paths (like "/save.dat"), not full system paths
     if (g_compat_mode == LPP_COMPAT_3DS && !was_console_path && result.length() > 0 && result[0] == '/') {
-        // 3DS games often use absolute paths like "/save.dat" which need to be relative on desktop
-        result = result.substr(1); // Remove leading slash to make it relative
-        was_console_path = true;
+        // Check if this is a simple 3DS-style path (no subdirectories) vs a full system path
+        size_t second_slash = result.find('/', 1);
+        if (second_slash == std::string::npos) {
+            // Simple path like "/save.dat" - convert to relative
+            result = result.substr(1); // Remove leading slash to make it relative
+            was_console_path = true;
+        }
+        // Full paths like "/home/user/..." are left unchanged
     }
     
     // Only convert to relative path if it was originally a console-specific path
