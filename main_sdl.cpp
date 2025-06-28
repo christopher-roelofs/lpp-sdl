@@ -35,6 +35,7 @@ bool g_dual_screen_mode = false; // Global flag for 3DS dual screen mode (deprec
 bool g_3ds_single_screen_mode = false; // Global flag for 3DS single-screen mode on small displays
 int g_3ds_active_screen = 0; // Currently active screen in single-screen mode (0=top, 1=bottom)
 bool g_debug_mode = false; // Global flag for debug output
+bool g_headless_mode = false; // Global flag for headless mode (no GUI)
 int g_gamepad_layout = 0; // Global gamepad layout (0=Nintendo, 1=Xbox)
 float g_scale_x = 1.0f; // Manual scaling factor for dual screen X
 float g_scale_y = 1.0f; // Manual scaling factor for dual screen Y
@@ -617,6 +618,7 @@ int main(int argc, char* args[]) {
     lpp_compat_mode_t compat_mode = LPP_COMPAT_NATIVE; // Default to native mode
     bool vita_compat_mode = false; // Legacy flag for backward compatibility
     bool threeds_compat_mode = false; // Legacy flag for backward compatibility
+    bool headless_mode = false; // Headless mode flag (no SDL window)
     const char* lua_file = NULL;
     
     // Store the executable directory for font loading
@@ -664,6 +666,10 @@ int main(int argc, char* args[]) {
         } else if (strcmp(args[i], "-debug") == 0) {
             g_debug_mode = true;
             printf("Debug mode enabled\n");
+        } else if (strcmp(args[i], "-headless") == 0 || strcmp(args[i], "-console") == 0) {
+            headless_mode = true;
+            g_headless_mode = true; // Set global flag
+            printf("Headless mode enabled (no GUI window)\n");
         } else if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
             printf("Lua Player Plus SDL - Compatibility Usage:\n");
             printf("  %s [options] <lua_file>\n\n", args[0]);
@@ -674,8 +680,9 @@ int main(int argc, char* args[]) {
             printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
             printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
             printf("\nOther Options:\n");
-            printf("  -debug          Enable debug output\n");
-            printf("  -h, --help      Show this help message\n");
+            printf("  -debug              Enable debug output\n");
+            printf("  -headless, -console Run without GUI window (for scripts that don't need graphics)\n");
+            printf("  -h, --help          Show this help message\n");
             printf("\nIf no lua file is specified, the program will:\n");
             printf("  1. Look for index.lua in the current directory\n");
             printf("  2. Launch a file browser to select a .lua file\n");
@@ -756,24 +763,30 @@ int main(int argc, char* args[]) {
     luaRegistry_init(L);
     luaGui_init(L);
 
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
+    // Initialize SDL (conditionally initialize video based on headless mode)
+    Uint32 sdl_flags = SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
+    if (!headless_mode) {
+        sdl_flags |= SDL_INIT_VIDEO;
+    }
+    
+    if (SDL_Init(sdl_flags) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return 1;
     }
 
-    // Initialize SDL_image
-    if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG) & (IMG_INIT_PNG | IMG_INIT_JPG))) {
-        printf("SDL_image could not initialize! IMG_Error: %s\n", IMG_GetError());
-        SDL_Quit();
-        return 1;
-    }
+    // Initialize SDL_image and SDL_ttf only if not in headless mode
+    if (!headless_mode) {
+        if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG) & (IMG_INIT_PNG | IMG_INIT_JPG))) {
+            printf("SDL_image could not initialize! IMG_Error: %s\n", IMG_GetError());
+            SDL_Quit();
+            return 1;
+        }
 
-    // Initialize SDL_ttf
-    if (TTF_Init() == -1) {
-        printf("SDL_ttf could not initialize! TTF_Error: %s\n", TTF_GetError());
-        SDL_Quit();
-        return 1;
+        if (TTF_Init() == -1) {
+            printf("SDL_ttf could not initialize! TTF_Error: %s\n", TTF_GetError());
+            SDL_Quit();
+            return 1;
+        }
     }
 
     // Initialize and detect game controllers
@@ -941,6 +954,12 @@ int main(int argc, char* args[]) {
     g_compat_mode = compat_mode; // Store globally for other modules to access
     g_vita_compat_mode = vita_compat_mode; // Store legacy flag for backward compatibility
     g_dual_screen_mode = threeds_compat_mode; // Store legacy flag for backward compatibility
+    
+    // Skip all GUI setup in headless mode
+    if (headless_mode) {
+        printf("Headless mode: Skipping window and renderer creation\n");
+        goto skip_gui_setup;
+    }
     
     // Update key constants now that compatibility mode is set
     luaControls_set_key_constants(L);
@@ -1294,6 +1313,12 @@ int main(int argc, char* args[]) {
     
     SDL_RenderPresent(g_renderer);
 
+skip_gui_setup:
+    // Update key constants now that compatibility mode is set (if not already done)
+    if (headless_mode) {
+        luaControls_set_key_constants(L);
+    }
+
     // Change working directory to the script's directory so relative asset paths work.
     std::string path_str(lua_file);
     std::string script_name_str = lua_file;
@@ -1334,11 +1359,13 @@ int main(int argc, char* args[]) {
         printf("Script completed - no callback function found, exiting.\n");
         fflush(stdout);
         // Cleanup and exit
-        SDL_DestroyRenderer(g_renderer);
-        SDL_DestroyWindow(g_window);
-        IMG_Quit();
-        if (g_defaultFont) TTF_CloseFont(g_defaultFont);
-        TTF_Quit();
+        if (!headless_mode) {
+            if (g_renderer) SDL_DestroyRenderer(g_renderer);
+            if (g_window) SDL_DestroyWindow(g_window);
+            IMG_Quit();
+            if (g_defaultFont) TTF_CloseFont(g_defaultFont);
+            TTF_Quit();
+        }
         SDL_Quit();
         if (L) lua_close(L);
         return 0;
@@ -1346,6 +1373,14 @@ int main(int argc, char* args[]) {
 
     bool quit = false;
     SDL_Event e;
+
+    // In headless mode, skip the main loop since there's no GUI to handle
+    if (headless_mode) {
+        printf("Headless mode: Script execution complete, exiting.\n");
+        if (L) lua_close(L);
+        SDL_Quit();
+        return 0;
+    }
 
     // Main loop - for scripts that don't exit immediately
     while (!quit && !should_exit) {
@@ -1471,17 +1506,21 @@ int main(int argc, char* args[]) {
         SDL_Delay(100); // Slower for non-callback scripts
     }
 
-    // Destroy renderer and window
-    SDL_DestroyRenderer(g_renderer);
-    SDL_DestroyWindow(g_window);
+    // Destroy renderer and window (if they exist)
+    if (!headless_mode) {
+        if (g_renderer) SDL_DestroyRenderer(g_renderer);
+        if (g_window) SDL_DestroyWindow(g_window);
+    }
 
     // Cleanup controllers before SDL shutdown
     cleanup_controllers();
     
     // Quit SDL subsystems
-    IMG_Quit();
-    if (g_defaultFont) TTF_CloseFont(g_defaultFont);
-    TTF_Quit();
+    if (!headless_mode) {
+        IMG_Quit();
+        if (g_defaultFont) TTF_CloseFont(g_defaultFont);
+        TTF_Quit();
+    }
     SDL_Quit();
 
     // Close LuaJIT state

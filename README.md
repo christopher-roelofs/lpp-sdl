@@ -98,6 +98,10 @@ The interpreter runs on LuaJIT 2.1, providing high-performance execution of Lua 
 # Native SDL mode (default)
 ./lpp-sdl your_game.lua              # Native mode is default
 
+# Console/Headless mode (no GUI window)
+./lpp-sdl -headless your_script.lua  # Run without graphics for automation
+./lpp-sdl -console your_script.lua   # Same as -headless
+
 # Legacy flag support (deprecated)
 ./lpp-sdl -vitascale your_game.lua   # Same as -vitacompat
 ./lpp-sdl -3dsscale your_game.lua    # Same as -3dscompat
@@ -215,6 +219,51 @@ The system automatically detects your screen size and chooses the most appropria
 ```
 
 Games designed for 3DS can use `Screen.init(TOP_SCREEN)` and `Screen.init(BOTTOM_SCREEN)` to target specific screens. The 3DS mode automatically calculates optimal scaling factors for both screens while maintaining their aspect ratios.
+
+## Console/Headless Mode
+
+For server environments and automation scripts, `lpp-sdl` supports headless execution without creating any GUI windows.
+
+### Features
+- **No GUI dependencies** - Runs on headless servers
+- **Full API compatibility** - All non-graphics functions work normally
+- **Lower resource usage** - No graphics initialization or memory allocation
+- **Automation-friendly** - Perfect for CI/CD pipelines and scripts
+- **File operations** - Complete file system access and manipulation
+- **Network functions** - HTTP requests, sockets, and data processing
+- **Timer operations** - Precise timing and delays
+
+### Usage
+
+```bash
+# Console mode with headless flag
+./lpp-sdl -headless your_script.lua
+
+# Console mode with console flag (same functionality)
+./lpp-sdl -console your_script.lua
+```
+
+### Sample Scripts
+
+The `samples/sdl/Console/` directory contains practical examples:
+
+- **index.lua** - Basic console operations demo
+- **file_processor.lua** - File system analysis utility
+- **data_converter.lua** - Multi-format data conversion (CSV/JSON/XML)
+- **run_demos.lua** - Demo launcher showing all console features
+
+```bash
+# Run the console demos
+./lpp-sdl -headless samples/sdl/Console/index.lua
+./lpp-sdl -console samples/sdl/Console/file_processor.lua
+```
+
+### Use Cases
+- **Server automation** - Process files and data on headless servers
+- **Data pipelines** - Convert between formats and process large datasets
+- **CI/CD integration** - Run tests and generate reports in automated environments
+- **Command-line tools** - Create CLI utilities with Lua scripting
+- **Batch processing** - Handle multiple files without GUI overhead
 
 ## Built-in File Browser
 
