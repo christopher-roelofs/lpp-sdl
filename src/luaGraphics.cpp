@@ -1796,6 +1796,58 @@ static int lua_gpixel(lua_State *L) {
 	return 1;
 }
 
+static int lua_spixel(lua_State *L) {
+	int argc = lua_gettop(L);
+#ifndef SKIP_ERROR_HANDLING
+	if (argc != 4)
+		return luaL_error(L, "Graphics.setPixel(x, y, color, texture): wrong number of arguments");
+#endif
+	int x = luaL_checkinteger(L, 1);
+	int y = luaL_checkinteger(L, 2);
+	uint32_t color = luaL_checkinteger(L, 3);
+	lpp_texture* text = (lpp_texture*)lua_touserdata(L, 4);
+#ifndef SKIP_ERROR_HANDLING
+	if (text->magic != 0xABADBEEF)
+		return luaL_error(L, "attempt to access wrong memory block type.");
+#endif
+	
+	if (!text->data) {
+		return luaL_error(L, "Cannot set pixel: texture has no pixel data");
+	}
+	
+	// Check bounds
+	if (x < 0 || y < 0 || x >= text->w || y >= text->h) {
+		return 0; // Silently ignore out of bounds writes
+	}
+	
+	// Extract color components from input (RGBA format)
+	Uint8 r = color & 0xFF;
+	Uint8 g = (color >> 8) & 0xFF;
+	Uint8 b = (color >> 16) & 0xFF;
+	Uint8 a = (color >> 24) & 0xFF;
+	
+	// Convert to ABGR8888 format for storage (matches how we read pixels)
+	Uint32 abgr_color = r | (g << 8) | (b << 16) | (a << 24);
+	
+	// Set pixel in stored RGBA data
+	Uint32* pixels = (Uint32*)text->data;
+	pixels[y * text->w + x] = abgr_color;
+	
+	// Update the SDL texture with modified data
+	// This is expensive but necessary for the changes to be visible
+	SDL_Texture* sdl_texture = (SDL_Texture*)text->texture;
+	if (sdl_texture) {
+		void* texture_pixels;
+		int pitch;
+		if (SDL_LockTexture(sdl_texture, NULL, &texture_pixels, &pitch) == 0) {
+			memcpy(texture_pixels, text->data, text->w * text->h * 4);
+			SDL_UnlockTexture(sdl_texture);
+		}
+	}
+	
+	return 0;
+}
+
 static int lua_overloadimg(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
@@ -1944,6 +1996,7 @@ static const luaL_Reg Graphics_functions[] = {
 	{"getImageHeight",      lua_getheight},
 	{"getImageWidth",       lua_getwidth},
 	{"getPixel",            lua_gpixel},
+	{"setPixel",            lua_spixel},
 	{"init",                lua_init},  // Alias for initBlend for compatibility
 	{"initBlend",           lua_init},
 	{"initRescaler",        lua_rescaleron},
