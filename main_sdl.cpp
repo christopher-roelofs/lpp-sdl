@@ -9,6 +9,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <cmath>
+#include <cctype>
+#include <cstdlib>
 
 #ifdef USE_READLINE
 #include <readline/readline.h>
@@ -820,11 +822,11 @@ const char* launch_console_repl(lua_State* L) {
         printf("\nContents:\n");
         for (size_t i = 0; i < entries.size(); i++) {
             const auto& entry = entries[i];
-            const char* type = entry.is_directory ? "[DIR]" : "[FILE]";
+            const char* type = entry.is_directory ? "[DIR] " : "[FILE]";
             if (entry.is_directory) {
-                printf("  %2zu. %s %s\n", i + 1, type, entry.name.c_str());
+                printf("  %s %s\n", type, entry.name.c_str());
             } else {
-                printf("  %2zu. %s %s (%zu bytes)\n", i + 1, type, entry.name.c_str(), entry.size);
+                printf("  %s %s (%zu bytes)\n", type, entry.name.c_str(), entry.size);
             }
         }
     };
@@ -873,7 +875,14 @@ const char* launch_console_repl(lua_State* L) {
     
     while (true) {
 #ifdef USE_READLINE
-        input = readline("lpp-sdl> ");
+        // Build prompt with current directory
+        std::string display_dir = current_dir;
+        const char* home = getenv("HOME");
+        if (home && display_dir.find(home) == 0) {
+            display_dir = "~" + display_dir.substr(strlen(home));
+        }
+        std::string prompt = "lpp-sdl: " + display_dir + " > ";
+        input = readline(prompt.c_str());
         
         if (!input) {
             printf("\n"); // Print newline on EOF
@@ -889,7 +898,13 @@ const char* launch_console_repl(lua_State* L) {
         // Add to history if non-empty
         add_history(input);
 #else
-        printf("\nlpp-sdl> ");
+        // Build prompt with current directory
+        std::string display_dir = current_dir;
+        const char* home = getenv("HOME");
+        if (home && display_dir.find(home) == 0) {
+            display_dir = "~" + display_dir.substr(strlen(home));
+        }
+        printf("\nlpp-sdl: %s > ", display_dir.c_str());
         fflush(stdout);
         
         if (!fgets(input, sizeof(input), stdin)) {
@@ -908,6 +923,15 @@ const char* launch_console_repl(lua_State* L) {
         // Parse command
         char* command = strtok(input, " ");
         char* argument = strtok(nullptr, "");
+        
+        // Trim trailing whitespace from argument
+        if (argument) {
+            size_t len = strlen(argument);
+            while (len > 0 && isspace(argument[len - 1])) {
+                argument[len - 1] = '\0';
+                len--;
+            }
+        }
         
         if (strcmp(command, "help") == 0) {
             show_help();

@@ -64,12 +64,12 @@ lpp-sdl> list
 Current directory: ./samples/sdl/Console
 
 Contents:
-   1. [DIR] ..
-   2. [FILE] README.md (5401 bytes)
-   3. [FILE] data_converter.lua (10518 bytes)
-   4. [FILE] file_processor.lua (6004 bytes)
-   5. [FILE] index.lua (4356 bytes)
-   6. [FILE] run_demos.lua (2760 bytes)
+   [DIR]  ..
+   [FILE] README.md (5401 bytes)
+   [FILE] data_converter.lua (10518 bytes)
+   [FILE] file_processor.lua (6004 bytes)
+   [FILE] index.lua (4356 bytes)
+   [FILE] run_demos.lua (2760 bytes)
 
 lpp-sdl> run index.lua
 Running: ./samples/sdl/Console/index.lua
