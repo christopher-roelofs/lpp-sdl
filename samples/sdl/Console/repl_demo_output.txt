@@ -1,0 +1,27 @@
+REPL Demo Output
+Generated: 2025-06-28 17:45:32
+Working Directory: /home/christopher/Documents/Development/lpp-sdl/samples/sdl/Console
+
+This file was created by a Lua script executed through
+the LPP-SDL Console REPL. This demonstrates how you can:
+
+1. Navigate directories with 'cd' and 'list'
+2. Run scripts with 'run <filename>'
+3. Use full Lua scripting capabilities
+4. Access file system operations
+5. Process data without any GUI
+
+The console REPL makes LPP-SDL perfect for:
+- Server automation
+- Script development and testing
+- File processing workflows
+- Command-line utilities
+- Educational purposes
+
+Try these REPL commands after this script finishes:
+  pwd
+  list
+  cd ..
+  list
+  cd samples/sdl/Console
+  run data_converter.lua

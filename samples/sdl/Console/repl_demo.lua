@@ -75,6 +75,11 @@ print("   run index.lua")
 print("   run file_processor.lua") 
 print("   run data_converter.lua")
 
+print("\n🆕 Enhanced REPL Features:")
+print("   • Tab completion for commands and file paths")
+print("   • Command history (up/down arrows)")
+print("   • Line editing (left/right, home/end)")
+print("   • Persistent history (.lpp_sdl_history)")
 print("\n🚀 Console REPL makes LPP-SDL a powerful automation tool!")
 
 -- Exit cleanly

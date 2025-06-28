@@ -10,6 +10,11 @@
 #include <sys/stat.h>
 #include <cmath>
 
+#ifdef USE_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
+
 bool should_exit = false; // Definition for the global exit flag
 #include <SDL_image.h>
 #include <stdio.h>
@@ -616,9 +621,147 @@ const char* launch_file_browser(lua_State* L) {
     return nullptr;
 }
 
+#ifdef USE_READLINE
+// Tab completion for REPL commands and file paths
+static char* command_completion_generator(const char* text, int state) {
+    static const char* commands[] = {
+        "help", "list", "ls", "dir", "cd", "pwd", "run", "load", 
+        "cat", "clear", "info", "exit", "quit", nullptr
+    };
+    
+    static int list_index, len;
+    const char* name;
+    
+    if (!state) {
+        list_index = 0;
+        len = strlen(text);
+    }
+    
+    while ((name = commands[list_index])) {
+        list_index++;
+        if (strncmp(name, text, len) == 0) {
+            return strdup(name);
+        }
+    }
+    
+    return nullptr;
+}
+
+static char* file_completion_generator(const char* text, int state, const std::string& current_dir) {
+    static DIR* dir = nullptr;
+    static int len;
+    static std::string search_dir;
+    static std::string prefix;
+    
+    if (!state) {
+        len = strlen(text);
+        
+        // Determine directory to search and prefix
+        std::string text_str(text);
+        size_t slash_pos = text_str.find_last_of('/');
+        
+        if (slash_pos != std::string::npos) {
+            // Text contains path separator
+            prefix = text_str.substr(0, slash_pos + 1);
+            std::string search_path = prefix;
+            
+            if (search_path[0] == '/') {
+                // Absolute path
+                search_dir = search_path;
+            } else {
+                // Relative path
+                search_dir = current_dir + "/" + search_path;
+            }
+            
+            // Remove trailing slash for opendir
+            if (search_dir.back() == '/' && search_dir.length() > 1) {
+                search_dir.pop_back();
+            }
+        } else {
+            // No path separator, search current directory
+            search_dir = current_dir;
+            prefix = "";
+        }
+        
+        if (dir) {
+            closedir(dir);
+        }
+        dir = opendir(search_dir.c_str());
+    }
+    
+    if (!dir) {
+        return nullptr;
+    }
+    
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        std::string search_text = text;
+        size_t slash_pos = search_text.find_last_of('/');
+        std::string filename_part = (slash_pos != std::string::npos) ? 
+            search_text.substr(slash_pos + 1) : search_text;
+        
+        if (strncmp(entry->d_name, filename_part.c_str(), filename_part.length()) == 0) {
+            std::string full_path = search_dir + "/" + entry->d_name;
+            struct stat st;
+            if (stat(full_path.c_str(), &st) == 0) {
+                std::string result = prefix + entry->d_name;
+                if (S_ISDIR(st.st_mode)) {
+                    result += "/";
+                }
+                return strdup(result.c_str());
+            }
+        }
+    }
+    
+    closedir(dir);
+    dir = nullptr;
+    return nullptr;
+}
+
+// Global current directory for completion
+static std::string g_repl_current_dir = ".";
+
+static char* file_completion_wrapper(const char* text, int state) {
+    return file_completion_generator(text, state, g_repl_current_dir);
+}
+
+static char** repl_completion(const char* text, int start, int end) {
+    rl_attempted_completion_over = 1;
+    
+    // If we're at the beginning of the line, complete commands
+    if (start == 0) {
+        return rl_completion_matches(text, command_completion_generator);
+    }
+    
+    // Otherwise, complete file paths
+    return rl_completion_matches(text, file_completion_wrapper);
+}
+
+static void setup_readline() {
+    // Set completion function
+    rl_attempted_completion_function = repl_completion;
+    
+    // Load history if available
+    read_history(".lpp_sdl_history");
+}
+
+static void cleanup_readline() {
+    // Save history
+    write_history(".lpp_sdl_history");
+    history_truncate_file(".lpp_sdl_history", 100); // Keep last 100 commands
+}
+#endif
+
 const char* launch_console_repl(lua_State* L) {
     printf("\n=== LPP-SDL Console REPL ===\n");
     printf("Type 'help' for available commands.\n");
+#ifdef USE_READLINE
+    printf("Features: Tab completion, command history, line editing\n");
+#endif
     
     static char* selected_file_result = nullptr;
     std::string current_dir = ".";
@@ -699,6 +842,13 @@ const char* launch_console_repl(lua_State* L) {
         printf("  clear                - Clear the screen\n");
         printf("  exit                 - Exit the REPL\n");
         printf("  quit                 - Exit the REPL\n");
+#ifdef USE_READLINE
+        printf("\nFeatures:\n");
+        printf("  Tab completion       - Tab to complete commands and file paths\n");
+        printf("  Command history      - Up/Down arrows to navigate command history\n");
+        printf("  Line editing         - Left/Right arrows, Home/End, backspace, delete\n");
+        printf("  History persistence  - Commands saved to .lpp_sdl_history\n");
+#endif
         printf("\nExamples:\n");
         printf("  run samples/sdl/Console/index.lua\n");
         printf("  cat samples/sdl/Console/README.md\n");
@@ -707,8 +857,33 @@ const char* launch_console_repl(lua_State* L) {
         printf("  info\n");
     };
     
+#ifdef USE_READLINE
+    // Initialize readline
+    setup_readline();
+    
+    char* input;
+#else
     char input[512];
+#endif
+    
     while (true) {
+#ifdef USE_READLINE
+        input = readline("lpp-sdl> ");
+        
+        if (!input) {
+            printf("\n"); // Print newline on EOF
+            break; // EOF or error
+        }
+        
+        // Skip empty input
+        if (strlen(input) == 0) {
+            free(input);
+            continue;
+        }
+        
+        // Add to history if non-empty
+        add_history(input);
+#else
         printf("\nlpp-sdl> ");
         fflush(stdout);
         
@@ -723,6 +898,7 @@ const char* launch_console_repl(lua_State* L) {
         if (strlen(input) == 0) {
             continue;
         }
+#endif
         
         // Parse command
         char* command = strtok(input, " ");
@@ -756,6 +932,9 @@ const char* launch_console_repl(lua_State* L) {
             struct stat st;
             if (stat(new_dir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
                 current_dir = new_dir;
+#ifdef USE_READLINE
+                g_repl_current_dir = current_dir; // Update global for completion
+#endif
                 printf("Changed to directory: %s\n", current_dir.c_str());
             } else {
                 printf("Error: Directory '%s' does not exist\n", argument);
@@ -859,13 +1038,26 @@ const char* launch_console_repl(lua_State* L) {
         }
         else if (strcmp(command, "exit") == 0 || strcmp(command, "quit") == 0) {
             printf("Exiting console REPL...\n");
+#ifdef USE_READLINE
+            free(input);
+#endif
             break;
         }
         else {
             printf("Unknown command: %s\n", command);
             printf("Type 'help' for available commands.\n");
         }
+        
+#ifdef USE_READLINE
+        // Free readline input
+        free(input);
+#endif
     }
+    
+#ifdef USE_READLINE
+    // Cleanup readline
+    cleanup_readline();
+#endif
     
     return nullptr;
 }

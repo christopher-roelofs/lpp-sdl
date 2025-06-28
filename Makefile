@@ -3,6 +3,9 @@ CXX := g++
 # Check if libarchive support is enabled
 USE_LIBARCHIVE ?= 1
 
+# Check if readline support is enabled
+USE_READLINE ?= 1
+
 # Base compiler flags
 CXXFLAGS := -std=c++17 -Wall $(shell sdl2-config --cflags) $(shell pkg-config --cflags luajit) $(shell pkg-config --cflags opencv4) $(shell pkg-config --cflags libavformat libavcodec libavutil libswscale) $(shell pkg-config --cflags mpg123) -I./src/include -I/opt/homebrew/include -DWANT_FASTWAV -DWANT_FMMIDI
 
@@ -20,6 +23,20 @@ ifeq ($(USE_LIBARCHIVE), 1)
     else
         $(warning libarchive not found - building without extended archive support)
         $(warning Install libarchive-dev package to enable extended archive support)
+    endif
+endif
+
+# Add readline support if enabled and available
+ifeq ($(USE_READLINE), 1)
+    # Check if readline is available
+    READLINE_AVAILABLE := $(shell pkg-config --exists readline && echo yes || echo no)
+    ifeq ($(READLINE_AVAILABLE), yes)
+        CXXFLAGS += -DUSE_READLINE $(shell pkg-config --cflags readline)
+        LDFLAGS += $(shell pkg-config --libs readline)
+        $(info Building with readline support (tab completion and history))
+    else
+        $(warning readline not found - building without tab completion and history)
+        $(warning Install libreadline-dev package to enable enhanced console features)
     endif
 endif
 
