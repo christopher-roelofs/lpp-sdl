@@ -241,6 +241,34 @@ For server environments and automation scripts, `lpp-sdl` supports headless exec
 
 # Console mode with console flag (same functionality)
 ./lpp-sdl -console your_script.lua
+
+# Interactive console REPL (when no script specified)
+./lpp-sdl -headless    # Launches interactive console
+./lpp-sdl -console     # Same as above
+```
+
+### Console REPL
+
+When no Lua file is specified in headless mode, an interactive console REPL is launched:
+
+```bash
+$ ./lpp-sdl -headless
+
+=== LPP-SDL Console REPL ===
+Type 'help' for available commands.
+
+lpp-sdl> help
+Available commands:
+  help                 - Show this help message
+  list                 - List files and directories
+  cd <directory>       - Change directory
+  run <file.lua>       - Run a Lua script
+  pwd                  - Show current directory
+  exit                 - Exit the REPL
+
+lpp-sdl> cd samples/sdl/Console
+lpp-sdl> list
+lpp-sdl> run index.lua
 ```
 
 ### Sample Scripts

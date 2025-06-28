@@ -74,6 +74,9 @@ extern "C" void handle_controller_event(SDL_Event* event);
 // Forward declaration for file browser
 const char* launch_file_browser(lua_State* L);
 
+// Forward declaration for console REPL
+const char* launch_console_repl(lua_State* L);
+
 struct FileEntry {
     std::string name;
     std::string full_path;
@@ -613,6 +616,197 @@ const char* launch_file_browser(lua_State* L) {
     return nullptr;
 }
 
+const char* launch_console_repl(lua_State* L) {
+    printf("\n=== LPP-SDL Console REPL ===\n");
+    printf("Type 'help' for available commands.\n");
+    
+    static char* selected_file_result = nullptr;
+    std::string current_dir = ".";
+    
+    // Helper function to list files and directories
+    auto list_directory = [&current_dir]() {
+        printf("\nCurrent directory: %s\n", current_dir.c_str());
+        
+        DIR* dir = opendir(current_dir.c_str());
+        if (!dir) {
+            printf("Error: Cannot access directory '%s'\n", current_dir.c_str());
+            return;
+        }
+        
+        std::vector<FileEntry> entries;
+        
+        // Add parent directory entry if not at root
+        if (current_dir != "." && current_dir != "/") {
+            FileEntry parent;
+            parent.name = "..";
+            parent.full_path = current_dir + "/..";
+            parent.is_directory = true;
+            parent.size = 0;
+            entries.push_back(parent);
+        }
+        
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            
+            std::string full_path = current_dir + "/" + entry->d_name;
+            struct stat st;
+            if (stat(full_path.c_str(), &st) == 0) {
+                FileEntry file_entry;
+                file_entry.name = entry->d_name;
+                file_entry.full_path = full_path;
+                file_entry.is_directory = S_ISDIR(st.st_mode);
+                file_entry.size = st.st_size;
+                entries.push_back(file_entry);
+            }
+        }
+        closedir(dir);
+        
+        // Sort: directories first, then files
+        std::sort(entries.begin(), entries.end(), [](const FileEntry& a, const FileEntry& b) {
+            if (a.name == "..") return true;
+            if (b.name == "..") return false;
+            if (a.is_directory != b.is_directory) {
+                return a.is_directory;
+            }
+            return a.name < b.name;
+        });
+        
+        printf("\nContents:\n");
+        for (size_t i = 0; i < entries.size(); i++) {
+            const auto& entry = entries[i];
+            const char* type = entry.is_directory ? "[DIR]" : "[FILE]";
+            if (entry.is_directory) {
+                printf("  %2zu. %s %s\n", i + 1, type, entry.name.c_str());
+            } else {
+                printf("  %2zu. %s %s (%zu bytes)\n", i + 1, type, entry.name.c_str(), entry.size);
+            }
+        }
+    };
+    
+    // Helper function to show help
+    auto show_help = []() {
+        printf("\nAvailable commands:\n");
+        printf("  help                 - Show this help message\n");
+        printf("  list                 - List files and directories in current directory\n");
+        printf("  cd <directory>       - Change to directory (use .. for parent)\n");
+        printf("  run <file.lua>       - Run a Lua script\n");
+        printf("  pwd                  - Show current directory\n");
+        printf("  exit                 - Exit the REPL\n");
+        printf("  quit                 - Exit the REPL\n");
+        printf("\nExamples:\n");
+        printf("  run samples/sdl/Console/index.lua\n");
+        printf("  cd samples/sdl/Console\n");
+        printf("  list\n");
+    };
+    
+    char input[512];
+    while (true) {
+        printf("\nlpp-sdl> ");
+        fflush(stdout);
+        
+        if (!fgets(input, sizeof(input), stdin)) {
+            break; // EOF or error
+        }
+        
+        // Remove newline
+        input[strcspn(input, "\n")] = 0;
+        
+        // Skip empty input
+        if (strlen(input) == 0) {
+            continue;
+        }
+        
+        // Parse command
+        char* command = strtok(input, " ");
+        char* argument = strtok(nullptr, "");
+        
+        if (strcmp(command, "help") == 0) {
+            show_help();
+        }
+        else if (strcmp(command, "list") == 0) {
+            list_directory();
+        }
+        else if (strcmp(command, "pwd") == 0) {
+            printf("Current directory: %s\n", current_dir.c_str());
+        }
+        else if (strcmp(command, "cd") == 0) {
+            if (!argument) {
+                printf("Error: cd requires a directory argument\n");
+                continue;
+            }
+            
+            std::string new_dir;
+            if (argument[0] == '/') {
+                // Absolute path
+                new_dir = argument;
+            } else {
+                // Relative path
+                new_dir = current_dir + "/" + argument;
+            }
+            
+            // Check if directory exists
+            struct stat st;
+            if (stat(new_dir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+                current_dir = new_dir;
+                printf("Changed to directory: %s\n", current_dir.c_str());
+            } else {
+                printf("Error: Directory '%s' does not exist\n", argument);
+            }
+        }
+        else if (strcmp(command, "run") == 0) {
+            if (!argument) {
+                printf("Error: run requires a Lua file argument\n");
+                continue;
+            }
+            
+            std::string file_path;
+            if (argument[0] == '/') {
+                // Absolute path
+                file_path = argument;
+            } else {
+                // Relative path
+                file_path = current_dir + "/" + argument;
+            }
+            
+            // Check if file exists
+            if (access(file_path.c_str(), F_OK) == 0) {
+                // Check if it's a .lua file
+                if (file_path.find(".lua") != std::string::npos) {
+                    printf("Running: %s\n", file_path.c_str());
+                    
+                    // Clean up any previous result
+                    if (selected_file_result) {
+                        delete[] selected_file_result;
+                    }
+                    
+                    // Allocate and copy the file path
+                    selected_file_result = new char[file_path.length() + 1];
+                    strcpy(selected_file_result, file_path.c_str());
+                    
+                    return selected_file_result;
+                } else {
+                    printf("Error: '%s' is not a Lua file (.lua extension required)\n", argument);
+                }
+            } else {
+                printf("Error: File '%s' does not exist\n", argument);
+            }
+        }
+        else if (strcmp(command, "exit") == 0 || strcmp(command, "quit") == 0) {
+            printf("Exiting console REPL...\n");
+            break;
+        }
+        else {
+            printf("Unknown command: %s\n", command);
+            printf("Type 'help' for available commands.\n");
+        }
+    }
+    
+    return nullptr;
+}
+
 int main(int argc, char* args[]) {
     lua_State* L = NULL;
     lpp_compat_mode_t compat_mode = LPP_COMPAT_NATIVE; // Default to native mode
@@ -685,13 +879,14 @@ int main(int argc, char* args[]) {
             printf("  -h, --help          Show this help message\n");
             printf("\nIf no lua file is specified, the program will:\n");
             printf("  1. Look for index.lua in the current directory\n");
-            printf("  2. Launch a file browser to select a .lua file\n");
+            printf("  2. Launch a file browser (GUI mode) or console REPL (headless mode)\n");
             printf("\nExamples:\n");
             printf("  %s -vitacompat mygame.lua             # Run with Vita compatibility\n", args[0]);
             printf("  %s -3dscompat mygame.lua              # Run with 3DS compatibility (horizontal)\n", args[0]);
             printf("  %s -3dscompat-vertical mygame.lua     # Run with 3DS compatibility (vertical)\n", args[0]);
             printf("  %s -3dscompat-1screen mygame.lua      # Run with 3DS single screen mode\n", args[0]);
             printf("  %s mygame.lua                         # Run in native SDL mode (default)\n", args[0]);
+            printf("  %s -headless                          # Launch interactive console REPL\n", args[0]);
             return 0;
         } else if (lua_file == NULL) {
             lua_file = args[i];
@@ -708,9 +903,16 @@ int main(int argc, char* args[]) {
             lua_file = "index.lua";
             printf("Found index.lua in current directory, loading it...\n");
         } else {
-            // No file specified and no index.lua found - launch file browser
-            printf("No Lua file specified and no index.lua found. Launching file browser...\n");
-            lua_file = "__file_browser__";
+            // No file specified and no index.lua found
+            if (headless_mode) {
+                // In headless mode, launch console REPL
+                printf("No Lua file specified. Starting console REPL...\n");
+                lua_file = "__console_repl__";
+            } else {
+                // In GUI mode, launch file browser
+                printf("No Lua file specified and no index.lua found. Launching file browser...\n");
+                lua_file = "__file_browser__";
+            }
         }
     }
 
@@ -791,6 +993,22 @@ int main(int argc, char* args[]) {
 
     // Initialize and detect game controllers
     init_controllers();
+
+    // Handle console REPL mode (headless only)
+    if (strcmp(lua_file, "__console_repl__") == 0) {
+        // Launch console REPL
+        const char* selected_file = launch_console_repl(L);
+        
+        if (selected_file == NULL) {
+            printf("Console REPL exited.\n");
+            if (L) lua_close(L);
+            SDL_Quit();
+            return 0;
+        }
+        
+        lua_file = selected_file;
+        printf("Console REPL selected file: %s\n", lua_file);
+    }
 
     // Handle file browser mode early (before renderer setup)
     if (strcmp(lua_file, "__file_browser__") == 0) {

@@ -13,12 +13,68 @@ This directory contains sample scripts that demonstrate LPP-SDL's headless mode 
 Use either the `-headless` or `-console` flag:
 
 ```bash
-# Using -headless flag
+# Run a specific script
 ./lpp_sdl -headless samples/sdl/Console/index.lua
-
-# Using -console flag (same functionality)
 ./lpp_sdl -console samples/sdl/Console/index.lua
+
+# Launch interactive console REPL (no script specified)
+./lpp_sdl -headless
+./lpp_sdl -console
 ```
+
+## Interactive Console REPL
+
+When no Lua file is specified in console mode, an interactive REPL (Read-Eval-Print Loop) is launched, providing a command-line interface for exploring and running scripts:
+
+```bash
+$ ./lpp_sdl -headless
+
+=== LPP-SDL Console REPL ===
+Type 'help' for available commands.
+
+lpp-sdl> help
+Available commands:
+  help                 - Show this help message
+  list                 - List files and directories in current directory
+  cd <directory>       - Change to directory (use .. for parent)
+  run <file.lua>       - Run a Lua script
+  pwd                  - Show current directory
+  exit                 - Exit the REPL
+  quit                 - Exit the REPL
+
+Examples:
+  run samples/sdl/Console/index.lua
+  cd samples/sdl/Console
+  list
+
+lpp-sdl> cd samples/sdl/Console
+Changed to directory: ./samples/sdl/Console
+
+lpp-sdl> list
+Current directory: ./samples/sdl/Console
+
+Contents:
+   1. [DIR] ..
+   2. [FILE] README.md (5401 bytes)
+   3. [FILE] data_converter.lua (10518 bytes)
+   4. [FILE] file_processor.lua (6004 bytes)
+   5. [FILE] index.lua (4356 bytes)
+   6. [FILE] run_demos.lua (2760 bytes)
+
+lpp-sdl> run index.lua
+Running: ./samples/sdl/Console/index.lua
+[Script executes...]
+
+lpp-sdl> exit
+Exiting console REPL...
+```
+
+### REPL Features
+- **File navigation**: `cd`, `pwd`, `list` commands for exploring directories
+- **Script execution**: `run` command to execute Lua scripts from any location
+- **Help system**: Built-in `help` command with examples
+- **Tab completion**: Commands and paths (future enhancement)
+- **History**: Command history navigation (future enhancement)
 
 ## Sample Scripts
 
