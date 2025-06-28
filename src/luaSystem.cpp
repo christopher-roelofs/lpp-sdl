@@ -28,6 +28,12 @@ extern "C" {
 #include <archive_entry.h>
 #endif
 
+// Readline support for input (if enabled)
+#ifdef USE_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
+
 // Platform-specific includes for disk space
 #if defined(_WIN32)
 #include <windows.h>
@@ -1662,6 +1668,52 @@ static int lua_getAsyncResult(lua_State *L) {
     return 0;
 }
 
+// System.input([prompt])
+static int lua_input(lua_State *L) {
+    const char* prompt = "";
+    if (lua_gettop(L) >= 1) {
+        prompt = luaL_checkstring(L, 1);
+    }
+    
+#ifdef USE_READLINE
+    // Use readline for enhanced input with line editing
+    char* input = readline(prompt);
+    
+    if (!input) {
+        // EOF or error
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    // Add to history if non-empty
+    if (strlen(input) > 0) {
+        add_history(input);
+    }
+    
+    lua_pushstring(L, input);
+    free(input);
+    return 1;
+#else
+    // Fallback to simple input
+    if (strlen(prompt) > 0) {
+        printf("%s", prompt);
+        fflush(stdout);
+    }
+    
+    char input[1024];
+    if (fgets(input, sizeof(input), stdin)) {
+        // Remove newline
+        input[strcspn(input, "\n")] = 0;
+        lua_pushstring(L, input);
+        return 1;
+    }
+    
+    // EOF or error
+    lua_pushnil(L);
+    return 1;
+#endif
+}
+
 // System.currentDirectory([path])
 static int lua_currentDirectory(lua_State *L) {
     int argc = lua_gettop(L);
@@ -1823,6 +1875,7 @@ static const luaL_Reg System_functions[] = {
 #endif
     {"getAsyncState",      lua_getAsyncState},
     {"getAsyncResult",     lua_getAsyncResult},
+    {"input",              lua_input},
     {"setGamepadLayout",   lua_setGamepadLayout},
     {"getGamepadLayout",   lua_getGamepadLayout},
     {NULL, NULL}

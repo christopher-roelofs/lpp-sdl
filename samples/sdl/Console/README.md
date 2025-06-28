@@ -151,6 +151,32 @@ Advanced data processing demonstration:
 - ETL (Extract, Transform, Load) processes
 - Data analysis pipelines
 
+### 4. **input_demo.lua** - Interactive Input Demonstration
+```bash
+./lpp_sdl -headless samples/sdl/Console/input_demo.lua
+```
+
+A comprehensive demonstration of user input capabilities:
+- Python-style `System.input()` function with prompts
+- Input validation and error handling
+- Menu systems and user interaction
+- Multi-line input collection
+- Interactive applications (calculator)
+- Integration with readline for enhanced editing
+
+**Features Demonstrated:**
+- Basic input: `local name = System.input("Name: ")`
+- Input validation loops
+- Menu-driven interfaces
+- File operations based on user input
+- Real-time interactive applications
+
+**Use Cases:**
+- Interactive configuration scripts
+- Data collection utilities
+- Menu-driven automation tools
+- User-friendly command-line applications
+
 ## Features Demonstrated
 
 ### ✅ File System Operations
@@ -170,6 +196,12 @@ Advanced data processing demonstration:
 - Platform-compatible file operations
 - Error handling and validation
 - Clean resource management
+
+### ✅ User Interaction
+- Python-style input with `System.input(prompt)`
+- Enhanced line editing with readline support
+- Input validation and error handling
+- Interactive menu systems and workflows
 
 ### ✅ Automation-Friendly
 - Command-line execution

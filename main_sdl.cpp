@@ -851,6 +851,7 @@ const char* launch_console_repl(lua_State* L) {
 #endif
         printf("\nExamples:\n");
         printf("  run samples/sdl/Console/index.lua\n");
+        printf("  run samples/sdl/Console/input_demo.lua\n");
         printf("  cat samples/sdl/Console/README.md\n");
         printf("  cd samples/sdl/Console\n");
         printf("  dir\n");
