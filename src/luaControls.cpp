@@ -859,6 +859,8 @@ static int lua_touchpad(lua_State *L){
             // Check if we're in 3DS dual screen mode with manual scaling
             extern bool g_dual_screen_mode;
             extern bool g_vita_compat_mode;
+            (void)g_dual_screen_mode; // Suppress unused variable warning
+            (void)g_vita_compat_mode; // Suppress unused variable warning
             
             // Get logical and window sizes for coordinate transformation
             SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
@@ -875,6 +877,7 @@ static int lua_touchpad(lua_State *L){
                     extern bool g_3ds_single_screen_mode;
                     extern int g_3ds_active_screen;
                     extern lpp_3ds_orientation_t g_3ds_orientation;
+                    (void)g_3ds_orientation; // Suppress unused variable warning
                     extern int getScreenXOffset(int screen_id);
                     extern int getScreenYOffset(int screen_id);
                     

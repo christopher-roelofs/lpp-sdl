@@ -1538,6 +1538,8 @@ static int lua_fprint(lua_State *L) {
     // Calculate screen offsets for dual screen support
     int x_offset = getScreenXOffset(screen);
     int y_offset = getScreenYOffset(screen);
+    (void)x_offset; // Suppress unused variable warning
+    (void)y_offset; // Suppress unused variable warning
     
     uint32_t color_val;
     // Handle both Color objects (tables) and integer colors for compatibility

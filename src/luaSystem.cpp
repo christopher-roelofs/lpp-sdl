@@ -62,7 +62,7 @@ extern uint32_t asyncResSize;
 
 // Zip-related globals
 static char fname[512];
-static char ext_fname[512];
+static char ext_fname[1024];  // Increased to handle concatenation of asyncDest + fname
 static char read_buffer[8192];
 static char asyncDest[512];
 static char asyncName[512];
@@ -245,7 +245,7 @@ static void zipThread() {
         
         for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
             unzGetCurrentFileInfo(asyncHandle, &file_info, fname, 512, NULL, 0, NULL, 0);
-            sprintf(ext_fname, "%s%s", asyncDest, fname);
+            snprintf(ext_fname, sizeof(ext_fname), "%s%s", asyncDest, fname);
             const size_t filename_length = strlen(ext_fname);
             
             if (ext_fname[filename_length - 1] != '/') {

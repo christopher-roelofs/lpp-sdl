@@ -41,6 +41,7 @@
 #include <regex>
 #include <algorithm>
 #include <cctype>
+#include <cinttypes>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -812,7 +813,7 @@ static int lua_jumpToTime(lua_State *L) {
     if (av_seek_frame(g_videoPlayer->formatContext, g_videoPlayer->videoStream->index, 
                      seekPTS, AVSEEK_FLAG_BACKWARD) >= 0) {
         avcodec_flush_buffers(g_videoPlayer->codecContext);
-        printf("Seeked to time: %lld ms\n", timeMs);
+        printf("Seeked to time: %" PRId64 " ms\n", timeMs);
     }
     
     return 0;

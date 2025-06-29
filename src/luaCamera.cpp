@@ -402,6 +402,7 @@ static int lua_ssharp(lua_State *L) {
     if (!isCamOn) return luaL_error(L, "camera has not been initialized.");
     
     int val = luaL_checkinteger(L, 1);
+    (void)val; // Suppress unused variable warning
     // Sharpness is not directly supported by OpenCV, store for future use
     return 0;
 }

@@ -651,12 +651,10 @@ static char* command_completion_generator(const char* text, int state) {
 
 static char* file_completion_generator(const char* text, int state, const std::string& current_dir) {
     static DIR* dir = nullptr;
-    static int len;
     static std::string search_dir;
     static std::string prefix;
     
     if (!state) {
-        len = strlen(text);
         
         // Determine directory to search and prefix
         std::string text_str(text);

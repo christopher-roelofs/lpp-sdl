@@ -69,6 +69,11 @@ struct Console {
 static std::vector<Console*> consoles;
 static int next_console_id = 1;
 
+// Suppress unused variable warning for next_console_id (reserved for future use)
+static void __attribute__((unused)) suppress_unused_warnings() {
+    (void)next_console_id;
+}
+
 // Helper function to translate Vita paths (app0:/ -> current directory, ux0:/ -> .)
 static std::string translate_vita_path(const char* path) {
     std::string result(path);
