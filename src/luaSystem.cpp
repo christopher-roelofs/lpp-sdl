@@ -1818,6 +1818,14 @@ static int lua_input(lua_State *L) {
 #endif
 }
 
+// System.clear() - Clear the console screen
+static int lua_clear(lua_State *L) {
+    // Use ANSI escape codes to clear screen and move cursor to top-left
+    printf("\033[2J\033[H");
+    fflush(stdout);
+    return 0;
+}
+
 // System.currentDirectory([path])
 static int lua_currentDirectory(lua_State *L) {
     int argc = lua_gettop(L);
@@ -1980,6 +1988,7 @@ static const luaL_Reg System_functions[] = {
     {"getAsyncState",      lua_getAsyncState},
     {"getAsyncResult",     lua_getAsyncResult},
     {"input",              lua_input},
+    {"clear",              lua_clear},
     {"setGamepadLayout",   lua_setGamepadLayout},
     {"getGamepadLayout",   lua_getGamepadLayout},
     {NULL, NULL}
