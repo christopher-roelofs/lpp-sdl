@@ -37,6 +37,11 @@
 #include <vector>
 #include <algorithm>
 
+// ImGui includes (conditional)
+#ifdef USE_IMGUI
+#include "imgui_impl_sdl2.h"
+#endif
+
 // Forward declaration
 extern "C" void update_sdl_controls();
 
@@ -135,6 +140,14 @@ static int lua_flip(lua_State *L) {
     // Process SDL events
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
+#ifdef USE_IMGUI
+        // Let ImGui process the event first (if initialized)
+        extern bool g_imgui_initialized;
+        if (g_imgui_initialized) {
+            ImGui_ImplSDL2_ProcessEvent(&e);
+        }
+#endif
+        
         if (e.type == SDL_QUIT) {
             should_exit = true; // Signal main loop to exit
             exit(0); // Force immediate exit for games with infinite loops

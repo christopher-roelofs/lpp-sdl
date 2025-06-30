@@ -6,7 +6,7 @@ USE_LIBARCHIVE ?= 1
 # Check if readline support is enabled
 USE_READLINE ?= 1
 
-# Check if ImGui support is enabled (default: enabled)
+# Check if ImGui support is enabled
 USE_IMGUI ?= 1
 
 # ImGui directory
@@ -32,8 +32,7 @@ ifeq ($(USE_IMGUI), 1)
                         $(IMGUI_DIR)/imgui_tables.cpp \
                         $(IMGUI_DIR)/imgui_widgets.cpp \
                         $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp \
-                        $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp \
-                        $(IMGUI_DIR)/backends/imgui_impl_opengl2.cpp
+                        $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
     else
         $(warning ImGui directory not found at $(IMGUI_DIR) - building with stub)
         $(warning Run 'make setup-imgui' to download ImGui)
@@ -104,6 +103,7 @@ SOURCES := main_sdl.cpp \
            src/include/unzip.c \
            src/include/ioapi.c \
            $(IMGUI_SOURCES)
+
 OBJECTS := $(SOURCES:.cpp=.o)
 OBJECTS := $(OBJECTS:.c=.o)
 

@@ -43,6 +43,23 @@ The interpreter runs on LuaJIT 2.1, providing high-performance execution of Lua 
     *   **PNG** (Portable Network Graphics) with transparency
     *   **JPG/JPEG** (Joint Photographic Experts Group) images
 
+##### ImGui (Immediate Mode GUI)
+
+*   **Multi-backend support** with automatic detection:
+    *   **OpenGL 3.0+** backend for modern systems (best performance)
+    *   **OpenGL 2.x** backend for legacy and embedded systems
+    *   **OpenGL ES 2.0/3.0** support for ARM devices
+    *   **gl4es compatibility** for embedded Linux handhelds
+*   **Cross-platform compatibility**:
+    *   Desktop systems (Windows, macOS, Linux)
+    *   Embedded Linux devices (handhelds, Raspberry Pi, SBCs)
+    *   Automatic backend selection based on hardware capabilities
+*   **Full widget support**: buttons, text input, sliders, checkboxes, menus, tooltips
+*   **Event handling integration** with SDL2 input system
+*   **Performance optimized** for both desktop and embedded platforms
+
+See `README_IMGUI.md` for complete documentation.
+
 ##### Multimedia
 
 *   Complete sound system with support for:

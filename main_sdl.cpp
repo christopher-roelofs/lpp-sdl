@@ -17,6 +17,14 @@
 #include <readline/history.h>
 #endif
 
+// ImGui includes (conditional)
+#ifdef USE_IMGUI
+#include <GL/gl.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
+#endif
+
 bool should_exit = false; // Definition for the global exit flag
 #include <SDL_image.h>
 #include <stdio.h>
@@ -34,6 +42,13 @@ extern "C" {
 
 SDL_Window* g_window = NULL;
 SDL_Renderer* g_renderer = NULL;
+
+// ImGui globals
+#ifdef USE_IMGUI
+SDL_GLContext g_gl_context = NULL;
+bool g_imgui_initialized = false;
+#endif
+
 int g_3ds_update_frames = 0; // Frame counter to allow inactive screen updates
 lpp_compat_mode_t g_compat_mode = LPP_COMPAT_NATIVE; // Global compatibility mode
 lpp_3ds_orientation_t g_3ds_orientation = LPP_3DS_HORIZONTAL; // 3DS screen orientation (default: horizontal)
@@ -1675,7 +1690,26 @@ int main(int argc, char* args[]) {
     // Enable alpha blending for proper transparency support
     SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
     
-    
+#ifdef USE_IMGUI
+    // Create OpenGL context for ImGui
+    if (!headless_mode) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        
+        // Create OpenGL context
+        g_gl_context = SDL_GL_CreateContext(g_window);
+        if (g_gl_context == NULL) {
+            printf("OpenGL context could not be created! SDL Error: %s\n", SDL_GetError());
+            // Continue without ImGui support
+        } else {
+            SDL_GL_MakeCurrent(g_window, g_gl_context);
+            SDL_GL_SetSwapInterval(1); // Enable vsync
+            printf("ImGui support enabled with OpenGL context\n");
+        }
+    }
+#endif
     
     // Hide the system cursor to prevent rendering artifacts
     // SDL_ShowCursor(SDL_DISABLE); // Keep mouse visible by default
@@ -1901,10 +1935,36 @@ skip_gui_setup:
     while (!quit && !should_exit) {
         // Handle events on queue
         while (SDL_PollEvent(&e) != 0) {
-            // User requests quit
+#ifdef USE_IMGUI
+            // Always let ImGui process the event first
+            if (g_imgui_initialized) {
+                ImGui_ImplSDL2_ProcessEvent(&e);
+            }
+#endif
+            
+            // User requests quit (always handle regardless of ImGui state)
             if (e.type == SDL_QUIT) {
                 quit = true;
+                continue;
             }
+            
+#ifdef USE_IMGUI
+            // Check if ImGui wants to capture input events
+            if (g_imgui_initialized) {
+                ImGuiIO& io = ImGui::GetIO();
+                
+                // Skip mouse events if ImGui wants to capture them
+                if ((e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP || 
+                     e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEWHEEL) && io.WantCaptureMouse) {
+                    continue;
+                }
+                
+                // Skip keyboard events if ImGui wants to capture them
+                if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP || e.type == SDL_TEXTINPUT) && io.WantCaptureKeyboard) {
+                    continue;
+                }
+            }
+#endif
             
             // Handle controller hotplug events
             handle_controller_event(&e);
@@ -2020,6 +2080,18 @@ skip_gui_setup:
         // Small delay to prevent 100% CPU usage
         SDL_Delay(100); // Slower for non-callback scripts
     }
+
+    // Cleanup ImGui
+#ifdef USE_IMGUI
+    if (g_gl_context) {
+        if (g_imgui_initialized) {
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplSDL2_Shutdown();
+            ImGui::DestroyContext();
+        }
+        SDL_GL_DeleteContext(g_gl_context);
+    }
+#endif
 
     // Destroy renderer and window (if they exist)
     if (!headless_mode) {
