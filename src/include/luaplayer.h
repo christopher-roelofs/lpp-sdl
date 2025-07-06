@@ -66,6 +66,8 @@ extern bool g_3ds_single_screen_mode; // Global flag for 3DS single-screen mode 
 extern int g_3ds_active_screen; // Currently active screen in single-screen mode (0=top, 1=bottom)
 extern bool g_debug_mode; // Global flag for debug output
 extern bool g_headless_mode; // Global flag for headless mode (no GUI)
+extern bool g_gamepad_enabled; // Global flag for gamepad/controller support
+extern int g_gamepad_layout; // Global gamepad layout (0=Nintendo, 1=Xbox)
 extern float g_scale_x; // Manual scaling factor for dual screen X
 extern float g_scale_y; // Manual scaling factor for dual screen Y
 extern float g_top_screen_scale_x; // Top screen X scaling factor

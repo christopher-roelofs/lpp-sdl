@@ -168,8 +168,8 @@ local ControlSettings = {
 -- Settings navigation
 local SettingsState = {
     selectedIndex = 1,
-    options = {"Controls", "Background Music", "Music Volume", "Cookie Shower", "Milk Animation", "Reset Game"},
-    optionCount = 6
+    options = {"Background Music", "Music Volume", "Cookie Shower", "Milk Animation", "Reset Game"},
+    optionCount = 5
 }
 
 -- SDL Control state (simplified for 2-panel layout)
@@ -1034,16 +1034,7 @@ function handleSettingsInput(pad)
         
         -- Toggle/Adjust selected option - Enter/A button/Left/Right
         if isSelectPressed(pad, oldpad) then
-            if selectedOption == "Controls" then
-                -- Toggle between Keyboard and Gamepad
-                if ControlSettings.mode == "Keyboard" then
-                    ControlSettings.mode = "Gamepad"
-                    ControlSettings.gamepadEnabled = true
-                else
-                    ControlSettings.mode = "Keyboard"
-                    ControlSettings.gamepadEnabled = false
-                end
-            elseif selectedOption == "Background Music" then
+            if selectedOption == "Background Music" then
                 toggleBackgroundMusic()
             elseif selectedOption == "Cookie Shower" then
                 VisualSettings.cookieShowerEnabled = not VisualSettings.cookieShowerEnabled
@@ -1059,16 +1050,7 @@ function handleSettingsInput(pad)
         local leftPressed = (Controls.check(pad, SDLK_LEFT) and not Controls.check(oldpad, SDLK_LEFT)) or
                            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_LEFT)
         if leftPressed then
-            if selectedOption == "Controls" then
-                -- Toggle between Keyboard and Gamepad
-                if ControlSettings.mode == "Keyboard" then
-                    ControlSettings.mode = "Gamepad"
-                    ControlSettings.gamepadEnabled = true
-                else
-                    ControlSettings.mode = "Keyboard"
-                    ControlSettings.gamepadEnabled = false
-                end
-            elseif selectedOption == "Music Volume" then
+            if selectedOption == "Music Volume" then
                 AudioSettings.bgMusicVolume = math.max(0.0, AudioSettings.bgMusicVolume - 0.1)
                 updateMusicVolume()
             elseif selectedOption == "Background Music" then
@@ -1084,16 +1066,7 @@ function handleSettingsInput(pad)
         local rightPressed = (Controls.check(pad, SDLK_RIGHT) and not Controls.check(oldpad, SDLK_RIGHT)) or
                             checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
         if rightPressed then
-            if selectedOption == "Controls" then
-                -- Toggle between Keyboard and Gamepad
-                if ControlSettings.mode == "Keyboard" then
-                    ControlSettings.mode = "Gamepad"
-                    ControlSettings.gamepadEnabled = true
-                else
-                    ControlSettings.mode = "Keyboard"
-                    ControlSettings.gamepadEnabled = false
-                end
-            elseif selectedOption == "Music Volume" then
+            if selectedOption == "Music Volume" then
                 AudioSettings.bgMusicVolume = math.min(1.0, AudioSettings.bgMusicVolume + 0.1)
                 updateMusicVolume()
             elseif selectedOption == "Background Music" then
@@ -1178,8 +1151,9 @@ function handleGameInput(pad)
     
     -- Panel navigation with timing delay
     if Timer.getTime(navTimer) >= NAV_DELAY then
-        -- Switch panels - gamepad B button only (2-panel layout: Buildings -> Store)
-        local panelSwitchPressed = checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_B)
+        -- Switch panels - gamepad B button or Tab key (2-panel layout: Buildings -> Store)
+        local panelSwitchPressed = (Controls.check(pad, SDLK_TAB) and not Controls.check(oldpad, SDLK_TAB)) or
+                                  checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_B)
         if panelSwitchPressed then
             if GamepadState.currentPanel == "Buildings" then
                 GamepadState.currentPanel = "Store"
@@ -1281,8 +1255,9 @@ function handleGameInput(pad)
             Timer.reset(buttonTimer)
         end
         
-        -- Purchase upgrade for selected building - Y button
-        local upgradePressed = checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_Y)
+        -- Purchase upgrade for selected building - Y button or Y key
+        local upgradePressed = (Controls.check(pad, SDLK_Y) and not Controls.check(oldpad, SDLK_Y)) or
+                              checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_Y)
         if upgradePressed then
             if GamepadState.currentPanel == "Store" then
                 local selectedBuilding = Button[GamepadState.selectedIndex]
@@ -1327,15 +1302,17 @@ function handleGameInput(pad)
             Timer.reset(buttonTimer)
         end
         
-        -- Toggle buy/sell mode - L button (left shoulder)
-        local toggleModePressed = checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+        -- Toggle buy/sell mode - L button (left shoulder) or T key
+        local toggleModePressed = (Controls.check(pad, SDLK_T) and not Controls.check(oldpad, SDLK_T)) or
+                                 checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
         if toggleModePressed then
             GamepadState.buyMode = not GamepadState.buyMode
             Timer.reset(buttonTimer)
         end
         
-        -- Cycle purchase quantity - R button (right shoulder)
-        local quantityPressed = checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+        -- Cycle purchase quantity - R button (right shoulder) or R key
+        local quantityPressed = (Controls.check(pad, SDLK_R) and not Controls.check(oldpad, SDLK_R)) or
+                               checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
         if quantityPressed then
             if GamepadState.purchaseQuantity == 1 then
                 GamepadState.purchaseQuantity = 10
@@ -1370,9 +1347,9 @@ function drawPanels()
         
         -- Draw solid dividers first
         Graphics.drawImageExtended(PANEL_RIGHT_X + PANEL_RIGHT_WIDTH/2, COOKIE_AREA_HEIGHT + math.floor(25 * scaleY), 0, 0, solidW, solidH, 0, solidScaleX, solidScaleY, Texture["panelHorizontal"])
-        local storeHeaderY = COOKIE_AREA_HEIGHT + math.floor(60 * scaleY)
+        local storeHeaderY = COOKIE_AREA_HEIGHT + math.floor(60 * scaleY) - 4
         Graphics.drawImageExtended(PANEL_RIGHT_X + PANEL_RIGHT_WIDTH/2, storeHeaderY, 0, 0, solidW, solidH, 0, solidScaleX, solidScaleY, Texture["panelHorizontal"])
-        local upgradeBottomY = COOKIE_AREA_HEIGHT + HEADER_HEIGHT + UPGRADE_HEIGHT + math.floor(10 * scaleY)
+        local upgradeBottomY = COOKIE_AREA_HEIGHT + HEADER_HEIGHT + UPGRADE_HEIGHT + math.floor(10 * scaleY) - 4
         Graphics.drawImageExtended(PANEL_RIGHT_X + PANEL_RIGHT_WIDTH/2, upgradeBottomY, 0, 0, solidW, solidH, 0, solidScaleX, solidScaleY, Texture["panelHorizontal"])
         
         -- Draw gradients on top
@@ -1447,14 +1424,14 @@ function drawPanels()
     end
     
     -- Draw store header with buy/sell mode and quantity
-    drawText(PANEL_RIGHT_X + math.floor(10 * scaleX), COOKIE_AREA_HEIGHT + math.floor(35 * scaleY), "STORE", white)
+    drawText(PANEL_RIGHT_X + math.floor(10 * scaleX), COOKIE_AREA_HEIGHT + math.floor(35 * scaleY) - 3, "STORE", white)
     local modeText = GamepadState.buyMode and "BUY" or "SELL"
     local modeColor = GamepadState.buyMode and green or red
-    drawText(PANEL_RIGHT_X + math.floor(80 * scaleX), COOKIE_AREA_HEIGHT + math.floor(35 * scaleY), modeText, modeColor)
+    drawText(PANEL_RIGHT_X + math.floor(80 * scaleX), COOKIE_AREA_HEIGHT + math.floor(35 * scaleY) - 3, modeText, modeColor)
     
     -- Draw quantity selector (1  10  100)
     local quantityX = PANEL_RIGHT_X + math.floor(130 * scaleX)
-    local quantityY = COOKIE_AREA_HEIGHT + math.floor(35 * scaleY)
+    local quantityY = COOKIE_AREA_HEIGHT + math.floor(35 * scaleY) - 3
     local darkGray = Color.new(50, 50, 50)
     
     -- Draw "1" quantity
@@ -1951,7 +1928,7 @@ function drawUpgrades()
     -- Draw upgrade area slightly above center between the two horizontal dividers
     local upgradeAreaTop = COOKIE_AREA_HEIGHT + HEADER_HEIGHT
     local upgradeAreaBottom = COOKIE_AREA_HEIGHT + HEADER_HEIGHT + UPGRADE_HEIGHT
-    local upgradeY = upgradeAreaTop + (upgradeAreaBottom - upgradeAreaTop) * 0.48 + math.floor(2 * scaleY)
+    local upgradeY = upgradeAreaTop + (upgradeAreaBottom - upgradeAreaTop) * 0.48 + math.floor(2 * scaleY) - 4
     local upgradeX = PANEL_RIGHT_X + math.floor(6 * scaleX)
     
     -- Show all 4 upgrade slots for the selected building
@@ -2107,50 +2084,32 @@ function drawControlsScreen()
     -- Draw title
     drawText(screenW/2 - 50, math.floor(30 * scaleY), "CONTROLS", white)
     
-    -- Draw current control mode
-    local modeText = "Mode: " .. ControlSettings.mode
-    drawText(screenW/2 - 40, math.floor(55 * scaleY), modeText, yellow)
-    
     -- Draw controls list
-    local startY = math.floor(80 * scaleY)
-    local lineHeight = math.floor(25 * scaleY)
+    local startY = math.floor(70 * scaleY)
+    local lineHeight = math.floor(22 * scaleY)
     local currentY = startY
     
-    local controls
-    if ControlSettings.gamepadEnabled then
-        -- Show gamepad controls
-        controls = {
-            {"X Button", "Click Cookie"},
-            {"Select/Back", "Switch Panel (Buildings/Store)"},
-            {"D-Pad UP/DOWN", "Navigate Items"},
-            {"A Button", "Purchase/Select"},
-            {"L Button", "Toggle Buy/Sell Mode"},
-            {"R Button", "Change Quantity (1/10/100)"},
-            {"Y Button", "Buy Upgrade"},
-            {"B Button", "Return to Menu"},
-            {"Guide", "Exit Game (if supported)"}
-        }
-    else
-        -- Show keyboard controls
-        controls = {
-            {"SPACE", "Click Cookie"},
-            {"TAB", "Switch Panel (Buildings/Store)"},
-            {"UP/DOWN", "Navigate Items"},
-            {"ENTER", "Purchase/Select"},
-            {"Q", "Toggle Buy/Sell Mode"},
-            {"E", "Change Quantity (1/10/100)"},
-            {"RIGHT SHIFT", "Buy Upgrade"},
-            {"BACKSPACE", "Return to Menu"},
-            {"ESC", "Exit Game"}
-        }
-    end
+    -- Combined controls showing keyboard/gamepad for each action
+    local controls = {
+        {"SPACE/A Button", "Enter/Action"},
+        {"X/X Button", "Click Cookie"},
+        {"TAB/B Button", "Switch Panel (Buildings/Store)"},
+        {"UP/DOWN/D-Pad UP/DOWN", "Navigate Items"},
+        {"LEFT/RIGHT/D-Pad LEFT/RIGHT", "Navigate Horizontally"},
+        {"ENTER/A Button", "Confirm/Purchase"},
+        {"T/L Button", "Toggle Buy/Sell Mode"},
+        {"R/R Button", "Change Quantity (1/10/100)"},
+        {"Y/Y Button", "Buy Upgrade"},
+        {"BACKSPACE/Start", "Return to Menu"},
+        {"ESC", "Exit Game"}
+    }
     
     for i, control in ipairs(controls) do
-        local key = control[1]
+        local keys = control[1]
         local description = control[2]
         
-        drawText(math.floor(50 * scaleX), currentY, key, green)
-        drawText(math.floor(200 * scaleX), currentY, description, white)
+        drawText(math.floor(50 * scaleX), currentY, keys, green)
+        drawText(math.floor(320 * scaleX), currentY, description, white)
         currentY = currentY + lineHeight
     end
     
@@ -2181,10 +2140,7 @@ function drawSettingsScreen()
         local valueColor = white
         
         -- Get option values
-        if option == "Controls" then
-            valueText = ControlSettings.mode
-            valueColor = ControlSettings.gamepadEnabled and green or white
-        elseif option == "Background Music" then
+        if option == "Background Music" then
             valueText = AudioSettings.bgMusicEnabled and "ON" or "OFF"
             valueColor = AudioSettings.bgMusicEnabled and green or red
         elseif option == "Music Volume" then

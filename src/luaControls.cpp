@@ -36,6 +36,9 @@
 #include "luaplayer.h"
 #include "include/sdl_renderer.h"
 
+// External gamepad enable flag from main
+extern bool g_gamepad_enabled;
+
 #define stringify(str) #str
 #define VariableRegister(lua, value) do { lua_pushinteger(lua, value); lua_setglobal (lua, stringify(value)); } while(0)
 
@@ -200,16 +203,18 @@ static void update_input_state() {
     // Pump events to update keyboard state and handle controller hotplugging
     SDL_PumpEvents();
     
-    // Process SDL events to handle controller hotplugging in games with custom loops
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        // Handle controller hotplug events
-        if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED ||
-            event.type == SDL_JOYDEVICEADDED || event.type == SDL_JOYDEVICEREMOVED) {
-            handle_controller_event(&event);
+    // Process SDL events to handle controller hotplugging in games with custom loops (if gamepad enabled)
+    if (g_gamepad_enabled) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            // Handle controller hotplug events
+            if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED ||
+                event.type == SDL_JOYDEVICEADDED || event.type == SDL_JOYDEVICEREMOVED) {
+                handle_controller_event(&event);
+            }
+            // Note: Other events are ignored here since games handle their own event loops
+            // This only processes controller hotplug events that games typically don't handle
         }
-        // Note: Other events are ignored here since games handle their own event loops
-        // This only processes controller hotplug events that games typically don't handle
     }
     
     // Update keyboard state
@@ -238,8 +243,8 @@ static void update_input_state() {
     // Native mode: No key clearing needed since we don't map gamepad to keyboard
     // Vita mode: No key clearing needed since we're not using gamepad
 
-    // Update controller state if available
-    if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
+    // Update controller state if available and gamepad enabled
+    if (g_gamepad_enabled && controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
         // Read analog sticks and convert from SDL range (-32768 to 32767) to Vita range (0-255)
         Sint16 sdl_lx = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTX);
         Sint16 sdl_ly = SDL_GameControllerGetAxis(controllers[0], SDL_CONTROLLER_AXIS_LEFTY);
@@ -643,7 +648,7 @@ static int lua_checkGamepadButton(lua_State *L){
     // Xbox layout (g_gamepad_layout == 1): No swapping needed, use buttons as-is
     
     bool is_pressed = false;
-    if (controllers[port] && SDL_GameControllerGetAttached(controllers[port])) {
+    if (g_gamepad_enabled && controllers[port] && SDL_GameControllerGetAttached(controllers[port])) {
         is_pressed = SDL_GameControllerGetButton(controllers[port], (SDL_GameControllerButton)actual_button);
     }
     

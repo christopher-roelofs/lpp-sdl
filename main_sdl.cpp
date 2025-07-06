@@ -58,6 +58,7 @@ bool g_3ds_single_screen_mode = false; // Global flag for 3DS single-screen mode
 int g_3ds_active_screen = 0; // Currently active screen in single-screen mode (0=top, 1=bottom)
 bool g_debug_mode = false; // Global flag for debug output
 bool g_headless_mode = false; // Global flag for headless mode (no GUI)
+bool g_gamepad_enabled = true; // Global flag for gamepad/controller support (enabled by default)
 int g_gamepad_layout = 0; // Global gamepad layout (0=Nintendo, 1=Xbox)
 float g_scale_x = 1.0f; // Manual scaling factor for dual screen X
 float g_scale_y = 1.0f; // Manual scaling factor for dual screen Y
@@ -1119,6 +1120,55 @@ const char* launch_console_repl(lua_State* L) {
     return nullptr;
 }
 
+// Function to load arguments from config file
+std::vector<std::string> load_config_file(const char* config_path, const char** config_lua_file) {
+    std::vector<std::string> config_args;
+    FILE* config_file = fopen(config_path, "r");
+    
+    if (!config_file) {
+        printf("Error: Could not open config file: %s\n", config_path);
+        return config_args;
+    }
+    
+    char line[1024];
+    printf("Loading config from: %s\n", config_path);
+    
+    while (fgets(line, sizeof(line), config_file)) {
+        // Remove newline and carriage return characters
+        line[strcspn(line, "\r\n")] = 0;
+        
+        // Skip empty lines and comments (lines starting with #)
+        if (strlen(line) == 0 || line[0] == '#') {
+            continue;
+        }
+        
+        std::string arg(line);
+        
+        // Check if this line is a lua file (ends with .lua) or looks like a file path
+        size_t len = arg.length();
+        if ((len > 4 && arg.substr(len - 4) == ".lua") || 
+            (arg.find('/') != std::string::npos && arg[0] != '-')) {
+            // This is a lua file path
+            *config_lua_file = strdup(arg.c_str());
+            printf("  Config lua file: %s\n", *config_lua_file);
+        } else {
+            // This is a command line argument
+            if (arg[0] != '-') {
+                arg = "-" + arg;
+            }
+            config_args.push_back(arg);
+            printf("  Config arg: %s\n", arg.c_str());
+        }
+    }
+    
+    fclose(config_file);
+    printf("Loaded %zu arguments from config file\n", config_args.size());
+    if (*config_lua_file) {
+        printf("Config file specifies lua file: %s\n", *config_lua_file);
+    }
+    return config_args;
+}
+
 int main(int argc, char* args[]) {
     lua_State* L = NULL;
     lpp_compat_mode_t compat_mode = LPP_COMPAT_NATIVE; // Default to native mode
@@ -1139,31 +1189,67 @@ int main(int argc, char* args[]) {
         }
     }
 
-    // Parse command line arguments
+    // Check if any argument is a config file (.cfg extension)
+    std::vector<std::string> config_args;
+    bool using_config = false;
+    const char* config_lua_file = nullptr;
+    
     for (int i = 1; i < argc; i++) {
-        if (strcmp(args[i], "-vitacompat") == 0) {
+        const char* arg = args[i];
+        size_t len = strlen(arg);
+        
+        // Check if this argument ends with .cfg
+        if (len > 4 && strcmp(arg + len - 4, ".cfg") == 0) {
+            config_args = load_config_file(arg, &config_lua_file);
+            using_config = true;
+            printf("Using config file - ignoring other command line arguments\n");
+            
+            // Use lua file from config if specified, otherwise check command line
+            if (config_lua_file) {
+                lua_file = config_lua_file;
+                printf("Using lua file from config: %s\n", lua_file);
+            } else {
+                // Find the lua file in remaining arguments (exclude the config file itself)
+                for (int j = 1; j < argc; j++) {
+                    if (j != i && args[j][0] != '-') {
+                        lua_file = args[j];
+                        printf("Using lua file from command line: %s\n", lua_file);
+                        break;
+                    }
+                }
+            }
+            break; // Stop after finding first config file
+        }
+    }
+    
+    // Parse arguments (either from config file or command line)
+    if (using_config) {
+        // Process config file arguments
+        for (const auto& arg : config_args) {
+            const char* current_arg = arg.c_str();
+            if (strcmp(current_arg, "-vitacompat") == 0) {
             compat_mode = LPP_COMPAT_VITA;
             vita_compat_mode = true; // Set legacy flag for backward compatibility
             printf("Vita compatibility mode enabled\n");
-        } else if (strcmp(args[i], "-3dscompat") == 0) {
+        } else if (strcmp(current_arg, "-3dscompat") == 0) {
             compat_mode = LPP_COMPAT_3DS;
             g_3ds_orientation = LPP_3DS_HORIZONTAL; // Default to horizontal layout
             threeds_compat_mode = true; // Set legacy flag for backward compatibility
             vita_compat_mode = true; // 3DS mode implies vita compat for scaling
             printf("3DS compatibility mode enabled (horizontal dual screen)\n");
-        } else if (strcmp(args[i], "-3dscompat-horizontal") == 0) {
+        } else if (strcmp(current_arg, "-3dscompat-horizontal") == 0) {
             compat_mode = LPP_COMPAT_3DS;
             g_3ds_orientation = LPP_3DS_HORIZONTAL;
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (horizontal dual screen)\n");
-        } else if (strcmp(args[i], "-3dscompat-vertical") == 0) {
+        } else if (strcmp(current_arg, "-3dscompat-vertical") == 0) {
             compat_mode = LPP_COMPAT_3DS;
             g_3ds_orientation = LPP_3DS_VERTICAL;
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (vertical dual screen)\n");
-        } else if (strcmp(args[i], "-3dscompat-1screen") == 0) {
+        } else if (strcmp(current_arg, "-3dscompat-1screen") == 0) {
             compat_mode = LPP_COMPAT_3DS;
             g_3ds_orientation = LPP_3DS_HORIZONTAL; // Default orientation
             g_3ds_single_screen_mode = true;
@@ -1171,20 +1257,23 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
-        } else if (strcmp(args[i], "-debug") == 0) {
+        } else if (strcmp(current_arg, "-debug") == 0) {
             g_debug_mode = true;
             printf("Debug mode enabled\n");
-        } else if (strcmp(args[i], "-gamepad:nintendo") == 0) {
+        } else if (strcmp(current_arg, "-gamepad:nintendo") == 0) {
             g_gamepad_layout = 0; // Nintendo layout
             printf("Controller layout set to Nintendo (A=right, B=bottom, X=top, Y=left)\n");
-        } else if (strcmp(args[i], "-gamepad:xbox") == 0) {
+        } else if (strcmp(current_arg, "-gamepad:xbox") == 0) {
             g_gamepad_layout = 1; // Xbox layout  
             printf("Controller layout set to Xbox (A=bottom, B=right, X=left, Y=top)\n");
-        } else if (strcmp(args[i], "-headless") == 0 || strcmp(args[i], "-console") == 0) {
+        } else if (strcmp(current_arg, "-gamepad:disabled") == 0) {
+            g_gamepad_enabled = false;
+            printf("Gamepad/controller support disabled\n");
+        } else if (strcmp(current_arg, "-headless") == 0 || strcmp(current_arg, "-console") == 0) {
             headless_mode = true;
             g_headless_mode = true; // Set global flag
             printf("Headless mode enabled (no GUI window)\n");
-        } else if (strncmp(args[i], "-resolution:", 12) == 0) {
+        } else if (strncmp(current_arg, "-resolution:", 12) == 0) {
             // Check if compatibility mode is already enabled
             if (compat_mode != LPP_COMPAT_NATIVE) {
                 printf("Error: -resolution argument is only supported in native SDL mode\n");
@@ -1193,7 +1282,7 @@ int main(int argc, char* args[]) {
                 custom_width = custom_height = 0; // Reset to auto
             } else {
                 // Parse resolution argument like -resolution:640x480
-                const char* res_str = args[i] + 12; // Skip "-resolution:"
+                const char* res_str = current_arg + 12; // Skip "-resolution:"
                 if (sscanf(res_str, "%dx%d", &custom_width, &custom_height) == 2) {
                     if (custom_width > 0 && custom_height > 0 && 
                         custom_width <= 4096 && custom_height <= 4096) {
@@ -1208,9 +1297,10 @@ int main(int argc, char* args[]) {
                     printf("Example: -resolution:640x480\n");
                 }
             }
-        } else if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
+        } else if (strcmp(current_arg, "--help") == 0 || strcmp(current_arg, "-h") == 0) {
             printf("Lua Player Plus SDL - Compatibility Usage:\n");
-            printf("  %s [options] <lua_file>\n\n", args[0]);
+            printf("  %s [options] <lua_file>\n", args[0]);
+            printf("  %s <config_file.cfg> [lua_file]\n\n", args[0]);
             printf("Compatibility Options:\n");
             printf("  -vitacompat              Enable Vita compatibility mode (960x544 resolution)\n");
             printf("  -3dscompat               Enable 3DS compatibility mode (horizontal dual screen)\n");
@@ -1220,11 +1310,21 @@ int main(int argc, char* args[]) {
             printf("\nController Options:\n");
             printf("  -gamepad:nintendo   Use Nintendo controller layout (A=right, B=bottom, X=top, Y=left) [DEFAULT]\n");
             printf("  -gamepad:xbox       Use Xbox controller layout (A=bottom, B=right, X=left, Y=top)\n");
+            printf("  -gamepad:disabled   Disable gamepad/controller support entirely\n");
             printf("\nOther Options:\n");
             printf("  -debug              Enable debug output\n");
             printf("  -resolution:WxH     Set custom window resolution - NATIVE MODE ONLY (e.g., -resolution:640x480)\n");
             printf("  -headless, -console Run without GUI window (for scripts that don't need graphics)\n");
             printf("  -h, --help          Show this help message\n");
+            printf("\nConfig File Support:\n");
+            printf("  Config files (.cfg) can contain arguments (one per line) and optionally a lua file.\n");
+            printf("  Lines starting with # are comments and are ignored.\n");
+            printf("  If a config file specifies a lua file, it takes precedence over command line.\n");
+            printf("  Example config file contents:\n");
+            printf("    resolution:640x480\n");
+            printf("    gamepad:disabled\n");
+            printf("    # This is a comment\n");
+            printf("    index.lua\n");
             printf("\nIf no lua file is specified, the program will:\n");
             printf("  1. Look for index.lua in the current directory\n");
             printf("  2. Launch a file browser (GUI mode) or console REPL (headless mode)\n");
@@ -1237,12 +1337,136 @@ int main(int argc, char* args[]) {
             printf("  %s -gamepad:xbox mygame.lua           # Run with Xbox controller layout\n", args[0]);
             printf("  %s -resolution:640x480 mygame.lua     # Run with custom 640x480 resolution\n", args[0]);
             printf("  %s -headless                          # Launch interactive console REPL\n", args[0]);
+            printf("  %s config.cfg                        # Run with settings from config.cfg\n", args[0]);
+            printf("  %s config.cfg mygame.lua             # Run mygame.lua with config (unless config specifies different lua file)\n", args[0]);
             return 0;
-        } else if (lua_file == NULL) {
-            lua_file = args[i];
+        } else if (lua_file == NULL && current_arg[0] != '-') {
+            lua_file = current_arg;
         } else {
-            printf("Unknown argument: %s\n", args[i]);
+            printf("Unknown argument: %s\n", current_arg);
             printf("Use --help for usage information.\n");
+        }
+        }
+    } else {
+        // Process regular command line arguments (full argument parsing)
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(args[i], "-vitacompat") == 0) {
+                compat_mode = LPP_COMPAT_VITA;
+                vita_compat_mode = true;
+                printf("Vita compatibility mode enabled\n");
+            } else if (strcmp(args[i], "-3dscompat") == 0) {
+                compat_mode = LPP_COMPAT_3DS;
+                g_3ds_orientation = LPP_3DS_HORIZONTAL;
+                threeds_compat_mode = true;
+                vita_compat_mode = true;
+                printf("3DS compatibility mode enabled (horizontal dual screen)\n");
+            } else if (strcmp(args[i], "-3dscompat-horizontal") == 0) {
+                compat_mode = LPP_COMPAT_3DS;
+                g_3ds_orientation = LPP_3DS_HORIZONTAL;
+                threeds_compat_mode = true;
+                vita_compat_mode = true;
+                printf("3DS compatibility mode enabled (horizontal dual screen)\n");
+            } else if (strcmp(args[i], "-3dscompat-vertical") == 0) {
+                compat_mode = LPP_COMPAT_3DS;
+                g_3ds_orientation = LPP_3DS_VERTICAL;
+                threeds_compat_mode = true;
+                vita_compat_mode = true;
+                printf("3DS compatibility mode enabled (vertical dual screen)\n");
+            } else if (strcmp(args[i], "-3dscompat-1screen") == 0) {
+                compat_mode = LPP_COMPAT_3DS;
+                g_3ds_orientation = LPP_3DS_HORIZONTAL;
+                g_3ds_single_screen_mode = true;
+                g_3ds_active_screen = 0;
+                threeds_compat_mode = true;
+                vita_compat_mode = true;
+                printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
+            } else if (strcmp(args[i], "-debug") == 0) {
+                g_debug_mode = true;
+                printf("Debug mode enabled\n");
+            } else if (strcmp(args[i], "-gamepad:nintendo") == 0) {
+                g_gamepad_layout = 0;
+                printf("Controller layout set to Nintendo (A=right, B=bottom, X=top, Y=left)\n");
+            } else if (strcmp(args[i], "-gamepad:xbox") == 0) {
+                g_gamepad_layout = 1;
+                printf("Controller layout set to Xbox (A=bottom, B=right, X=left, Y=top)\n");
+            } else if (strcmp(args[i], "-gamepad:disabled") == 0) {
+                g_gamepad_enabled = false;
+                printf("Gamepad/controller support disabled\n");
+            } else if (strcmp(args[i], "-headless") == 0 || strcmp(args[i], "-console") == 0) {
+                headless_mode = true;
+                g_headless_mode = true;
+                printf("Headless mode enabled (no GUI window)\n");
+            } else if (strncmp(args[i], "-resolution:", 12) == 0) {
+                if (compat_mode != LPP_COMPAT_NATIVE) {
+                    printf("Error: -resolution argument is only supported in native SDL mode\n");
+                    printf("Compatibility modes (-vitacompat, -3dscompat) use fixed console resolutions\n");
+                    printf("Use native mode (no compatibility flags) to set custom resolution\n");
+                    custom_width = custom_height = 0;
+                } else {
+                    const char* res_str = args[i] + 12;
+                    if (sscanf(res_str, "%dx%d", &custom_width, &custom_height) == 2) {
+                        if (custom_width > 0 && custom_height > 0 && 
+                            custom_width <= 4096 && custom_height <= 4096) {
+                            printf("Custom resolution set to %dx%d\n", custom_width, custom_height);
+                        } else {
+                            printf("Error: Invalid resolution %dx%d (must be between 1x1 and 4096x4096)\n", 
+                                   custom_width, custom_height);
+                            custom_width = custom_height = 0;
+                        }
+                    } else {
+                        printf("Error: Invalid resolution format '%s' (use format: -resolution:WIDTHxHEIGHT)\n", res_str);
+                        printf("Example: -resolution:640x480\n");
+                    }
+                }
+            } else if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
+                printf("Lua Player Plus SDL - Compatibility Usage:\n");
+                printf("  %s [options] <lua_file>\n", args[0]);
+                printf("  %s <config_file.cfg> [lua_file]\n\n", args[0]);
+                printf("Compatibility Options:\n");
+                printf("  -vitacompat              Enable Vita compatibility mode (960x544 resolution)\n");
+                printf("  -3dscompat               Enable 3DS compatibility mode (horizontal dual screen)\n");
+                printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
+                printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
+                printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
+                printf("\nController Options:\n");
+                printf("  -gamepad:nintendo   Use Nintendo controller layout (A=right, B=bottom, X=top, Y=left) [DEFAULT]\n");
+                printf("  -gamepad:xbox       Use Xbox controller layout (A=bottom, B=right, X=left, Y=top)\n");
+                printf("  -gamepad:disabled   Disable gamepad/controller support entirely\n");
+                printf("\nOther Options:\n");
+                printf("  -debug              Enable debug output\n");
+                printf("  -resolution:WxH     Set custom window resolution - NATIVE MODE ONLY (e.g., -resolution:640x480)\n");
+                printf("  -headless, -console Run without GUI window (for scripts that don't need graphics)\n");
+                printf("  -h, --help          Show this help message\n");
+                printf("\nConfig File Support:\n");
+                printf("  Config files (.cfg) can contain arguments (one per line) and optionally a lua file.\n");
+                printf("  Lines starting with # are comments and are ignored.\n");
+                printf("  If a config file specifies a lua file, it takes precedence over command line.\n");
+                printf("  Example config file contents:\n");
+                printf("    resolution:640x480\n");
+                printf("    gamepad:disabled\n");
+                printf("    # This is a comment\n");
+                printf("    index.lua\n");
+                printf("\nIf no lua file is specified, the program will:\n");
+                printf("  1. Look for index.lua in the current directory\n");
+                printf("  2. Launch a file browser (GUI mode) or console REPL (headless mode)\n");
+                printf("\nExamples:\n");
+                printf("  %s -vitacompat mygame.lua             # Run with Vita compatibility\n", args[0]);
+                printf("  %s -3dscompat mygame.lua              # Run with 3DS compatibility (horizontal)\n", args[0]);
+                printf("  %s -3dscompat-vertical mygame.lua     # Run with 3DS compatibility (vertical)\n", args[0]);
+                printf("  %s -3dscompat-1screen mygame.lua      # Run with 3DS single screen mode\n", args[0]);
+                printf("  %s mygame.lua                         # Run in native SDL mode (default)\n", args[0]);
+                printf("  %s -gamepad:xbox mygame.lua           # Run with Xbox controller layout\n", args[0]);
+                printf("  %s -resolution:640x480 mygame.lua     # Run with custom 640x480 resolution\n", args[0]);
+                printf("  %s -headless                          # Launch interactive console REPL\n", args[0]);
+                printf("  %s config.cfg                        # Run with settings from config.cfg\n", args[0]);
+                printf("  %s config.cfg mygame.lua             # Run mygame.lua with config (unless config specifies different lua file)\n", args[0]);
+                return 0;
+            } else if (lua_file == NULL && args[i][0] != '-') {
+                lua_file = args[i];
+            } else {
+                printf("Unknown argument: %s\n", args[i]);
+                printf("Use --help for usage information.\n");
+            }
         }
     }
 
@@ -1315,10 +1539,13 @@ int main(int argc, char* args[]) {
     luaRegistry_init(L);
     luaGui_init(L);
 
-    // Initialize SDL (conditionally initialize video based on headless mode)
-    Uint32 sdl_flags = SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
+    // Initialize SDL (conditionally initialize video and gamepad based on options)
+    Uint32 sdl_flags = SDL_INIT_AUDIO;
     if (!headless_mode) {
         sdl_flags |= SDL_INIT_VIDEO;
+    }
+    if (g_gamepad_enabled) {
+        sdl_flags |= SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
     }
     
     if (SDL_Init(sdl_flags) < 0) {
@@ -1341,8 +1568,12 @@ int main(int argc, char* args[]) {
         }
     }
 
-    // Initialize and detect game controllers
-    init_controllers();
+    // Initialize and detect game controllers (if enabled)
+    if (g_gamepad_enabled) {
+        init_controllers();
+    } else {
+        printf("Gamepad/controller support disabled\n");
+    }
 
     // Handle console REPL mode (headless only)
     if (strcmp(lua_file, "__console_repl__") == 0) {
@@ -2151,8 +2382,10 @@ skip_gui_setup:
         if (g_window) SDL_DestroyWindow(g_window);
     }
 
-    // Cleanup controllers before SDL shutdown
-    cleanup_controllers();
+    // Cleanup controllers before SDL shutdown (if enabled)
+    if (g_gamepad_enabled) {
+        cleanup_controllers();
+    }
     
     // Quit SDL subsystems
     if (!headless_mode) {
