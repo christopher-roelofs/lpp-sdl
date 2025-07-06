@@ -1,0 +1,368 @@
+LPP-SDL Dependency Analysis Report
+==================================
+
+Generated on: Sun Jul  6 07:24:18 PM EDT 2025
+Binary: lpp_sdl
+
+Total shared library dependencies: 297
+
+### SDL Libraries ###
+  - libSDL2-2.0.so.0
+  - libSDL2_image-2.0.so.0
+  - libSDL2_mixer-2.0.so.0
+  - libSDL2_ttf-2.0.so.0
+
+### Lua Libraries ###
+  - libluajit-5.1.so.2
+
+### Audio Libraries ###
+  - libfluidsynth.so.3
+  - libgsm.so.1
+  - libgstaudio-1.0.so.0
+  - libjack.so.0
+  - libmodplug.so.1
+  - libmpg123.so.0
+  - libogg.so.0
+  - libopusfile.so.0
+  - libopus.so.0
+  - libpulse-simple.so.0
+  - libpulse.so.0
+  - libsndfile.so.1
+  - libvorbisenc.so.2
+  - libvorbisfile.so.3
+  - libvorbis.so.0
+  - libpulsecommon-16.1.so
+
+### Video Libraries ###
+  - libaom.so.3
+  - libavcodec.so.60
+  - libavformat.so.60
+  - libavutil.so.58
+  - libdav1d.so.7
+  - librav1e.so.0
+  - libswresample.so.4
+  - libswscale.so.7
+  - libtheoradec.so.1
+  - libtheoraenc.so.1
+  - libvpx.so.9
+  - libx264.so.164
+  - libx265.so.199
+  - libxvidcore.so.4
+
+### Graphics Libraries ###
+  - libcairo-gobject.so.2
+  - libcairo.so.2
+  - libdrm_amdgpu.so.1
+  - libdrm_intel.so.1
+  - libdrm_radeon.so.1
+  - libdrm.so.2
+  - libgbm.so.1
+  - libgdcmjpeg12.so.3.0
+  - libgdcmjpeg16.so.3.0
+  - libgdcmjpeg8.so.3.0
+  - libgeotiff.so.5
+  - libglapi.so.0
+  - libGLdispatch.so.0
+  - libglib-2.0.so.0
+  - libGL.so.1
+  - libGLX.so.0
+  - libjpeg.so.8
+  - libpangocairo-1.0.so.0
+  - libpixman-1.so.0
+  - libpng16.so.16
+  - libtiff.so.6
+  - libva-drm.so.2
+  - libwayland-client.so.0
+  - libwayland-cursor.so.0
+  - libwayland-egl.so.1
+  - libwayland-server.so.0
+  - libwebpdemux.so.2
+  - libwebpmux.so.3
+  - libwebp.so.7
+  - libX11.so.6
+  - libX11-xcb.so.1
+  - libxcb-dri2.so.0
+  - libxcb-dri3.so.0
+  - libxcb-present.so.0
+  - libxcb-randr.so.0
+  - libxcb-render.so.0
+  - libxcb-shm.so.0
+  - libxcb.so.1
+  - libxcb-sync.so.1
+  - libxcb-xfixes.so.0
+
+### OpenCV Libraries ###
+  - libopencv_core.so.406
+  - libopencv_imgcodecs.so.406
+  - libopencv_imgproc.so.406
+  - libopencv_videoio.so.406
+
+### Network Libraries ###
+  - libcrypto.so.3
+  - libcurl-gnutls.so.4
+  - libcurl.so.4
+  - libgnutls.so.30
+  - libk5crypto.so.3
+  - libmbedcrypto.so.7
+  - libnettle.so.8
+  - libnghttp2.so.14
+  - librtmp.so.1
+  - libsrt-gnutls.so.1.5
+  - libssh-gcrypt.so.4
+  - libssh.so.4
+  - libssl.so.3
+
+### Database Libraries ###
+  - libmysqlclient.so.21
+  - libodbcinst.so.2
+  - libodbc.so.2
+  - libpq.so.5
+  - libsqlite3.so.0
+
+### Compression Libraries ###
+  - libarchive.so.13
+  - libbrotlicommon.so.1
+  - libbrotlidec.so.1
+  - libbrotlienc.so.1
+  - libbz2.so.1.0
+  - libharfbuzz.so.0
+  - liblz4.so.1
+  - liblzma.so.5
+  - libsz.so.2
+  - libz.so.1
+  - libzstd.so.1
+
+### System Libraries ###
+  - libc.so.6
+  - libgcc_s.so.1
+  - libgomp.so.1
+  - libm.so.6
+  - libstdc++.so.6
+
+### Other Libraries ###
+  - libarmadillo.so.12
+  - libacl.so.1
+  - libaec.so.0
+  - libapparmor.so.1
+  - libarpack.so.2
+  - libasound.so.2
+  - libasyncns.so.0
+  - libblas.so.3
+  - libblkid.so.1
+  - libblosc.so.1
+  - libbluray.so.2
+  - libbsd.so.0
+  - libcap.so.2
+  - libcfitsio.so.10
+  - libcharls.so.2
+  - libchromaprint.so.1
+  - libcjson.so.1
+  - libcodec2.so.1.2
+  - libcom_err.so.2
+  - libdatrie.so.1
+  - libdb-5.3.so
+  - libdbus-1.so.3
+  - libdc1394.so.25
+  - libdecor-0.so.0
+  - libdeflate.so.0
+  - libdfalt.so.0
+  - libdw.so.1
+  - libedit.so.2
+  - libelf.so.1
+  - libexif.so.12
+  - libexpat.so.1
+  - libffi.so.8
+  - libFLAC.so.12
+  - libfontconfig.so.1
+  - libfreetype.so.6
+  - libfreexl.so.1
+  - libfribidi.so.0
+  - libfyba.so.0
+  - libfygm.so.0
+  - libfyut.so.0
+  - libgallium-24.2.8-1ubuntu1~24.04.1.so
+  - libgcrypt.so.20
+  - libgdal.so.34
+  - libgdcmCommon.so.3.0
+  - libgdcmDICT.so.3.0
+  - libgdcmDSED.so.3.0
+  - libgdcmIOD.so.3.0
+  - libgdcmMSFF.so.3.0
+  - libgdk_pixbuf-2.0.so.0
+  - libgeos_c.so.1
+  - libgeos.so.3.12.1
+  - libgfortran.so.5
+  - libgif.so.7
+  - libgio-2.0.so.0
+  - libgme.so.0
+  - libgmodule-2.0.so.0
+  - libgmp.so.10
+  - libgobject-2.0.so.0
+  - libgpg-error.so.0
+  - libgphoto2_port.so.12
+  - libgphoto2.so.6
+  - libgraphite2.so.3
+  - libgssapi_krb5.so.2
+  - libgstapp-1.0.so.0
+  - libgstbase-1.0.so.0
+  - libgstpbutils-1.0.so.0
+  - libgstreamer-1.0.so.0
+  - libgstriff-1.0.so.0
+  - libgsttag-1.0.so.0
+  - libgstvideo-1.0.so.0
+  - libhdf5_serial_hl.so.100
+  - libhdf5_serial.so.103
+  - libheif.so.1
+  - libhogweed.so.6
+  - libhwy.so.1
+  - libicudata.so.74
+  - libicuuc.so.74
+  - libidn2.so.0
+  - libIex-3_1.so.30
+  - libIlmThread-3_1.so.30
+  - libImath-3_1.so.29
+  - libinstpatch-1.0.so.2
+  - libjbig.so.0
+  - libjson-c.so.5
+  - libjxl.so.0.7
+  - libjxl_threads.so.0.7
+  - libkeyutils.so.1
+  - libkmlbase.so.1
+  - libkmldom.so.1
+  - libkmlengine.so.1
+  - libkrb5.so.3
+  - libkrb5support.so.0
+  - liblapack.so.3
+  - liblber.so.2
+  - liblcms2.so.2
+  - libldap.so.2
+  - libLerc.so.4
+  - libLLVM.so.19.1
+  - libltdl.so.7
+  - libmd.so.0
+  - libmfhdfalt.so.0
+  - libminizip.so.1
+  - libmount.so.1
+  - libmp3lame.so.0
+  - libmvec.so.1
+  - libnetcdf.so.19
+  - libnorm.so.1
+  - libnspr4.so
+  - libnss3.so
+  - libnssutil3.so
+  - libnuma.so.1
+  - libogdi.so.4.1
+  - libOpenCL.so.1
+  - libOpenEXR-3_1.so.30
+  - libopenjp2.so.7
+  - libopenmpt.so.0
+  - liborc-0.4.so.0
+  - libp11-kit.so.0
+  - libpango-1.0.so.0
+  - libpangoft2-1.0.so.0
+  - libpciaccess.so.0
+  - libpcre2-8.so.0
+  - libpgm-5.3.so.0
+  - libpipewire-0.3.so.0
+  - libplc4.so
+  - libplds4.so
+  - libpoppler.so.134
+  - libproj.so.25
+  - libpsl.so.5
+  - libqhull_r.so.8.0
+  - librabbitmq.so.4
+  - libraw1394.so.11
+  - libreadline.so.8
+  - libresolv.so.2
+  - librist.so.4
+  - librsvg-2.so.2
+  - librttopo.so.1
+  - libsamplerate.so.0
+  - libsasl2.so.2
+  - libselinux.so.1
+  - libsensors.so.5
+  - libsharpyuv.so.0
+  - libshine.so.3
+  - libsmime3.so
+  - libsnappy.so.1
+  - libsodium.so.23
+  - libsoxr.so.0
+  - libspatialite.so.8
+  - libspeex.so.1
+  - libsuperlu.so.6
+  - libSvtAv1Enc.so.1
+  - libsystemd.so.0
+  - libtasn1.so.6
+  - libtbb.so.12
+  - libthai.so.0
+  - libtinfo.so.6
+  - libtirpc.so.3
+  - libtwolame.so.0
+  - libudev.so.1
+  - libudfread.so.0
+  - libunistring.so.5
+  - libunwind.so.8
+  - liburiparser.so.1
+  - libusb-1.0.so.0
+  - libuuid.so.1
+  - libva.so.2
+  - libva-x11.so.2
+  - libvdpau.so.1
+  - libvpl.so.2
+  - libXau.so.6
+  - libXcursor.so.1
+  - libXdmcp.so.6
+  - libxerces-c-3.2.so
+  - libXext.so.6
+  - libXfixes.so.3
+  - libXi.so.6
+  - libxkbcommon.so.0
+  - libxml2.so.2
+  - libXrandr.so.2
+  - libXrender.so.1
+  - libxshmfence.so.1
+  - libXss.so.1
+  - libzmq.so.5
+  - libzvbi.so.0
+
+### Core Dependencies (from Makefile) ###
+These are the libraries directly linked in the Makefile:
+
+SDL2 Stack:
+  - libSDL2-2.0.so.0 - Core SDL2 library
+  - libSDL2_ttf-2.0.so.0 - TrueType font support
+  - libSDL2_image-2.0.so.0 - Image loading support
+  - libSDL2_mixer-2.0.so.0 - Audio mixing support
+
+Lua:
+  - libluajit-5.1.so.2 - LuaJIT 2.1 interpreter
+
+Computer Vision:
+  - libopencv_*.so.406 - OpenCV 4 libraries
+
+Video/Audio Processing:
+  - libavformat.so.60 - FFmpeg format library
+  - libavcodec.so.60 - FFmpeg codec library
+  - libavutil.so.58 - FFmpeg utility library
+  - libswscale.so.7 - FFmpeg scaling library
+
+Other Core Libraries:
+  - libsqlite3.so.0 - SQLite database
+  - libcurl.so.4 - URL transfer library
+  - libgsm.so.1 - GSM audio codec
+  - libmpg123.so.0 - MP3 decoder
+  - libz.so.1 - zlib compression
+  - libpng16.so.16 - PNG image support
+  - libGL.so.1 - OpenGL graphics
+
+Optional Libraries (if enabled):
+  - libarchive.so.13 - Archive support (tar, zip, etc.)
+  - libreadline.so.8 - Command line editing
+
+### Package Recommendations ###
+For Ubuntu/Debian users, install these packages:
+  sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0
+  sudo apt-get install libluajit-5.1-2 libopencv-core406 libopencv-videoio406 libopencv-imgproc406
+  sudo apt-get install libavformat60 libavcodec60 libavutil58 libswscale7
+  sudo apt-get install libsqlite3-0 libcurl4 libgsm1 libmpg123-0
+  sudo apt-get install libarchive13 libreadline8
