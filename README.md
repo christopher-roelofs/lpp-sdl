@@ -115,9 +115,17 @@ See `README_IMGUI.md` for complete documentation.
 # Native SDL mode (default)
 ./lpp-sdl your_game.lua              # Native mode is default
 
+# Custom window resolution
+./lpp-sdl -resolution:640x480 your_game.lua       # Run with custom 640x480 window
+./lpp-sdl -resolution:800x600 your_game.lua       # Run with custom 800x600 window
+./lpp-sdl -resolution:1024x768 your_game.lua      # Run with custom 1024x768 window
+
 # Console/Headless mode (no GUI window)
 ./lpp-sdl -headless your_script.lua  # Run without graphics for automation
 ./lpp-sdl -console your_script.lua   # Same as -headless
+
+# Note: -resolution only works with native SDL mode
+# Compatibility modes use fixed console resolutions for authenticity
 
 # Legacy flag support (deprecated)
 ./lpp-sdl -vitascale your_game.lua   # Same as -vitacompat
@@ -210,6 +218,7 @@ For modern desktop development, provides adaptive high-resolution rendering with
   - **800x600 range**: 800x600 logical resolution (SVGA) 
   - **1024x768 range**: 1024x768 logical resolution (XGA)
   - **Above 1024x768**: 1280x720 logical resolution (HD)
+- **Custom Resolution Support**: Override automatic detection with `-resolution:WxH` argument
 - **Performance**: No compatibility overhead
 - **Input**: Full SDL2 input system access
 - **Graphics**: Native SDL2 rendering capabilities
@@ -218,10 +227,11 @@ For modern desktop development, provides adaptive high-resolution rendering with
 ### Usage
 
 ```bash
-./lpp-sdl your_game.lua              # Native mode is default (no flag needed)
+./lpp-sdl your_game.lua                          # Native mode is default (no flag needed)
+./lpp-sdl -resolution:640x480 your_game.lua     # Native mode with custom 640x480 window
 ```
 
-The system automatically detects your screen size and chooses the most appropriate logical resolution for optimal usability.
+The system automatically detects your screen size and chooses the most appropriate logical resolution for optimal usability, or you can specify an exact resolution for precise control.
 
 ### 3DS Screen Layout
 
@@ -236,6 +246,76 @@ The system automatically detects your screen size and chooses the most appropria
 ```
 
 Games designed for 3DS can use `Screen.init(TOP_SCREEN)` and `Screen.init(BOTTOM_SCREEN)` to target specific screens. The 3DS mode automatically calculates optimal scaling factors for both screens while maintaining their aspect ratios.
+
+## Custom Window Resolution
+
+For precise control over window size, `lpp-sdl` supports custom resolution arguments in **native SDL mode only**. Compatibility modes use fixed console resolutions to maintain authentic console experiences.
+
+### Features
+- **Custom Window Size**: Set exact window dimensions for testing and development
+- **Resolution Range**: Supports resolutions from 1x1 to 4096x4096 pixels
+- **Native Mode Only**: Only works with native SDL mode (no compatibility flags)
+- **Logical Resolution**: Automatically sets logical rendering resolution to match window size
+- **Error Handling**: Invalid formats and out-of-range values are rejected with helpful messages
+
+### Usage
+
+```bash
+# Basic custom resolution
+./lpp-sdl -resolution:640x480 your_game.lua        # 640x480 window
+./lpp-sdl -resolution:800x600 your_game.lua        # 800x600 window
+./lpp-sdl -resolution:1024x768 your_game.lua       # 1024x768 window
+./lpp-sdl -resolution:1920x1080 your_game.lua      # Full HD window
+
+# Testing different resolutions
+./lpp-sdl -resolution:480x360 your_game.lua        # Small screen testing
+./lpp-sdl -resolution:2560x1440 your_game.lua      # Large screen testing
+```
+
+### Resolution Format
+- **Syntax**: `-resolution:WIDTHxHEIGHT`
+- **Width/Height**: Integer values from 1 to 4096
+- **Separator**: Must use lowercase 'x' between width and height
+- **Examples**: `640x480`, `1920x1080`, `800x600`
+
+### Error Handling
+```bash
+# Invalid format examples (will show error and fall back to auto-detection)
+./lpp-sdl -resolution:invalid your_game.lua         # Invalid format
+./lpp-sdl -resolution:640 your_game.lua             # Missing height
+./lpp-sdl -resolution:9999x9999 your_game.lua       # Out of range
+
+# Compatibility mode conflicts (will show error)
+./lpp-sdl -vitacompat -resolution:640x480 your_game.lua   # Error: not allowed with compatibility modes
+./lpp-sdl -3dscompat -resolution:800x600 your_game.lua    # Error: not allowed with compatibility modes
+```
+
+### Design Philosophy
+The `-resolution` argument is restricted to native SDL mode because:
+- **Compatibility modes** maintain authentic console experiences with fixed resolutions
+- **Vita mode** uses 960x544 (or scaled versions) to match the actual Vita screen
+- **3DS mode** uses dual-screen layouts (400x240 + 320x240) to match the actual 3DS
+- **Native mode** is designed for modern desktop development with flexible resolutions
+
+### Use Cases
+- **Retro Gaming**: Test with classic resolutions like 640x480 (VGA) or 320x240
+- **Mobile Development**: Simulate mobile screen sizes and aspect ratios
+- **Multi-Monitor**: Position specific window sizes for multi-monitor setups
+- **Performance Testing**: Test rendering performance at different resolutions
+- **UI Development**: Verify interface scaling at various window sizes
+
+### Practical Example
+The included Cookie Clicker port demonstrates adaptive UI design that automatically optimizes for different resolutions:
+
+```bash
+# Play Cookie Clicker optimized for 640x480 (compact layout, smaller text spacing)
+./lpp-sdl -resolution:640x480 tests/games/sdl/3dscookieclicker/index_native.lua
+
+# Same game with larger resolution (expanded layout, comfortable spacing)
+./lpp-sdl -resolution:1024x768 tests/games/sdl/3dscookieclicker/index_native.lua
+```
+
+The game automatically adapts panel sizes, text spacing, and UI elements based on the target resolution.
 
 ## Console/Headless Mode
 

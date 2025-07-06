@@ -197,20 +197,8 @@ extern "C" void handle_controller_event(SDL_Event* event) {
 }
 
 static void update_input_state() {
-    // Pump events to update keyboard state and handle controller hotplugging
+    // Pump events to update keyboard state
     SDL_PumpEvents();
-    
-    // Process SDL events to handle controller hotplugging in games with custom loops
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        // Handle controller hotplug events
-        if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED ||
-            event.type == SDL_JOYDEVICEADDED || event.type == SDL_JOYDEVICEREMOVED) {
-            handle_controller_event(&event);
-        }
-        // Note: Other events are ignored here since games handle their own event loops
-        // This only processes controller hotplug events that games typically don't handle
-    }
     
     // Update keyboard state
     keyboard_state = SDL_GetKeyboardState(NULL);
@@ -433,37 +421,17 @@ static int lua_readC(lua_State *L){
             const Uint32 VITA_GAMEPAD_REPEAT_DELAY = 150; // 150ms delay for Vita gamepad
             
             // Face buttons - immediate response (no timing control)
-            // Apply controller layout swapping for gamepad-to-keyboard mapping
-            extern int g_gamepad_layout; // 0=Nintendo, 1=Xbox
-            
-            if (g_gamepad_layout == 0) {
-                // Nintendo layout: Swap A/B and X/Y to match Nintendo physical layout
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                    current_keys[SDL_SCANCODE_SPACE] = true; // Nintendo A (right) = Space
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Nintendo B (bottom) = Backspace
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                    current_keys[SDL_SCANCODE_Z] = true; // Nintendo X (top) = Z
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                    current_keys[SDL_SCANCODE_X] = true; // Nintendo Y (left) = X
-                }
-            } else {
-                // Xbox layout: Use buttons as-is (no swapping)
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                    current_keys[SDL_SCANCODE_SPACE] = true; // Xbox A (bottom) = Space
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Xbox B (right) = Backspace
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                    current_keys[SDL_SCANCODE_Z] = true; // Xbox X (left) = Z
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                    current_keys[SDL_SCANCODE_X] = true; // Xbox Y (top) = X
-                }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // Cross = Space
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Circle = Backspace
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_Z] = true; // Square = Z
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_X] = true; // Triangle = X
             }
             
             // Shoulder buttons - immediate response
@@ -527,37 +495,17 @@ static int lua_readC(lua_State *L){
         // Add gamepad support after keyboard (doesn't interfere with keyboard edge detection)
         if (controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
             // Native gamepad mapping (immediate response, no timing control)
-            // Apply controller layout swapping for gamepad-to-keyboard mapping
-            extern int g_gamepad_layout; // 0=Nintendo, 1=Xbox
-            
-            if (g_gamepad_layout == 0) {
-                // Nintendo layout: Swap A/B and X/Y to match Nintendo physical layout
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                    current_keys[SDL_SCANCODE_SPACE] = true; // Nintendo A (right) = Primary action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Nintendo B (bottom) = Secondary action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                    current_keys[SDL_SCANCODE_X] = true; // Nintendo X (top) = X action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                    current_keys[SDL_SCANCODE_Y] = true; // Nintendo Y (left) = Y action
-                }
-            } else {
-                // Xbox layout: Use buttons as-is (no swapping)
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
-                    current_keys[SDL_SCANCODE_SPACE] = true; // Xbox A (bottom) = Primary action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
-                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Xbox B (right) = Secondary action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
-                    current_keys[SDL_SCANCODE_X] = true; // Xbox X (left) = X action
-                }
-                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
-                    current_keys[SDL_SCANCODE_Y] = true; // Xbox Y (top) = Y action
-                }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                current_keys[SDL_SCANCODE_SPACE] = true; // Primary action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                current_keys[SDL_SCANCODE_BACKSPACE] = true; // Secondary action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                current_keys[SDL_SCANCODE_X] = true; // X action
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                current_keys[SDL_SCANCODE_Y] = true; // Y action
             }
             
             // Shoulder buttons
@@ -702,25 +650,9 @@ static int lua_checkGamepadButton(lua_State *L){
 #endif
     }
     
-    // Apply controller layout swapping for A/B and X/Y buttons
-    extern int g_gamepad_layout; // 0=Nintendo, 1=Xbox
-    int actual_button = button;
-    
-    if (g_gamepad_layout == 0) {
-        // Nintendo layout: Swap buttons to match Nintendo physical layout
-        switch (button) {
-            case SDL_CONTROLLER_BUTTON_A: actual_button = SDL_CONTROLLER_BUTTON_B; break; // Nintendo A (right) → SDL B
-            case SDL_CONTROLLER_BUTTON_B: actual_button = SDL_CONTROLLER_BUTTON_A; break; // Nintendo B (bottom) → SDL A
-            case SDL_CONTROLLER_BUTTON_X: actual_button = SDL_CONTROLLER_BUTTON_Y; break; // Nintendo X (top) → SDL Y
-            case SDL_CONTROLLER_BUTTON_Y: actual_button = SDL_CONTROLLER_BUTTON_X; break; // Nintendo Y (left) → SDL X
-            default: actual_button = button; break; // Other buttons unchanged
-        }
-    }
-    // Xbox layout (g_gamepad_layout == 1): No swapping needed, use buttons as-is
-    
     bool is_pressed = false;
     if (controllers[port] && SDL_GameControllerGetAttached(controllers[port])) {
-        is_pressed = SDL_GameControllerGetButton(controllers[port], (SDL_GameControllerButton)actual_button);
+        is_pressed = SDL_GameControllerGetButton(controllers[port], (SDL_GameControllerButton)button);
     }
     
     lua_pushboolean(L, is_pressed);
@@ -1280,11 +1212,15 @@ void luaControls_init(lua_State *L) {
     luaL_setfuncs(L, Controls_functions, 0);
     lua_setglobal(L, "Controls");
     
-    // Set key constants (old global version)
-    set_key_constants(L);
+    // Set mode-specific constants based on compatibility mode
+    set_mode_specific_constants(L);
     
-    // Note: Controller initialization is handled by init_controllers() 
-    // which is called later after SDL is fully initialized
+    // Initialize game controllers
+    for (int i = 0; i < 4; i++) {
+        if (SDL_IsGameController(i)) {
+            controllers[i] = SDL_GameControllerOpen(i);
+        }
+    }
     
     // Register device types
     uint8_t UNPAIRED_DEV = 0;

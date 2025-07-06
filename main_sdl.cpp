@@ -1126,6 +1126,8 @@ int main(int argc, char* args[]) {
     bool threeds_compat_mode = false; // Legacy flag for backward compatibility
     bool headless_mode = false; // Headless mode flag (no SDL window)
     const char* lua_file = NULL;
+    int custom_width = 0; // Custom resolution width (0 = use automatic)
+    int custom_height = 0; // Custom resolution height (0 = use automatic)
     
     // Store the executable directory for font loading
     std::string exe_dir = ".";
@@ -1172,10 +1174,40 @@ int main(int argc, char* args[]) {
         } else if (strcmp(args[i], "-debug") == 0) {
             g_debug_mode = true;
             printf("Debug mode enabled\n");
+        } else if (strcmp(args[i], "-gamepad:nintendo") == 0) {
+            g_gamepad_layout = 0; // Nintendo layout
+            printf("Controller layout set to Nintendo (A=right, B=bottom, X=top, Y=left)\n");
+        } else if (strcmp(args[i], "-gamepad:xbox") == 0) {
+            g_gamepad_layout = 1; // Xbox layout  
+            printf("Controller layout set to Xbox (A=bottom, B=right, X=left, Y=top)\n");
         } else if (strcmp(args[i], "-headless") == 0 || strcmp(args[i], "-console") == 0) {
             headless_mode = true;
             g_headless_mode = true; // Set global flag
             printf("Headless mode enabled (no GUI window)\n");
+        } else if (strncmp(args[i], "-resolution:", 12) == 0) {
+            // Check if compatibility mode is already enabled
+            if (compat_mode != LPP_COMPAT_NATIVE) {
+                printf("Error: -resolution argument is only supported in native SDL mode\n");
+                printf("Compatibility modes (-vitacompat, -3dscompat) use fixed console resolutions\n");
+                printf("Use native mode (no compatibility flags) to set custom resolution\n");
+                custom_width = custom_height = 0; // Reset to auto
+            } else {
+                // Parse resolution argument like -resolution:640x480
+                const char* res_str = args[i] + 12; // Skip "-resolution:"
+                if (sscanf(res_str, "%dx%d", &custom_width, &custom_height) == 2) {
+                    if (custom_width > 0 && custom_height > 0 && 
+                        custom_width <= 4096 && custom_height <= 4096) {
+                        printf("Custom resolution set to %dx%d\n", custom_width, custom_height);
+                    } else {
+                        printf("Error: Invalid resolution %dx%d (must be between 1x1 and 4096x4096)\n", 
+                               custom_width, custom_height);
+                        custom_width = custom_height = 0; // Reset to auto
+                    }
+                } else {
+                    printf("Error: Invalid resolution format '%s' (use format: -resolution:WIDTHxHEIGHT)\n", res_str);
+                    printf("Example: -resolution:640x480\n");
+                }
+            }
         } else if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
             printf("Lua Player Plus SDL - Compatibility Usage:\n");
             printf("  %s [options] <lua_file>\n\n", args[0]);
@@ -1185,8 +1217,12 @@ int main(int argc, char* args[]) {
             printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
             printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
             printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
+            printf("\nController Options:\n");
+            printf("  -gamepad:nintendo   Use Nintendo controller layout (A=right, B=bottom, X=top, Y=left) [DEFAULT]\n");
+            printf("  -gamepad:xbox       Use Xbox controller layout (A=bottom, B=right, X=left, Y=top)\n");
             printf("\nOther Options:\n");
             printf("  -debug              Enable debug output\n");
+            printf("  -resolution:WxH     Set custom window resolution - NATIVE MODE ONLY (e.g., -resolution:640x480)\n");
             printf("  -headless, -console Run without GUI window (for scripts that don't need graphics)\n");
             printf("  -h, --help          Show this help message\n");
             printf("\nIf no lua file is specified, the program will:\n");
@@ -1198,6 +1234,8 @@ int main(int argc, char* args[]) {
             printf("  %s -3dscompat-vertical mygame.lua     # Run with 3DS compatibility (vertical)\n", args[0]);
             printf("  %s -3dscompat-1screen mygame.lua      # Run with 3DS single screen mode\n", args[0]);
             printf("  %s mygame.lua                         # Run in native SDL mode (default)\n", args[0]);
+            printf("  %s -gamepad:xbox mygame.lua           # Run with Xbox controller layout\n", args[0]);
+            printf("  %s -resolution:640x480 mygame.lua     # Run with custom 640x480 resolution\n", args[0]);
             printf("  %s -headless                          # Launch interactive console REPL\n", args[0]);
             return 0;
         } else if (lua_file == NULL) {
@@ -1473,10 +1511,17 @@ int main(int argc, char* args[]) {
     
     // Set native logical resolution based on display resolution (only in native mode)
     if (compat_mode == LPP_COMPAT_NATIVE) {
-        NATIVE_LOGICAL_WIDTH = display_mode.w;
-        NATIVE_LOGICAL_HEIGHT = display_mode.h;
-        printf("Native mode: Set logical resolution to %dx%d (display resolution)\n", 
-               NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
+        if (custom_width > 0 && custom_height > 0) {
+            NATIVE_LOGICAL_WIDTH = custom_width;
+            NATIVE_LOGICAL_HEIGHT = custom_height;
+            printf("Native mode: Set logical resolution to %dx%d (custom resolution)\n", 
+                   NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
+        } else {
+            NATIVE_LOGICAL_WIDTH = display_mode.w;
+            NATIVE_LOGICAL_HEIGHT = display_mode.h;
+            printf("Native mode: Set logical resolution to %dx%d (display resolution)\n", 
+                   NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
+        }
     }
     
     int window_width, window_height;
@@ -1623,10 +1668,16 @@ int main(int argc, char* args[]) {
         }
     } else {
         // Native resolution mode: Use full display resolution for maximum quality
-        window_width = display_mode.w;
-        window_height = display_mode.h;
-        
-        printf("Native resolution mode: Using full display resolution %dx%d\n", window_width, window_height);
+        // Unless custom resolution is specified
+        if (custom_width > 0 && custom_height > 0) {
+            window_width = custom_width;
+            window_height = custom_height;
+            printf("Custom resolution mode: Using specified resolution %dx%d\n", window_width, window_height);
+        } else {
+            window_width = display_mode.w;
+            window_height = display_mode.h;
+            printf("Native resolution mode: Using full display resolution %dx%d\n", window_width, window_height);
+        }
     }
     
     // Create window
@@ -1935,6 +1986,7 @@ skip_gui_setup:
     while (!quit && !should_exit) {
         // Handle events on queue
         while (SDL_PollEvent(&e) != 0) {
+            
 #ifdef USE_IMGUI
             // Always let ImGui process the event first
             if (g_imgui_initialized) {
