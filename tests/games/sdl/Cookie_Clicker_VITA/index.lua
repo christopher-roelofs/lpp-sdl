@@ -242,7 +242,11 @@ local gamepadState = {
     Y_prev = false,
     L_prev = false,
     R_prev = false,
-    Start_prev = false
+    Start_prev = false,
+    DPadUp_prev = false,
+    DPadDown_prev = false,
+    DPadLeft_prev = false,
+    DPadRight_prev = false
 }
 
 -- Timer setup
@@ -870,6 +874,18 @@ function checkGamepadButtonPressed(button)
     elseif button == SDL_CONTROLLER_BUTTON_START then
         wasPressed = current and not gamepadState.Start_prev
         gamepadState.Start_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_UP then
+        wasPressed = current and not gamepadState.DPadUp_prev
+        gamepadState.DPadUp_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_DOWN then
+        wasPressed = current and not gamepadState.DPadDown_prev
+        gamepadState.DPadDown_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_LEFT then
+        wasPressed = current and not gamepadState.DPadLeft_prev
+        gamepadState.DPadLeft_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT then
+        wasPressed = current and not gamepadState.DPadRight_prev
+        gamepadState.DPadRight_prev = current
     end
     
     return wasPressed
@@ -931,8 +947,10 @@ end
 function handleTitleInput(pad)
     -- Navigation with timing delay
     if Timer.getTime(navTimer) >= NAV_DELAY then
-        -- Navigate menu options - Up/Down arrows
-        if Controls.check(pad, SDLK_UP) and not Controls.check(oldpad, SDLK_UP) then
+        -- Navigate menu options - Up/Down arrows or D-pad
+        local upPressed = (Controls.check(pad, SDLK_UP) and not Controls.check(oldpad, SDLK_UP)) or
+                          checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP)
+        if upPressed then
             MenuState.selectedIndex = MenuState.selectedIndex - 1
             if MenuState.selectedIndex < 1 then
                 MenuState.selectedIndex = MenuState.optionCount
@@ -940,7 +958,9 @@ function handleTitleInput(pad)
             Timer.reset(navTimer)
         end
         
-        if Controls.check(pad, SDLK_DOWN) and not Controls.check(oldpad, SDLK_DOWN) then
+        local downPressed = (Controls.check(pad, SDLK_DOWN) and not Controls.check(oldpad, SDLK_DOWN)) or
+                            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+        if downPressed then
             MenuState.selectedIndex = MenuState.selectedIndex + 1
             if MenuState.selectedIndex > MenuState.optionCount then
                 MenuState.selectedIndex = 1
@@ -978,8 +998,9 @@ end
 -- Controls screen input handling
 function handleControlsInput(pad)
     if Timer.getTime(buttonTimer) >= BUTTON_DELAY then
-        -- Return to title screen - Enter/A button or gamepad Start button
+        -- Return to title screen - Enter/A button, Backspace, or gamepad Start button
         if isSelectPressed(pad, oldpad) or
+           (Controls.check(pad, SDLK_BACKSPACE) and not Controls.check(oldpad, SDLK_BACKSPACE)) or
            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START) then
             gameState = "Title"
             Timer.reset(buttonTimer)
@@ -1034,8 +1055,10 @@ function handleSettingsInput(pad)
             Timer.reset(buttonTimer)
         end
         
-        -- Adjust values - Left/Right arrows
-        if Controls.check(pad, SDLK_LEFT) and not Controls.check(oldpad, SDLK_LEFT) then
+        -- Adjust values - Left/Right arrows or D-pad
+        local leftPressed = (Controls.check(pad, SDLK_LEFT) and not Controls.check(oldpad, SDLK_LEFT)) or
+                           checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_LEFT)
+        if leftPressed then
             if selectedOption == "Controls" then
                 -- Toggle between Keyboard and Gamepad
                 if ControlSettings.mode == "Keyboard" then
@@ -1058,7 +1081,9 @@ function handleSettingsInput(pad)
             Timer.reset(buttonTimer)
         end
         
-        if Controls.check(pad, SDLK_RIGHT) and not Controls.check(oldpad, SDLK_RIGHT) then
+        local rightPressed = (Controls.check(pad, SDLK_RIGHT) and not Controls.check(oldpad, SDLK_RIGHT)) or
+                            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+        if rightPressed then
             if selectedOption == "Controls" then
                 -- Toggle between Keyboard and Gamepad
                 if ControlSettings.mode == "Keyboard" then
@@ -1081,8 +1106,9 @@ function handleSettingsInput(pad)
             Timer.reset(buttonTimer)
         end
         
-        -- Return to title screen - gamepad Start button only
-        if checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START) then
+        -- Return to title screen - Backspace or gamepad Start button
+        if (Controls.check(pad, SDLK_BACKSPACE) and not Controls.check(oldpad, SDLK_BACKSPACE)) or
+           checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START) then
             gameState = "Title"
             Timer.reset(buttonTimer)
         end
@@ -1092,8 +1118,9 @@ end
 -- About screen input handling
 function handleAboutInput(pad)
     if Timer.getTime(buttonTimer) >= BUTTON_DELAY then
-        -- Return to title screen - Enter or gamepad Start button
+        -- Return to title screen - Enter, Backspace, or gamepad Start button
         if (Controls.check(pad, SDLK_RETURN) and not Controls.check(oldpad, SDLK_RETURN)) or
+           (Controls.check(pad, SDLK_BACKSPACE) and not Controls.check(oldpad, SDLK_BACKSPACE)) or
            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START) then
             gameState = "Title"
             Timer.reset(buttonTimer)
@@ -1104,8 +1131,9 @@ end
 -- Statistics screen input handling
 function handleStatisticsInput(pad)
     if Timer.getTime(buttonTimer) >= BUTTON_DELAY then
-        -- Return to title screen - Enter or gamepad Start button
+        -- Return to title screen - Enter, Backspace, or gamepad Start button
         if (Controls.check(pad, SDLK_RETURN) and not Controls.check(oldpad, SDLK_RETURN)) or
+           (Controls.check(pad, SDLK_BACKSPACE) and not Controls.check(oldpad, SDLK_BACKSPACE)) or
            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START) then
             gameState = "Title"
             Timer.reset(buttonTimer)
@@ -1115,8 +1143,9 @@ end
 
 -- Game input handling (original input code)
 function handleGameInput(pad)
-    -- Return to title screen - gamepad Start button only (no keyboard backspace to avoid conflicts)
-    local backToMenuPressed = checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START)
+    -- Return to title screen - Backspace or gamepad Start button
+    local backToMenuPressed = (Controls.check(pad, SDLK_BACKSPACE) and not Controls.check(oldpad, SDLK_BACKSPACE)) or
+                              checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_START)
     if backToMenuPressed then
         -- Update play time statistics before saving
         local currentTime = Timer.getTime(timer)
@@ -1161,8 +1190,10 @@ function handleGameInput(pad)
             Timer.reset(navTimer)
         end
         
-        -- Navigate within current panel - D-pad Up/Down
-        if Controls.check(pad, SDLK_UP) and not Controls.check(oldpad, SDLK_UP) then
+        -- Navigate within current panel - Arrow keys or D-pad Up/Down
+        local upPressed = (Controls.check(pad, SDLK_UP) and not Controls.check(oldpad, SDLK_UP)) or
+                          checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP)
+        if upPressed then
             if GamepadState.currentPanel == "Store" then
                 GamepadState.selectedIndex = math.max(1, GamepadState.selectedIndex - 1)
             elseif GamepadState.currentPanel == "Buildings" then
@@ -1173,7 +1204,9 @@ function handleGameInput(pad)
             Timer.reset(navTimer)
         end
         
-        if Controls.check(pad, SDLK_DOWN) and not Controls.check(oldpad, SDLK_DOWN) then
+        local downPressed = (Controls.check(pad, SDLK_DOWN) and not Controls.check(oldpad, SDLK_DOWN)) or
+                            checkGamepadButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN)
+        if downPressed then
             if GamepadState.currentPanel == "Store" then
                 GamepadState.selectedIndex = math.min(#Button, GamepadState.selectedIndex + 1)
             elseif GamepadState.currentPanel == "Buildings" then
