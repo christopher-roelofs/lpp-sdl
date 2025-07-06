@@ -1108,6 +1108,20 @@ static int lua_getControllerStatus(lua_State *L) {
     return 1; // Return the table
 }
 
+// Get gamepad layout (Nintendo vs Xbox)
+static int lua_getGamepadLayout(lua_State *L) {
+    extern int g_gamepad_layout;
+    lua_pushinteger(L, g_gamepad_layout);
+    return 1;
+}
+
+// Check if gamepad is enabled
+static int lua_getGamepadEnabled(lua_State *L) {
+    extern bool g_gamepad_enabled;
+    lua_pushboolean(L, g_gamepad_enabled);
+    return 1;
+}
+
 static const luaL_Reg Controls_functions[] = {
   {"read",             lua_readC},    
   {"readLeftAnalog",   lua_readleft},      
@@ -1134,6 +1148,8 @@ static const luaL_Reg Controls_functions[] = {
   {"disableAccel",     lua_disablesensors},
   {"getEnterButton",   lua_getenter},
   {"readCirclePad",    lua_readleft},  // Alias for 3DS compatibility
+  {"getGamepadLayout", lua_getGamepadLayout},  // Get gamepad layout (0=Nintendo, 1=Xbox)
+  {"getGamepadEnabled", lua_getGamepadEnabled}, // Check if gamepad is enabled
   {"init",             lua_init}, 
   {0, 0}
 };
