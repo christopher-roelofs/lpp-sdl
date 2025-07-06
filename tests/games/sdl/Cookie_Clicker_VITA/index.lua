@@ -60,7 +60,6 @@ local NAMEOMBTQ={"Million", "Billion", "Trillion", "Quadrillion", "Quintillion",
 local white = Color.new(255,255,255)
 local black = Color.new(0,0,0)
 local gray = Color.new(128,128,128)
-local yellow = Color.new(255,255,80)
 local blue = Color.new(80,80,255)
 local red = Color.new(255,80,80)
 local transred = Color.new(255,80,80,80)
@@ -1847,7 +1846,7 @@ function drawStore()
                 -- Draw count on far right
                 local ownCount = Button[building.."count"]
                 local countX = x + frameWidth - math.floor(30 * scaleX)
-                drawText(countX, y + frameHeight/2 - 5, tostring(ownCount), yellow)
+                drawText(countX, y + frameHeight/2 - 5, tostring(ownCount), white)
             end
         end
     end
@@ -2108,13 +2107,11 @@ function drawControlsScreen()
         local keys = control[1]
         local description = control[2]
         
-        drawText(math.floor(50 * scaleX), currentY, keys, green)
+        drawText(math.floor(50 * scaleX), currentY, keys, white)
         drawText(math.floor(320 * scaleX), currentY, description, white)
         currentY = currentY + lineHeight
     end
     
-    -- Draw instructions
-    drawText(math.floor(10 * scaleX), screenH - math.floor(20 * scaleY), "ENTER or BACKSPACE: Return to Menu", gray)
 end
 
 -- Settings Screen drawing
@@ -2168,11 +2165,6 @@ function drawSettingsScreen()
         drawText(math.floor(80 * scaleX), y, option .. ": " .. valueText, color)
     end
     
-    -- Controls info at bottom
-    local controlsY = startY + (SettingsState.optionCount + 1) * lineHeight
-    drawText(math.floor(50 * scaleX), controlsY, "UP/DOWN: Navigate   LEFT/RIGHT: Adjust   ENTER: Toggle", white)
-    controlsY = controlsY + math.floor(25 * scaleY)
-    drawText(math.floor(50 * scaleX), controlsY, "BACKSPACE: Return to Menu", white)
 end
 
 -- Statistics Screen drawing
@@ -2198,7 +2190,7 @@ function drawStatisticsScreen()
     local currentY = startY
     
     -- Cookie Statistics (Left Column)
-    drawText(leftX, currentY, "COOKIE STATISTICS", yellow)
+    drawText(leftX, currentY, "COOKIE STATISTICS", white)
     currentY = currentY + lineHeight
     
     drawText(leftX, currentY, "Total Cookies: " .. formatNumber(Cookie.total), white)
@@ -2220,7 +2212,7 @@ function drawStatisticsScreen()
     currentY = currentY + lineHeight + 10
     
     -- Session Statistics
-    drawText(leftX, currentY, "SESSION STATISTICS", yellow)
+    drawText(leftX, currentY, "SESSION STATISTICS", white)
     currentY = currentY + lineHeight
     
     drawText(leftX, currentY, "Session Time: " .. formatTime(sessionTime), white)
@@ -2231,7 +2223,7 @@ function drawStatisticsScreen()
     
     -- Building Statistics (Right Column)
     currentY = startY
-    drawText(rightX, currentY, "BUILDING STATISTICS", yellow)
+    drawText(rightX, currentY, "BUILDING STATISTICS", white)
     currentY = currentY + lineHeight
     
     drawText(rightX, currentY, "Total Buildings: " .. formatNumber(Game.totalBuildings), white)
@@ -2241,7 +2233,7 @@ function drawStatisticsScreen()
     currentY = currentY + lineHeight + 10
     
     -- Top building producers
-    drawText(rightX, currentY, "TOP PRODUCERS", yellow)
+    drawText(rightX, currentY, "TOP PRODUCERS", white)
     currentY = currentY + lineHeight
     
     -- Find top 3 producing buildings
@@ -2267,8 +2259,6 @@ function drawStatisticsScreen()
         currentY = currentY + lineHeight
     end
     
-    -- Draw instructions
-    drawText(math.floor(10 * scaleX), screenH - math.floor(20 * scaleY), "ENTER or BACKSPACE: Return to Menu", gray)
 end
 
 -- About Screen drawing
