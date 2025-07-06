@@ -7,7 +7,7 @@ USE_LIBARCHIVE ?= 1
 USE_READLINE ?= 1
 
 # Check if ImGui support is enabled (default: enabled)
-USE_IMGUI ?= 1
+USE_IMGUI ?= 0
 
 # ImGui directory
 IMGUI_DIR := src/include/imgui
