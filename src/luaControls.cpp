@@ -390,6 +390,52 @@ static void update_input_state() {
         left_analog_y = 128 * 256;
         right_analog_x = 128 * 256;
         right_analog_y = 128 * 256;
+        
+        // In Vita compatibility mode, map keyboard keys to analog sticks
+        extern lpp_compat_mode_t g_compat_mode;
+        if (g_compat_mode == LPP_COMPAT_VITA && keyboard_state) {
+            // Left analog stick: WASD
+            if (keyboard_state[SDL_SCANCODE_A]) left_analog_x = 0;      // Full left
+            if (keyboard_state[SDL_SCANCODE_D]) left_analog_x = 255 * 256; // Full right
+            if (keyboard_state[SDL_SCANCODE_W]) left_analog_y = 0;      // Full up
+            if (keyboard_state[SDL_SCANCODE_S]) left_analog_y = 255 * 256; // Full down
+            
+            // Handle diagonal movement for left stick
+            if (keyboard_state[SDL_SCANCODE_A] && keyboard_state[SDL_SCANCODE_W]) {
+                left_analog_x = 37 * 256;  // ~37/255 left
+                left_analog_y = 37 * 256;  // ~37/255 up
+            } else if (keyboard_state[SDL_SCANCODE_D] && keyboard_state[SDL_SCANCODE_W]) {
+                left_analog_x = 218 * 256; // ~218/255 right
+                left_analog_y = 37 * 256;  // ~37/255 up
+            } else if (keyboard_state[SDL_SCANCODE_A] && keyboard_state[SDL_SCANCODE_S]) {
+                left_analog_x = 37 * 256;  // ~37/255 left
+                left_analog_y = 218 * 256; // ~218/255 down
+            } else if (keyboard_state[SDL_SCANCODE_D] && keyboard_state[SDL_SCANCODE_S]) {
+                left_analog_x = 218 * 256; // ~218/255 right
+                left_analog_y = 218 * 256; // ~218/255 down
+            }
+            
+            // Right analog stick: IJKL
+            if (keyboard_state[SDL_SCANCODE_J]) right_analog_x = 0;      // Full left
+            if (keyboard_state[SDL_SCANCODE_L]) right_analog_x = 255 * 256; // Full right
+            if (keyboard_state[SDL_SCANCODE_I]) right_analog_y = 0;      // Full up
+            if (keyboard_state[SDL_SCANCODE_K]) right_analog_y = 255 * 256; // Full down
+            
+            // Handle diagonal movement for right stick
+            if (keyboard_state[SDL_SCANCODE_J] && keyboard_state[SDL_SCANCODE_I]) {
+                right_analog_x = 37 * 256;  // ~37/255 left
+                right_analog_y = 37 * 256;  // ~37/255 up
+            } else if (keyboard_state[SDL_SCANCODE_L] && keyboard_state[SDL_SCANCODE_I]) {
+                right_analog_x = 218 * 256; // ~218/255 right
+                right_analog_y = 37 * 256;  // ~37/255 up
+            } else if (keyboard_state[SDL_SCANCODE_J] && keyboard_state[SDL_SCANCODE_K]) {
+                right_analog_x = 37 * 256;  // ~37/255 left
+                right_analog_y = 218 * 256; // ~218/255 down
+            } else if (keyboard_state[SDL_SCANCODE_L] && keyboard_state[SDL_SCANCODE_K]) {
+                right_analog_x = 218 * 256; // ~218/255 right
+                right_analog_y = 218 * 256; // ~218/255 down
+            }
+        }
     }
     
     // Update mouse state
@@ -1370,8 +1416,8 @@ void luaControls_init(lua_State *L) {
     lua_pushinteger(L, SDL_SCANCODE_RIGHT); lua_setglobal(L, "SCE_CTRL_RIGHT");
     lua_pushinteger(L, SDL_SCANCODE_X); lua_setglobal(L, "SCE_CTRL_CROSS");      // X button for Cross (action)
     lua_pushinteger(L, SDL_SCANCODE_BACKSPACE); lua_setglobal(L, "SCE_CTRL_CIRCLE");  // B button for Circle (cancel)
-    lua_pushinteger(L, SDL_SCANCODE_Z); lua_setglobal(L, "SCE_CTRL_SQUARE");     // Keep Z for Square
-    lua_pushinteger(L, SDL_SCANCODE_Y); lua_setglobal(L, "SCE_CTRL_TRIANGLE");   // Y button for Triangle
+    lua_pushinteger(L, SDL_SCANCODE_C); lua_setglobal(L, "SCE_CTRL_SQUARE");     // C button for Square (changed from Z)
+    lua_pushinteger(L, SDL_SCANCODE_V); lua_setglobal(L, "SCE_CTRL_TRIANGLE");   // V button for Triangle (changed from Y)
     lua_pushinteger(L, SDL_SCANCODE_Q); lua_setglobal(L, "SCE_CTRL_LTRIGGER");   // L button
     lua_pushinteger(L, SDL_SCANCODE_E); lua_setglobal(L, "SCE_CTRL_RTRIGGER");   // R button
     lua_pushinteger(L, SDL_SCANCODE_RETURN); lua_setglobal(L, "SCE_CTRL_START"); // Start button
@@ -1385,8 +1431,8 @@ void luaControls_init(lua_State *L) {
     // These work with both keyboard and gamepad (gamepad buttons are mapped to keys internally)
     lua_pushinteger(L, SDL_SCANCODE_SPACE); lua_setglobal(L, "KEY_A");           // A button (Space/primary action)
     lua_pushinteger(L, SDL_SCANCODE_BACKSPACE); lua_setglobal(L, "KEY_B");       // B button (Back/cancel)
-    lua_pushinteger(L, SDL_SCANCODE_X); lua_setglobal(L, "KEY_X");               // X button
-    lua_pushinteger(L, SDL_SCANCODE_Y); lua_setglobal(L, "KEY_Y");               // Y button
+    lua_pushinteger(L, SDL_SCANCODE_C); lua_setglobal(L, "KEY_X");               // X button (changed to C for consistency)
+    lua_pushinteger(L, SDL_SCANCODE_V); lua_setglobal(L, "KEY_Y");               // Y button (changed to V for consistency)
     lua_pushinteger(L, SDL_SCANCODE_Q); lua_setglobal(L, "KEY_L");               // L button
     lua_pushinteger(L, SDL_SCANCODE_E); lua_setglobal(L, "KEY_R");               // R button
     lua_pushinteger(L, SDL_SCANCODE_RETURN); lua_setglobal(L, "KEY_START");      // Start button

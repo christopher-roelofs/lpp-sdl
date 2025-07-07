@@ -1,4 +1,4 @@
-require("bullet")
+require("Bullet")
 
 Tank = {
   hp = 0.0,
@@ -10,11 +10,11 @@ Tank = {
   color = Color.new(128,128,128,255)
 }
 
-gunBase = Graphics.loadImage("resources/tanktopBase.png")
-tankBase = Graphics.loadImage("resources/tankbottomBase.png")
+gunBase = Graphics.loadImage("resources/tankTopBase.png")
+tankBase = Graphics.loadImage("resources/tankBottomBase.png")
 
-gunColor = Graphics.loadImage("resources/tanktopColor.png")
-tankColor = Graphics.loadImage("resources/tankbottomColor.png")
+gunColor = Graphics.loadImage("resources/tankTopColor.png")
+tankColor = Graphics.loadImage("resources/tankBottomColor.png")
 
 -- Derived class method new
 

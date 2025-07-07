@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with TexturePacker http://www.codeandweb.com/texturepacker-->
+<!-- $TexturePacker:SmartUpdate:8a5095e6fe2b204b8aadb702a463c74b:a729534beccd99aa678459689f985fa8:5d37015809db27dafecca22e61a1ac09$ -->
+<!--Format:
+n  => name of the sprite
+x  => sprite x pos in texture
+y  => sprite y pos in texture
+w  => sprite width (may be trimmed)
+h  => sprite height (may be trimmed)
+pX => x pos of the pivot point (relative to sprite width)
+pY => y pos of the pivot point (relative to sprite height)
+oX => sprite's x-corner offset (only available if trimmed)
+oY => sprite's y-corner offset (only available if trimmed)
+oW => sprite's original width (only available if trimmed)
+oH => sprite's original height (only available if trimmed)
+r => 'y' only set if sprite is rotated
+with polygon mode enabled:
+vertices   => points in sprite coordinate system (x0,y0,x1,y1,x2,y2, ...)
+verticesUV => points in sheet coordinate system (x0,y0,x1,y1,x2,y2, ...)
+triangles  => sprite triangulation, 3 vertex indices per triangle
+-->
+<TextureAtlas imagePath="Marine.png" width="128" height="128">
+    <sprite n="Marine0000.png" x="0" y="0" w="32" h="32" pX="0.5" pY="0.5"/>
+    <sprite n="Marine0001.png" x="32" y="0" w="32" h="32" pX="0.5" pY="0.5"/>
+    <sprite n="Marine0002.png" x="64" y="0" w="32" h="32" pX="0.5" pY="0.5"/>
+    <sprite n="Marine0003.png" x="96" y="0" w="32" h="32" pX="0.5" pY="0.5"/>
+    <sprite n="Marine0004.png" x="0" y="32" w="32" h="32" pX="0.5" pY="0.5"/>
+    <sprite n="Marine0005.png" x="32" y="32" w="32" h="32" pX="0.5" pY="0.5"/>
+</TextureAtlas>

@@ -1027,13 +1027,19 @@ static int lua_drawimg(lua_State *L) {
 static int lua_drawimg_rotate(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 4)
+	if (argc != 4 && argc != 5)
 		return luaL_error(L, "wrong number of arguments");
 #endif
     float x = luaL_checknumber(L, 1);
     float y = luaL_checknumber(L, 2);
     lpp_texture* tex = (lpp_texture*)lua_touserdata(L, 3);
     float angle = luaL_checknumber(L, 4);
+    
+    // Optional tint color parameter (5th argument)
+    uint32_t tint_color = 0xFFFFFFFF; // Default white (no tint)
+    if (argc == 5) {
+        tint_color = luaL_checkinteger(L, 5);
+    }
 
     if (!tex || tex->magic != 0xABADBEEF) {
         return luaL_error(L, "Invalid texture provided to drawRotateImage");
@@ -1056,11 +1062,27 @@ static int lua_drawimg_rotate(lua_State *L) {
     }
 
     if (g_renderer) {
+        // Apply tint color if specified
+        if (argc == 5) {
+            uint8_t r = tint_color & 0xFF;
+            uint8_t g = (tint_color >> 8) & 0xFF;
+            uint8_t b = (tint_color >> 16) & 0xFF;
+            uint8_t a = (tint_color >> 24) & 0xFF;
+            SDL_SetTextureColorMod((SDL_Texture*)tex->texture, r, g, b);
+            SDL_SetTextureAlphaMod((SDL_Texture*)tex->texture, a);
+        }
+        
         // Note: Vita drawRotateImage uses (x,y) as center, SDL uses top-left corner
         SDL_Rect dest_rect = { (int)x - tex->w/2, (int)y - tex->h/2, tex->w, tex->h };
         // The angle in vita2d is in radians, SDL_RenderCopyEx expects degrees.
         double angle_degrees = angle * 180.0 / M_PI;
         SDL_RenderCopyEx(g_renderer, (SDL_Texture*)tex->texture, NULL, &dest_rect, angle_degrees, NULL, SDL_FLIP_NONE);
+        
+        // Reset color mod to white after drawing
+        if (argc == 5) {
+            SDL_SetTextureColorMod((SDL_Texture*)tex->texture, 255, 255, 255);
+            SDL_SetTextureAlphaMod((SDL_Texture*)tex->texture, 255);
+        }
     }
 
     return 0;

@@ -1961,6 +1961,13 @@ static int lua_getGamepadLayout(lua_State *L) {
     return 1;
 }
 
+// System.isGWMode() - Check if running in Gateway mode (3DS homebrew compatibility)
+static int lua_isGWMode(lua_State *L) {
+    // Always return false since this is an SDL port, not Gateway 3DS mode
+    lua_pushboolean(L, false);
+    return 1;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -2015,6 +2022,7 @@ static const luaL_Reg System_functions[] = {
     {"clear",              lua_clear},
     {"setGamepadLayout",   lua_setGamepadLayout},
     {"getGamepadLayout",   lua_getGamepadLayout},
+    {"isGWMode",           lua_isGWMode},
     {NULL, NULL}
 };
 

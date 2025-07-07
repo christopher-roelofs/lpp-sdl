@@ -7,8 +7,8 @@ require("menu")
 require("twoplayergame")
 require("oneplayergame")
 
-require("bullet")
-require("tank")
+require("Bullet")
+require("Tank")
 
 tile = Graphics.loadImage("resources/floor.png")
 overlay = Graphics.loadImage("resources/overlay.png")
