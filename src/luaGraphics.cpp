@@ -2095,6 +2095,7 @@ static const luaL_Reg Graphics_functions[] = {
 	{"saveImage",           lua_saveimg},
 	{"setImageFilters",     lua_filters},
 	{"setImageFrame",       lua_setframe},
+	{"term",               lua_term},  // Alias for termBlend for compatibility
 	{"termBlend",           lua_term},
 	{"termRescaler",        lua_rescaleroff},
 	{0, 0}

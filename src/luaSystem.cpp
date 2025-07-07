@@ -478,11 +478,13 @@ static int lua_writeFile(lua_State *L) {
     return 1;
 }
 
-// Compatibility wrapper for 3DS-style io.write(filehandle, offset, data, length)
+// Compatibility wrapper for both Vita and 3DS-style io.write
+// Vita style: io.write(filehandle, data, length) - 3 args
+// 3DS style: io.write(filehandle, offset, data, length) - 4 args
 static int lua_iowrite_3ds(lua_State *L) {
     int argc = lua_gettop(L);
-    if (argc != 4) {
-        return luaL_error(L, "io.write(filehandle, offset, data, length): wrong number of arguments");
+    if (argc != 3 && argc != 4) {
+        return luaL_error(L, "io.write: expected 3 args (filehandle, data, length) or 4 args (filehandle, offset, data, length)");
     }
     
     FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
@@ -490,12 +492,21 @@ static int lua_iowrite_3ds(lua_State *L) {
         return luaL_error(L, "Attempt to use a closed file");
     }
     
-    // For now, ignore the offset (argument 2) - 3DS might use this differently
-    // int offset = luaL_checkinteger(L, 2);
-    
     size_t len;
-    const char *data = luaL_checklstring(L, 3, &len);
-    int specified_length = luaL_checkinteger(L, 4);
+    const char *data;
+    int specified_length;
+    
+    if (argc == 3) {
+        // Vita style: io.write(filehandle, data, length)
+        data = luaL_checklstring(L, 2, &len);
+        specified_length = luaL_checkinteger(L, 3);
+    } else {
+        // 3DS style: io.write(filehandle, offset, data, length)
+        // For now, ignore the offset (argument 2) - 3DS might use this differently
+        // int offset = luaL_checkinteger(L, 2);
+        data = luaL_checklstring(L, 3, &len);
+        specified_length = luaL_checkinteger(L, 4);
+    }
     
     // Use the minimum of the string length and specified length
     size_t write_len = (specified_length < (int)len) ? specified_length : len;
@@ -506,10 +517,13 @@ static int lua_iowrite_3ds(lua_State *L) {
 }
 
 // Compatibility wrapper for 3DS-style io.read(filehandle, offset, length)
+// Compatibility wrapper for both Vita and 3DS-style io.read
+// Vita style: io.read(filehandle, length) - 2 args
+// 3DS style: io.read(filehandle, offset, length) - 3 args
 static int lua_ioread_3ds(lua_State *L) {
     int argc = lua_gettop(L);
-    if (argc != 3) {
-        return luaL_error(L, "io.read(filehandle, offset, length): wrong number of arguments");
+    if (argc != 2 && argc != 3) {
+        return luaL_error(L, "io.read: expected 2 args (filehandle, length) or 3 args (filehandle, offset, length)");
     }
     
     FILE **ud = (FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
@@ -517,11 +531,21 @@ static int lua_ioread_3ds(lua_State *L) {
         return luaL_error(L, "Attempt to use a closed file");
     }
     
-    int offset = luaL_checkinteger(L, 2);
-    int length = luaL_checkinteger(L, 3);
+    int offset;
+    int length;
     
-    // Seek to the specified offset
-    if (fseek(*ud, offset, SEEK_SET) != 0) {
+    if (argc == 2) {
+        // Vita style: io.read(filehandle, length) - read from current position
+        offset = -1; // Don't seek, use current position
+        length = luaL_checkinteger(L, 2);
+    } else {
+        // 3DS style: io.read(filehandle, offset, length)
+        offset = luaL_checkinteger(L, 2);
+        length = luaL_checkinteger(L, 3);
+    }
+    
+    // Seek to the specified offset (only if offset is specified)
+    if (offset != -1 && fseek(*ud, offset, SEEK_SET) != 0) {
         lua_pushnil(L);
         return 1;
     }

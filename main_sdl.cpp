@@ -1175,6 +1175,7 @@ int main(int argc, char* args[]) {
     bool vita_compat_mode = false; // Legacy flag for backward compatibility
     bool threeds_compat_mode = false; // Legacy flag for backward compatibility
     bool headless_mode = false; // Headless mode flag (no SDL window)
+    bool fullscreen_mode = false; // Fullscreen mode flag
     const char* lua_file = NULL;
     int custom_width = 0; // Custom resolution width (0 = use automatic)
     int custom_height = 0; // Custom resolution height (0 = use automatic)
@@ -1273,6 +1274,9 @@ int main(int argc, char* args[]) {
             headless_mode = true;
             g_headless_mode = true; // Set global flag
             printf("Headless mode enabled (no GUI window)\n");
+        } else if (strcmp(current_arg, "-fullscreen") == 0) {
+            fullscreen_mode = true;
+            printf("Fullscreen mode enabled\n");
         } else if (strncmp(current_arg, "-resolution:", 12) == 0) {
             // Check if compatibility mode is already enabled
             if (compat_mode != LPP_COMPAT_NATIVE) {
@@ -1314,6 +1318,7 @@ int main(int argc, char* args[]) {
             printf("\nOther Options:\n");
             printf("  -debug              Enable debug output\n");
             printf("  -resolution:WxH     Set custom window resolution - NATIVE MODE ONLY (e.g., -resolution:640x480)\n");
+            printf("  -fullscreen         Launch in fullscreen mode\n");
             printf("  -headless, -console Run without GUI window (for scripts that don't need graphics)\n");
             printf("  -h, --help          Show this help message\n");
             printf("\nConfig File Support:\n");
@@ -1336,6 +1341,8 @@ int main(int argc, char* args[]) {
             printf("  %s mygame.lua                         # Run in native SDL mode (default)\n", args[0]);
             printf("  %s -gamepad:xbox mygame.lua           # Run with Xbox controller layout\n", args[0]);
             printf("  %s -resolution:640x480 mygame.lua     # Run with custom 640x480 resolution\n", args[0]);
+            printf("  %s -fullscreen mygame.lua             # Run in fullscreen mode\n", args[0]);
+            printf("  %s -resolution:1280x720 -fullscreen mygame.lua # Custom resolution in fullscreen\n", args[0]);
             printf("  %s -headless                          # Launch interactive console REPL\n", args[0]);
             printf("  %s config.cfg                        # Run with settings from config.cfg\n", args[0]);
             printf("  %s config.cfg mygame.lua             # Run mygame.lua with config (unless config specifies different lua file)\n", args[0]);
@@ -1396,6 +1403,9 @@ int main(int argc, char* args[]) {
                 headless_mode = true;
                 g_headless_mode = true;
                 printf("Headless mode enabled (no GUI window)\n");
+            } else if (strcmp(args[i], "-fullscreen") == 0) {
+                fullscreen_mode = true;
+                printf("Fullscreen mode enabled\n");
             } else if (strncmp(args[i], "-resolution:", 12) == 0) {
                 if (compat_mode != LPP_COMPAT_NATIVE) {
                     printf("Error: -resolution argument is only supported in native SDL mode\n");
@@ -1911,8 +1921,24 @@ int main(int argc, char* args[]) {
         }
     }
     
-    // Create window
-    g_window = SDL_CreateWindow("Lua Player Plus SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    // Create window with appropriate flags
+    {
+        Uint32 window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+        if (fullscreen_mode) {
+            window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+            // In fullscreen mode, get the actual desktop resolution for the window
+            SDL_DisplayMode desktop_mode;
+            if (SDL_GetCurrentDisplayMode(0, &desktop_mode) == 0) {
+                printf("Fullscreen mode: Using desktop resolution %dx%d for window, logical resolution %dx%d for rendering\n", 
+                       desktop_mode.w, desktop_mode.h, window_width, window_height);
+                // Keep the logical resolution for the renderer, but use desktop resolution for window
+                // SDL will handle the scaling automatically with fullscreen desktop mode
+            } else {
+                printf("Warning: Could not get desktop resolution for fullscreen mode: %s\n", SDL_GetError());
+            }
+        }
+        g_window = SDL_CreateWindow("Lua Player Plus SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, window_flags);
+    }
     if (g_window == NULL) {
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         if (g_defaultFont) TTF_CloseFont(g_defaultFont);

@@ -470,12 +470,22 @@ static int lua_clear(lua_State *L) {
 static int lua_getP(lua_State *L) {
 	int argc = lua_gettop(L);
 #ifndef SKIP_ERROR_HANDLING
-	if (argc != 3)
-		return luaL_error(L, "Screen.getPixel(x, y, texture): wrong number of arguments");
+	if (argc != 2 && argc != 3)
+		return luaL_error(L, "Screen.getPixel: expected 2 args (x, y) or 3 args (x, y, texture)");
 #endif
 	
 	int x = luaL_checkinteger(L, 1);
 	int y = luaL_checkinteger(L, 2);
+	
+	if (argc == 2) {
+		// 3DS-style: Screen.getPixel(x, y) - read from screen buffer
+		// For now, return black (0) as reading from SDL render target is complex
+		// This allows games to run without crashing, actual collision detection may need adjustment
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+	
+	// 3-argument case: Screen.getPixel(x, y, texture) - existing implementation
 	void* texture_ptr = lua_touserdata(L, 3);
 	
 	if (!texture_ptr) {

@@ -3,10 +3,12 @@
 
 
 -- Setting directories
-local appdir = "data/Eucliod"
-local rsrcdir = appdir.."rsrc"
-local scrdir = appdir.."screenshots"
-local lvldir = appdir.."levels"
+local appdir = "."
+local rsrcdir = "rsrc"
+local wavdir = "rsrc/sfx"
+local scrdir = "screenshots"
+local lvldir = "levels"
+local rotdir = "."
 
 -- Colours
 local c_white = Color.new(255,255,255)
@@ -66,20 +68,201 @@ themedb.hit2[3] = 178
 -- Localize all most used functions and variables so they will be accessed faster
 local Graphics_drawImage = Graphics.drawImage
 local Screen_flip = Screen.flip
+local Screen_waitVblankStart = Screen.waitVblankStart
 local Graphics_drawPartialImage = Graphics.drawPartialImage
 local Graphics_drawLine = Graphics.drawLine
 local Graphics_fillRect = Graphics.fillRect
 local Graphics_initBlend = Graphics.initBlend
 local Graphics_termBlend = Graphics.termBlend
-local Controls_read = Controls.read
-local Controls_check = Controls.check
-local Controls_readTouch = Controls.readTouch
-local KEY_CROSS = SCE_CTRL_CROSS
-local KEY_SQUARE = SCE_CTRL_SQUARE
-local KEY_TRIANGLE = SCE_CTRL_TRIANGLE
-local KEY_CIRCLE = SCE_CTRL_CIRCLE
-local KEY_START = SCE_CTRL_START
-local KEY_SELECT = SCE_CTRL_SELECT
+
+-- Native control system using proper SDL constants (like Cookie Clicker game)
+-- Initialize game controllers for SDL gamepad support
+if Controls.init then
+    Controls.init()
+end
+
+-- SDLK constants should be available in native mode - no fallback needed
+-- These are provided by LPP-SDL as SDL scancode values
+
+-- Define all constants with numeric fallbacks for native mode
+-- SDLK constants (SDL scancodes)
+SDLK_x = SDLK_x or 27
+SDLK_z = SDLK_z or 29
+SDLK_y = SDLK_y or 28
+SDLK_BACKSPACE = SDLK_BACKSPACE or 42
+SDLK_RETURN = SDLK_RETURN or 40
+SDLK_RSHIFT = SDLK_RSHIFT or 229
+SDLK_TAB = SDLK_TAB or 43
+SDLK_SPACE = SDLK_SPACE or 44
+SDLK_LSHIFT = SDLK_LSHIFT or 225
+SDLK_q = SDLK_q or 20
+SDLK_e = SDLK_e or 8
+SDLK_UP = SDLK_UP or 82
+SDLK_DOWN = SDLK_DOWN or 81
+SDLK_LEFT = SDLK_LEFT or 80
+SDLK_RIGHT = SDLK_RIGHT or 79
+
+-- Define SCE_CTRL constants for native mode (these are used by the keymap system)
+SCE_CTRL_CROSS = SDLK_x
+SCE_CTRL_SQUARE = SDLK_z
+SCE_CTRL_TRIANGLE = SDLK_y
+SCE_CTRL_CIRCLE = SDLK_BACKSPACE
+SCE_CTRL_START = SDLK_RETURN
+SCE_CTRL_SELECT = SDLK_TAB
+SCE_CTRL_LTRIGGER = SDLK_q
+SCE_CTRL_RTRIGGER = SDLK_e
+
+-- Use proper SDL key constants (SDLK_*) for keyboard input
+local KEY_CROSS = SDLK_x        -- X key
+local KEY_SQUARE = SDLK_z       -- Z key (fire)
+local KEY_TRIANGLE = SDLK_y     -- Y key  
+local KEY_CIRCLE = SDLK_BACKSPACE -- Backspace key (cancel)
+local KEY_START = SDLK_RSHIFT   -- Right Shift key (pause/menu) - different from confirm
+local KEY_SELECT = SDLK_TAB     -- Tab key
+
+-- Face buttons (SDL keys)
+local KEY_A = SDLK_RETURN       -- Return key (confirm)
+local KEY_B = SDLK_BACKSPACE    -- Backspace key (cancel)
+local KEY_X = SDLK_SPACE        -- Space key
+local KEY_Y = SDLK_LSHIFT       -- Left Shift key
+
+-- Shoulder buttons
+local KEY_L = SDLK_q            -- Q key
+local KEY_R = SDLK_e            -- E key
+local KEY_ZL = SDLK_q           -- Q key (alias)
+local KEY_ZR = SDLK_e           -- E key (alias)
+
+-- Directional pad
+local KEY_DUP = SDLK_UP         -- Up arrow
+local KEY_DDOWN = SDLK_DOWN     -- Down arrow
+local KEY_DLEFT = SDLK_LEFT     -- Left arrow
+local KEY_DRIGHT = SDLK_RIGHT   -- Right arrow
+
+-- Game action mappings
+local KEY_FIRE = KEY_SQUARE     -- Z key (primary fire)
+local KEY_FIRE2 = KEY_CROSS     -- X key (secondary fire)
+local KEY_WEAPON = KEY_TRIANGLE -- Y key (weapon select)
+local KEY_FOCUS = KEY_R         -- E key (focus mode)
+
+-- Analog triggers (for gamepad)
+local SCE_CTRL_LTRIGGER = KEY_L
+local SCE_CTRL_RTRIGGER = KEY_R
+
+-- Define SDL controller button constants if not available
+local SDL_CONTROLLER_BUTTON_A = SDL_CONTROLLER_BUTTON_A or 0
+local SDL_CONTROLLER_BUTTON_B = SDL_CONTROLLER_BUTTON_B or 1
+local SDL_CONTROLLER_BUTTON_X = SDL_CONTROLLER_BUTTON_X or 2
+local SDL_CONTROLLER_BUTTON_Y = SDL_CONTROLLER_BUTTON_Y or 3
+local SDL_CONTROLLER_BUTTON_BACK = SDL_CONTROLLER_BUTTON_BACK or 4
+local SDL_CONTROLLER_BUTTON_GUIDE = SDL_CONTROLLER_BUTTON_GUIDE or 5
+local SDL_CONTROLLER_BUTTON_START = SDL_CONTROLLER_BUTTON_START or 6
+local SDL_CONTROLLER_BUTTON_LEFTSTICK = SDL_CONTROLLER_BUTTON_LEFTSTICK or 7
+local SDL_CONTROLLER_BUTTON_RIGHTSTICK = SDL_CONTROLLER_BUTTON_RIGHTSTICK or 8
+local SDL_CONTROLLER_BUTTON_LEFTSHOULDER = SDL_CONTROLLER_BUTTON_LEFTSHOULDER or 9
+local SDL_CONTROLLER_BUTTON_RIGHTSHOULDER = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER or 10
+local SDL_CONTROLLER_BUTTON_DPAD_UP = SDL_CONTROLLER_BUTTON_DPAD_UP or 11
+local SDL_CONTROLLER_BUTTON_DPAD_DOWN = SDL_CONTROLLER_BUTTON_DPAD_DOWN or 12
+local SDL_CONTROLLER_BUTTON_DPAD_LEFT = SDL_CONTROLLER_BUTTON_DPAD_LEFT or 13
+local SDL_CONTROLLER_BUTTON_DPAD_RIGHT = SDL_CONTROLLER_BUTTON_DPAD_RIGHT or 14
+
+-- Gamepad state tracking for edge detection (following Cookie Clicker pattern)
+local gamepadState = {
+    A_prev = false,
+    B_prev = false,
+    X_prev = false,
+    Y_prev = false,
+    L_prev = false,
+    R_prev = false,
+    Start_prev = false,
+    Select_prev = false,
+    DPadUp_prev = false,
+    DPadDown_prev = false,
+    DPadLeft_prev = false,
+    DPadRight_prev = false
+}
+
+-- Helper function to check if gamepad button was just pressed
+function checkGamepadButtonPressed(button)
+    if not Controls.checkGamepadButton then
+        return false
+    end
+    
+    local current = Controls.checkGamepadButton(button)
+    local wasPressed = false
+    
+    if button == SDL_CONTROLLER_BUTTON_A then
+        wasPressed = current and not gamepadState.A_prev
+        gamepadState.A_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_B then
+        wasPressed = current and not gamepadState.B_prev
+        gamepadState.B_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_X then
+        wasPressed = current and not gamepadState.X_prev
+        gamepadState.X_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_Y then
+        wasPressed = current and not gamepadState.Y_prev
+        gamepadState.Y_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER then
+        wasPressed = current and not gamepadState.L_prev
+        gamepadState.L_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER then
+        wasPressed = current and not gamepadState.R_prev
+        gamepadState.R_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_START then
+        wasPressed = current and not gamepadState.Start_prev
+        gamepadState.Start_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_BACK then
+        wasPressed = current and not gamepadState.Select_prev
+        gamepadState.Select_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_UP then
+        wasPressed = current and not gamepadState.DPadUp_prev
+        gamepadState.DPadUp_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_DOWN then
+        wasPressed = current and not gamepadState.DPadDown_prev
+        gamepadState.DPadDown_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_LEFT then
+        wasPressed = current and not gamepadState.DPadLeft_prev
+        gamepadState.DPadLeft_prev = current
+    elseif button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT then
+        wasPressed = current and not gamepadState.DPadRight_prev
+        gamepadState.DPadRight_prev = current
+    end
+    
+    return wasPressed
+end
+
+-- Helper function to check if gamepad button is held
+function checkGamepadButtonHeld(button)
+    if not Controls.checkGamepadButton then
+        return false
+    end
+    return Controls.checkGamepadButton(button)
+end
+
+-- Store references to original control functions before redefining them
+local Controls_read_old = Controls.read
+local Controls_check_old = Controls.check
+
+-- Native Controls.read implementation following Cookie Clicker pattern
+function Controls_read_native()
+    return Controls_read_old() -- Call original function to get keyboard state
+end
+
+-- Native Controls.check implementation - just use keyboard for now (like Cookie Clicker)
+function Controls_check_native(pad, key)
+    -- Just pass through to original keyboard function
+    return Controls_check_old(pad, key)
+end
+
+-- Touch control stub (touch controls are not used in gameplay)
+function Controls_readTouch_native()
+    return 0, 0 -- Return dummy coordinates since touch is not used
+end
+
+-- Use native control functions
+local Controls_read = Controls_read_native
+local Controls_check = Controls_check_native
+local Controls_readTouch = Controls_readTouch_native
 
 keymap={}; keymap2={}
 keymap[KEY_CIRCLE]=0; keymap2[0] = KEY_CIRCLE
@@ -89,12 +272,7 @@ keymap[KEY_TRIANGLE]=3; keymap2[3] = KEY_TRIANGLE
 keymap[SCE_CTRL_LTRIGGER]=4; keymap2[4] = SCE_CTRL_LTRIGGER 
 keymap[SCE_CTRL_RTRIGGER]=5; keymap2[5] = SCE_CTRL_RTRIGGER
 --keymap[KEY_ZL]=6; keymap2[6] = KEY_ZL 
---keymap[KEY_ZR]=7; keymap2[7] = KEY_ZR 
-
-local KEY_FIRE = KEY_SQUARE
-local KEY_FIRE2 = KEY_CROSS
-local KEY_WEAPON = KEY_TRIANGLE
-local KEY_FOCUS = SCE_CTRL_RTRIGGER
+--keymap[KEY_ZR]=7; keymap2[7] = KEY_ZR
 
 
 
@@ -144,6 +322,14 @@ local i=0
 local load_texvariable = {}
 local load_wavvariable = {}
 local load_filepath = {}
+
+-- Initialize playwav table for sound effect triggers
+local playwav = {}
+playwav.b01 = false
+playwav.b02 = false
+playwav.b03 = false
+playwav.b04 = false
+playwav.b07 = false
 
 	i=i+1; load_texvariable[i]='img_ship_hawk'; load_filepath[i] = '/ship_hawk.png'
 	i=i+1; load_texvariable[i]='img_ship_tiger'; load_filepath[i] = '/ship_tiger.png'
@@ -243,8 +429,8 @@ end
 
 while i<load_filecount do --load them one by one on each frame of the loading screen
 	if load_texvariable[i] ~= nil then --also make a debug catch to ensure you don't load two files to the same variable?
-		if System.doesFileExist(appdir..load_filepath[i]) then
-			_G[load_texvariable[i]] = Graphics.loadImage(appdir..load_filepath[i])
+		if System.doesFileExist(rsrcdir..load_filepath[i]) then
+			_G[load_texvariable[i]] = Graphics.loadImage(rsrcdir..load_filepath[i])
 		else
 			c_line = c_red --file doesn't exist
 		end
@@ -310,11 +496,11 @@ function gpu_drawtext(x, y, text, col)
 	end
 end
 
-dofile(appdir..'/ds_list_init.lua')
-dofile(appdir..'/ds_queue_init.lua')
+dofile(rsrcdir..'/ds_list_init.lua')
+dofile(rsrcdir..'/ds_queue_init.lua')
 
-dofile(appdir..'/object.lua')
-dofile(appdir..'/fps_init.lua')
+dofile(rsrcdir..'/object.lua')
+dofile(rsrcdir..'/fps_init.lua')
 
 function loadlevel(num)
 	--if a level has been loaded, we need to clear it before loading the new one
@@ -536,6 +722,7 @@ shot_lib.energy = {}
 shot_lib.power = {}
 shot_lib.width = {}
 shot_lib.height = {}
+shot_lib.sfx = {}
 
 shot_lib.name[1] = 'shot01'
 shot_lib.speed[1]=8
@@ -1803,25 +1990,62 @@ while true do
 		
 		Graphics_termBlend()
 		
-		--PLAYER COLLISION AND DEATH\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+		--PLAYER COLLISION AND DEATH (Bounding Box Implementation)
 		if player_alive == true then
 			local hit=false
 			local px=player_x
 			local py=player_y
-			local col={}
-			col[1]=Screen.getPixel(px, py-1);
-			col[2]=Screen.getPixel(px, py+1); 
-			col[3]=Screen.getPixel(px-1, py); 
-			col[4]=Screen.getPixel(px+1, py);
-			local i=1
-			while i<5 do
-				local c = Color.getB(col[i])
-				if c==themedb.hit1[theme] or c==themedb.hit2[theme] then --enemy and bullet textures. Consider pulling these from a theme-specific database
-					player_alive = false
-					Sound.play(wav_ship_death,NO_LOOP)
-					i=5
-				else i=i+1
+			local player_width = 22  -- Based on Graphics_drawImage(px-11, py-8, player_graphic)
+			local player_height = 16 -- Approximately 11*2 x 8*2 from drawing offsets
+			
+			-- Check collision with enemies
+			local j = 0
+			while j < enemylist.size and not hit do
+				local id = ds_list_find_value(enemylist, j)
+				if obj.x[id] ~= nil then
+					local ex = obj.x[id]
+					local ey = obj.y[id]
+					local typ = obj.type[id]
+					
+					-- Get enemy dimensions
+					local ew = enemy_lib_width[typ] or 12  -- Default size if not defined
+					local eh = enemy_lib_height[typ] or 12
+					
+					-- Bounding box collision detection
+					if px < ex + (ew + player_width) * 0.5 and 
+					   px > ex - (ew + player_width) * 0.5 and 
+					   py < ey + (eh + player_height) * 0.5 and 
+					   py > ey - (eh + player_height) * 0.5 then
+						hit = true
+					end
 				end
+				j = j + 1
+			end
+			
+			-- Check collision with enemy bullets
+			local k = 0
+			while k < bulletlist.size and not hit do
+				local id = ds_list_find_value(bulletlist, k)
+				if obj.x[id] ~= nil then
+					local bx = obj.x[id]
+					local by = obj.y[id]
+					local bullet_width = 6   -- Default bullet size based on common drawing offsets
+					local bullet_height = 6
+					
+					-- Bounding box collision detection with bullets
+					if px < bx + (bullet_width + player_width) * 0.5 and 
+					   px > bx - (bullet_width + player_width) * 0.5 and 
+					   py < by + (bullet_height + player_height) * 0.5 and 
+					   py > by - (bullet_height + player_height) * 0.5 then
+						hit = true
+					end
+				end
+				k = k + 1
+			end
+			
+			if hit then
+				player_alive = false
+				Sound.play(wav_ship_death,NO_LOOP)
 			end
 		end
 		

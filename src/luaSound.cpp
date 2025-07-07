@@ -51,7 +51,7 @@ extern "C" {
 #define AUDIO_FORMAT MIX_DEFAULT_FORMAT
 #define AUDIO_CHANNELS 2
 #define AUDIO_CHUNK_SIZE 2048
-#define MAX_SOUND_CHANNELS 8
+#define MAX_SOUND_CHANNELS 32
 #define DEFAULT_VOLUME 128
 
 // Sound constants
