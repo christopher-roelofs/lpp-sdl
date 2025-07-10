@@ -72,7 +72,8 @@ static int asyncMode = 0;
 // Async modes
 enum {
     FULL_EXTRACT = 0,
-    FILE_EXTRACT = 1
+    FILE_EXTRACT = 1,
+    FILE_READ_ZIP = 2
 };
 
 // Maximum async tasks
@@ -1452,6 +1453,71 @@ static int lua_extractFromZip(lua_State *L) {
     return 1;
 }
 
+// System.readFromZip(zipfile, filename) - Read file contents directly from ZIP
+static int lua_readFromZip(lua_State *L) {
+    const char* zip_file = luaL_checkstring(L, 1);
+    const char* filename = luaL_checkstring(L, 2);
+    
+    std::string translated_zip = translate_console_path(zip_file);
+    
+    unz_global_info global_info;
+    unz_file_info file_info;
+    unzFile zipfile = unzOpen(translated_zip.c_str());
+    if (!zipfile) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    unzGetGlobalInfo(zipfile, &global_info);
+    unzGoToFirstFile(zipfile);
+    int num_files = global_info.number_entry;
+    bool found = false;
+    std::string content;
+    
+    for (int zip_idx = 0; zip_idx < num_files; ++zip_idx) {
+        unzGetCurrentFileInfo(zipfile, &file_info, fname, 512, NULL, 0, NULL, 0);
+        if (!strcmp(fname, filename)) {
+            unzOpenCurrentFile(zipfile);
+            
+            // Allocate buffer for file content
+            uint64_t file_size = file_info.uncompressed_size;
+            char* buffer = new char[file_size + 1];
+            memset(buffer, 0, file_size + 1);
+            
+            // Read entire file into buffer
+            uint64_t total_read = 0;
+            while (total_read < file_size) {
+                int rbytes = unzReadCurrentFile(zipfile, buffer + total_read, file_size - total_read);
+                if (rbytes <= 0) break;
+                total_read += rbytes;
+            }
+            
+            // Convert to string and push to Lua
+            if (total_read > 0) {
+                buffer[total_read] = '\0';
+                lua_pushlstring(L, buffer, total_read);
+                found = true;
+            }
+            
+            delete[] buffer;
+            unzCloseCurrentFile(zipfile);
+            break;
+        }
+        if ((zip_idx + 1) < num_files)
+            unzGoToNextFile(zipfile);
+    }
+    
+    unzClose(zipfile);
+    
+    if (!found) {
+        lua_pushnil(L);
+    }
+    
+    return 1;
+}
+
+// Function removed - not needed
+
 // System.extractFromZipAsync(zipfile, filename, destination)
 static int lua_extractFromZipAsync(lua_State *L) {
     if (async_task_num >= ASYNC_TASKS_MAX) {
@@ -2010,6 +2076,7 @@ static const luaL_Reg System_functions[] = {
     {"extractZipAsync",    lua_extractZipAsync},
     {"extractFromZip",     lua_extractFromZip},
     {"extractFromZipAsync", lua_extractFromZipAsync},
+    {"readFromZip",        lua_readFromZip},
     {"compressZip",        lua_compressZip},
     {"addToZip",           lua_addToZip},
 #ifdef USE_LIBARCHIVE

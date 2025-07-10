@@ -748,6 +748,165 @@ static int lua_openSubs(lua_State *L) {
     return 0;
 }
 
+// Parse SRT subtitle content from string
+static bool parseSRTString(const std::string& content, std::vector<SubtitleEntry>& subtitles) {
+    std::stringstream ss(content);
+    std::string line;
+    
+    printf("Parsing SRT subtitle content from string\n");
+    
+    std::regex timingRegex(R"((\d+:\d+:\d+,\d+)\s*-->\s*(\d+:\d+:\d+,\d+))");
+    
+    while (std::getline(ss, line)) {
+        line = trim(line);
+        
+        // Skip empty lines
+        if (line.empty()) continue;
+        
+        // Check if this line is a subtitle number (just digits)
+        if (std::regex_match(line, std::regex(R"(\d+)"))) {
+            // This is a subtitle number, read the next line for timing
+            if (std::getline(ss, line)) {
+                line = trim(line);
+                std::smatch matches;
+                if (std::regex_search(line, matches, timingRegex)) {
+                    // Found timing line
+                    std::string startTimeStr = matches[1].str();
+                    std::string endTimeStr = matches[2].str();
+                    
+                    int64_t startTime = parseSRTTimestamp(startTimeStr);
+                    int64_t endTime = parseSRTTimestamp(endTimeStr);
+                    
+                    // Read subtitle text (may be multiple lines)
+                    std::string subtitleText;
+                    while (std::getline(ss, line)) {
+                        line = trim(line);
+                        if (line.empty()) break; // Empty line ends the subtitle
+                        
+                        if (!subtitleText.empty()) {
+                            subtitleText += "\n";
+                        }
+                        subtitleText += line;
+                    }
+                    
+                    if (!subtitleText.empty()) {
+                        subtitles.emplace_back(startTime, endTime, subtitleText);
+                        printf("Subtitle: %s -> %s: %s\n", startTimeStr.c_str(), endTimeStr.c_str(), subtitleText.c_str());
+                    }
+                }
+            }
+        }
+    }
+    
+    printf("Loaded %zu subtitle entries from string\n", subtitles.size());
+    return true;
+}
+
+// Parse VTT subtitle content from string
+static bool parseVTTString(const std::string& content, std::vector<SubtitleEntry>& subtitles) {
+    std::stringstream ss(content);
+    std::string line;
+    
+    printf("Parsing VTT subtitle content from string\n");
+    
+    // Check for WEBVTT header
+    if (std::getline(ss, line)) {
+        line = trim(line);
+        if (line.find("WEBVTT") != 0) {
+            printf("Invalid VTT format: missing WEBVTT header\n");
+            return false;
+        }
+    }
+    
+    std::regex timingRegex(R"((\d+:\d+:\d+\.\d+|\d+:\d+\.\d+)\s*-->\s*(\d+:\d+:\d+\.\d+|\d+:\d+\.\d+))");
+    
+    while (std::getline(ss, line)) {
+        line = trim(line);
+        
+        // Skip empty lines and comments
+        if (line.empty() || line.find("NOTE") == 0 || line.find("STYLE") == 0) {
+            continue;
+        }
+        
+        // Check if this line contains timing information
+        std::smatch matches;
+        if (std::regex_search(line, matches, timingRegex)) {
+            // Found timing line
+            std::string startTimeStr = matches[1].str();
+            std::string endTimeStr = matches[2].str();
+            
+            int64_t startTime = parseVTTTimestamp(startTimeStr);
+            int64_t endTime = parseVTTTimestamp(endTimeStr);
+            
+            // Read subtitle text (may be multiple lines)
+            std::string subtitleText;
+            while (std::getline(ss, line)) {
+                line = trim(line);
+                if (line.empty()) break; // Empty line ends the subtitle
+                
+                if (!subtitleText.empty()) {
+                    subtitleText += "\n";
+                }
+                subtitleText += line;
+            }
+            
+            if (!subtitleText.empty()) {
+                subtitles.emplace_back(startTime, endTime, subtitleText);
+                printf("Subtitle: %s -> %s: %s\n", startTimeStr.c_str(), endTimeStr.c_str(), subtitleText.c_str());
+            }
+        }
+    }
+    
+    printf("Loaded %zu subtitle entries from string\n", subtitles.size());
+    return true;
+}
+
+static int lua_openSubsFromString(lua_State *L) {
+    const char* subtitleContent = luaL_checkstring(L, 1);
+    const char* formatHint = luaL_optstring(L, 2, "srt"); // Default to SRT
+    
+    std::lock_guard<std::mutex> lock(g_playerMutex);
+    
+    if (!g_videoPlayer) {
+        return luaL_error(L, "No video file is currently open");
+    }
+    
+    // Clear existing subtitles
+    g_videoPlayer->subtitles.clear();
+    
+    // Convert format hint to lowercase
+    std::string format(formatHint);
+    std::transform(format.begin(), format.end(), format.begin(), ::tolower);
+    
+    bool success = false;
+    if (format == "srt") {
+        // Parse SRT content
+        success = parseSRTString(subtitleContent, g_videoPlayer->subtitles);
+    } else if (format == "vtt") {
+        // Parse VTT content
+        success = parseVTTString(subtitleContent, g_videoPlayer->subtitles);
+    } else {
+        // Try to detect format by attempting to parse as both
+        printf("Unknown subtitle format '%s', trying SRT first...\n", formatHint);
+        success = parseSRTString(subtitleContent, g_videoPlayer->subtitles);
+        if (!success || g_videoPlayer->subtitles.empty()) {
+            printf("SRT parsing failed, trying VTT...\n");
+            g_videoPlayer->subtitles.clear();
+            success = parseVTTString(subtitleContent, g_videoPlayer->subtitles);
+        }
+    }
+    
+    if (success) {
+        printf("Successfully loaded %zu subtitles from string\n", g_videoPlayer->subtitles.size());
+        lua_pushboolean(L, 1);
+    } else {
+        printf("Failed to load subtitles from string\n");
+        lua_pushboolean(L, 0);
+    }
+    
+    return 1;
+}
+
 static int lua_getOutput(lua_State *L) {
     std::lock_guard<std::mutex> lock(g_playerMutex);
     
@@ -901,6 +1060,7 @@ static const luaL_Reg Video_functions[] = {
   {"init",          lua_init},
   {"open",          lua_video_open},
   {"openSubs",      lua_openSubs},
+  {"openSubsFromString", lua_openSubsFromString},
   {"getOutput",     lua_getOutput},
   {"close",         lua_video_close},
   {"getTime",       lua_getTime},

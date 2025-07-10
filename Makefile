@@ -9,14 +9,45 @@ USE_READLINE ?= 1
 # Check if ImGui support is enabled (default: enabled)
 USE_IMGUI ?= 0
 
+# OpenGL variant selection: GL (desktop OpenGL) or GLES (OpenGL ES)
+GL_VARIANT ?= GL
+
+# Target platform (override for cross-compilation)
+TARGET_PLATFORM ?= $(shell uname -s)
+
 # ImGui directory
 IMGUI_DIR := src/include/imgui
 
 # Base compiler flags
 CXXFLAGS := -std=c++17 -Wall $(shell sdl2-config --cflags) $(shell pkg-config --cflags luajit) $(shell pkg-config --cflags opencv4) $(shell pkg-config --cflags libavformat libavcodec libavutil libswscale) $(shell pkg-config --cflags mpg123) -I./src/include -I/opt/homebrew/include -DWANT_FASTWAV -DWANT_FMMIDI
 
-# Base linker flags  
-LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs opencv4) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz -lpng -lGL
+# Detect OS for platform-specific OpenGL linking
+UNAME_S := $(shell uname -s)
+
+# Base linker flags (without OpenGL)
+LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs opencv4) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz -lpng
+
+# Only add OpenGL linking if ImGui is enabled
+ifeq ($(USE_IMGUI), 1)
+    # Platform and GL variant specific linking
+    ifeq ($(GL_VARIANT),GLES)
+        # OpenGL ES linking
+        LDFLAGS += -lGLESv2 -lEGL
+        CXXFLAGS += -DUSE_GLES
+    else
+        # Desktop OpenGL linking
+        ifeq ($(TARGET_PLATFORM),Darwin)
+            # macOS uses framework
+            LDFLAGS += -framework OpenGL
+        else ifeq ($(TARGET_PLATFORM),Linux)
+            # Linux uses -lGL
+            LDFLAGS += -lGL
+        else
+            # Default to -lGL for other systems
+            LDFLAGS += -lGL
+        endif
+    endif
+endif
 
 # Add ImGui support if enabled
 ifeq ($(USE_IMGUI), 1)
@@ -128,6 +159,19 @@ setup-imgui:
 		echo "ImGui already exists at $(IMGUI_DIR)"; \
 	fi
 	@echo "ImGui setup complete. Run 'make' to build with ImGui support."
+
+# Build targets for different OpenGL configurations
+build-gles:
+	$(MAKE) GL_VARIANT=GLES
+
+build-gl:
+	$(MAKE) GL_VARIANT=GL
+
+# Cross-compilation targets
+build-aarch64-linux-gles:
+	$(MAKE) TARGET_PLATFORM=Linux GL_VARIANT=GLES CXX=aarch64-linux-gnu-g++
+
+.PHONY: setup-imgui build-gles build-gl build-aarch64-linux-gles
 
 clean:
 	rm -f $(TARGET) $(OBJECTS)
