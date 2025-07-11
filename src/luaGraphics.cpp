@@ -40,7 +40,7 @@
 //#include <vitasdk.h> // Porting to SDL
 //#include <vita2d.h> // Porting to SDL
 
-// External globals from main_sdl.cpp
+// External globals from main.cpp
 extern SDL_Window* g_window;
 extern SDL_Renderer* g_renderer;
 extern bool g_dual_screen_mode;
@@ -208,7 +208,7 @@ extern "C"{
 #define VariableRegister(lua, value) do { lua_pushinteger(lua, value); lua_setglobal (lua, stringify(value)); } while(0)
 
 void* debug_font = NULL; // SDL equivalent placeholder
-TTF_Font* g_defaultFont = NULL; // Global default font, to be loaded in main_sdl.cpp
+TTF_Font* g_defaultFont = NULL; // Global default font, to be loaded in main.cpp
 
 
 // Helper function to extract color from Lua stack (handles both Color objects and integers)
@@ -2170,9 +2170,9 @@ void luaGraphics_init(lua_State *L) {
     lua_setglobal(L, "Color");
 
     // Initialize g_defaultFont (example, ensure font.ttf is accessible)
-    // This should ideally be done after TTF_Init() in main_sdl.cpp
-    // For now, we ensure it's NULL if not loaded by main_sdl.cpp
+    // This should ideally be done after TTF_Init() in main.cpp
+    // For now, we ensure it's NULL if not loaded by main.cpp
     if (!g_defaultFont) {
-        // fprintf(stderr, "luaGraphics_init: g_defaultFont is NULL. Load it in main_sdl.cpp\n");
+        // fprintf(stderr, "luaGraphics_init: g_defaultFont is NULL. Load it in main.cpp\n");
     }
 }

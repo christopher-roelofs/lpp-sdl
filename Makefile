@@ -106,7 +106,7 @@ ifeq ($(USE_READLINE), 1)
 endif
 
 TARGET := lpp_sdl
-SOURCES := main_sdl.cpp \
+SOURCES := main.cpp \
            src/luaCamera.cpp \
            src/luaControls.cpp \
            src/luaDatabase.cpp \

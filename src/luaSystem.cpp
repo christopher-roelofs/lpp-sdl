@@ -54,7 +54,7 @@ extern "C" {
 
 #include "luaplayer.h"
 
-// External declarations for async variables defined in main_sdl.cpp
+// External declarations for async variables defined in main.cpp
 extern volatile int asyncResult;
 extern uint8_t async_task_num;
 extern unsigned char* asyncStrRes;
@@ -665,7 +665,7 @@ static int lua_deleteFile(lua_State *L) {
 }
 
 // System.shouldExit() - Check if ESC was pressed or window closed
-extern bool should_exit; // Defined in main_sdl.cpp
+extern bool should_exit; // Defined in main.cpp
 static int lua_shouldExit(lua_State *L) {
     lua_pushboolean(L, should_exit);
     return 1;
