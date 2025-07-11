@@ -68,16 +68,24 @@ namespace PathUtils {
     std::string translate_vita_path(const std::string& path) {
         std::string result(path);
         
-        // Replace app0:/ with current directory (empty string means relative to current dir)
-        size_t pos = result.find("app0:/");
+        // Replace app0: with current directory (with or without slash)
+        size_t pos = result.find("app0:");
         if (pos != std::string::npos) {
-            result.replace(pos, 6, "");  // Remove "app0:/"
+            if (pos + 5 < result.length() && result[pos + 5] == '/') {
+                result.replace(pos, 6, "");  // Remove "app0:/"
+            } else {
+                result.replace(pos, 5, "");  // Remove "app0:"
+            }
         }
         
-        // Replace ux0:/ with current directory (user data path)
-        pos = result.find("ux0:/");
+        // Replace ux0: with current directory (with or without slash)
+        pos = result.find("ux0:");
         if (pos != std::string::npos) {
-            result.replace(pos, 5, "");  // Remove "ux0:/"
+            if (pos + 4 < result.length() && result[pos + 4] == '/') {
+                result.replace(pos, 5, "");  // Remove "ux0:/"
+            } else {
+                result.replace(pos, 4, "");  // Remove "ux0:"
+            }
         }
         
         return result;

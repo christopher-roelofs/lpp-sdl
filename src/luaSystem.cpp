@@ -693,6 +693,53 @@ static int lua_getTime(lua_State *L) {
     return 3; // Return 3 values: hour, minute, second
 }
 
+// System.getLanguage() - Get system language (Vita compatibility)
+static int lua_getLanguage(lua_State *L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+    
+    // Default to English (US) - Vita language code 1
+    int language_id = 1;
+    
+    // Try to detect system language from environment variables
+    const char* lang = getenv("LANG");
+    if (!lang) lang = getenv("LC_ALL");
+    if (!lang) lang = getenv("LC_MESSAGES");
+    
+    if (lang) {
+        std::string language(lang);
+        std::transform(language.begin(), language.end(), language.begin(), ::tolower);
+        
+        // Map common locale codes to Vita language IDs
+        if (language.find("ja") == 0) language_id = 0;  // Japanese
+        else if (language.find("en_us") == 0) language_id = 1;  // English (US)
+        else if (language.find("fr") == 0) language_id = 2;  // French
+        else if (language.find("es") == 0) language_id = 3;  // Spanish
+        else if (language.find("de") == 0) language_id = 4;  // German
+        else if (language.find("it") == 0) language_id = 5;  // Italian
+        else if (language.find("nl") == 0) language_id = 6;  // Dutch
+        else if (language.find("pt_pt") == 0) language_id = 7;  // Portuguese (Portugal)
+        else if (language.find("ru") == 0) language_id = 8;  // Russian
+        else if (language.find("ko") == 0) language_id = 9;  // Korean
+        else if (language.find("zh_tw") == 0 || language.find("zh_hk") == 0) language_id = 10;  // Traditional Chinese
+        else if (language.find("zh_cn") == 0 || language.find("zh") == 0) language_id = 11;  // Simplified Chinese
+        else if (language.find("fi") == 0) language_id = 12;  // Finnish
+        else if (language.find("sv") == 0) language_id = 13;  // Swedish
+        else if (language.find("da") == 0) language_id = 14;  // Danish
+        else if (language.find("no") == 0 || language.find("nb") == 0) language_id = 15;  // Norwegian
+        else if (language.find("pl") == 0) language_id = 16;  // Polish
+        else if (language.find("pt_br") == 0 || language.find("pt") == 0) language_id = 17;  // Portuguese (Brazil)
+        else if (language.find("en_gb") == 0) language_id = 18;  // English (GB)
+        else if (language.find("tr") == 0) language_id = 19;  // Turkish
+        else if (language.find("en") == 0) language_id = 1;  // Default to English (US) for other English variants
+    }
+    
+    lua_pushinteger(L, language_id);
+    return 1;
+}
+
 // Power management functions - SDL stubs for Vita compatibility
 static int lua_setCpuSpeed(lua_State *L) {
     // SDL doesn't have CPU speed control, just return success
@@ -2065,6 +2112,7 @@ static const luaL_Reg System_functions[] = {
     {"doesDirExist",       lua_doesDirExist},
     {"listDirectory",      lua_listDirectory},
     {"getTime",            lua_getTime},
+    {"getLanguage",        lua_getLanguage},
     {"statFile",           lua_statFile},
     {"statOpenedFile",     lua_statOpenedFile},
     {"copyFile",           lua_copyFile},
