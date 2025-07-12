@@ -1,0 +1,273 @@
+﻿5/15/2014
+
+This version has been slightly changed to run on PPSSPP emulator.
+
+What was changed?
+
+1. The following EBOOT (LuaPlayer Euphoria V8 Update) LPE_V8_Update.zip was used. Notepad++ was used to edit the files
+UTF-8 encoding without BOM
+LPE_V8_Update.zip (1.1 MB)
+http://code.google.com/p/luaplayereuphoria/downloads/detail?name=LPE_V8_Update.zip&can=2&q=
+Notepad++ (Notepad++ 6.5.5 released)
+http://notepad-plus-plus.org/
+
+
+2. On index.lua System.setCpuSpeed(333) code was disabled and small intro was added:
+--System.setCpuSpeed(333)
+Recommended settings for watching The Melancholy of Haruhi Suzumiya (frame by frame pictures):
+* Multithreaded on
+* PSP CPU clock speed to 1000
+
+
+
+3. screen:print(x,y,text,color) only works on software rendering so it was disabled:
+
+--[[
+function printCentered(y,text,color)
+local length = string.len(text)
+local x = 240 - ((length*8)/2)
+screen:print(x,y,text,color)
+end
+]]
+
+
+
+4. instead font:print(x, y, "text") was used, example:
+
+green = Color.new(60, 179, 113)
+transparent = 	Color.new(255, 255, 255, 128);
+font = IntraFont.load("flash0:/font/ltn9.pgf", 0);
+
+
+font:setStyle(0.5, green, transparent, IntraFont.ALIGN_LEFT)
+font:print(370, 36, "R+O = Answer")
+
+For Japanese Hiragana and Katakana ifont:print(x, y, "text") was used, example:
+ifont = IntraFont.load("flash0:/font/jpn0.pgf", IntraFont.STRING_UTF8);
+
+
+5. In the case of screen:blit(x, y, image, [alpha], [source x], [source y], [width], [height]) the word false and true were changed to 0 "number zero", example:
+
+screen:blit(0, 0, stage1back, false, 0, 0, 480, 233)
+screen:blit(0, 194, grasslayer, true, 0, 0, 480, 78)
+
+to
+
+screen:blit(0, 0, stage1back, 0, 0, 0, 480, 233)
+screen:blit(0, 194, grasslayer, 0, 0, 0, 480, 78) 
+
+
+
+6. Moved System.endDraw() to the end of the file so it look like this:
+
+System.endDraw()
+screen.flip()
+screen.waitVblankStart()
+oldpad = pad
+end
+
+
+
+7. Stage 11 (all) rdemon = 1 this change adds a animation:
+
+if victory == 1 then
+Wav.play(false, 0)
+end
+
+to
+
+if victory == 1 then
+Wav.play(false, 0)
+rdemon = 1
+end
+
+8. New find this can fix text (only karaoke1.lua has it, I don't think the colors works):
+
+function printCentered(y,text,color)
+local length = string.len(text)
+local x = 240 - ((length*8)/2)
+screen:print(x,y,text,color)
+end
+
+to
+
+function printCentered(y,text,color)
+local length = string.len(text)
+local x = 240 - ((length*8)/2)
+font:print(x,y,text)
+end 
+
+
+9. Karaoke stage (karaoke1.lua) green letters and pink letters added
+
+
+
+10. I think the menu is fully working now, text added Romaji/Japanese Random On/Off
+
+
+11. Fixed R+▲ = Menu/R+Triangle = Menu not showing on some stages after exiting a stage.
+
+
+12. Added missing sound unloads (R+Triangle) on stages.
+
+
+13. Cheat.lua and Cheatjprandom.lua added remove the double hyphen on each line to active the Cheat/Cheatjprandom
+
+--if pad:l() and pad:r() then
+--name = question[qcount].answer
+--end
+
+to
+
+if pad:l() and pad:r() then
+name = question[qcount].answer
+end
+
+14. menu.lua new font location ltn1.pgf(PPSSPP),ltn9.pgf(PPSSPP) and jpn0.pgf(JPCSP)
+
+ifont = IntraFont.load("flash0:/font/jpn0.pgf", IntraFont.STRING_UTF8);
+ltn1 = IntraFont.load("flash0:/font/ltn1.pgf", 0); 
+font = IntraFont.load("flash0:/font/ltn9.pgf", 0);
+
+to
+
+ifont = IntraFont.load("jpn0.pgf", IntraFont.STRING_UTF8);
+font = IntraFont.load("ltn9.pgf", 0); 
+ltn1 = IntraFont.load("ltn1.pgf", 0);
+
+
+PPSSPP LearnJP v0.9 forums
+http://forums.ppsspp.org/showthread.php?tid=4607
+
+
+More on the functions:
+http://code.google.com/p/luaplayereuphoria/source/browse/trunk/new_functions.txt
+
+
+---------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------
+Other:
+
+Missing unload in some stages? will it crash?
+
+
+Example Stage 15 missing unload:
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+stage15back:free()
+bganimate:free()
+menuprompt = 1
+break 
+end
+
+
+Example Stage 1:
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+Wav.unload(1)
+Wav.unload(2)
+Wav.unload(3)
+stage1back:free()
+grasslayer:free()
+menuprompt = 1
+break 
+end
+------------------------------------------------------
+Stage 10 (all) no music, this code was disabled:
+
+--[[
+if bgm == 1 then 
+Mp3.play(true, 1)
+end
+
+if bgm == 1 then bgm = bgm + 1
+elseif bgm == 3 then bgm = 2
+end
+]]
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+--Mp3.stop(1)
+--Mp3.unload(1)
+stage10back:free()
+menuprompt = 1
+break 
+end
+------------------------------------------------------
+This code was disabled on all stage that had it:
+
+--if menuprompt == 0 then
+font:print(10, 260, "R+Triangle = Menu")
+--end
+
+------------------------------------------------------
+Stage 13 (all) perfume.ogg keeps on playing even after the stage is over added Ogg.stop(0) and Ogg.unload(0)
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+stage13back:free()
+menuprompt = 1
+break
+end
+
+to
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+Ogg.stop(0)
+Ogg.unload(0)
+stage13back:free()
+menuprompt = 1
+break
+end
+-------------------------------------------------------
+Stage 15 (all) Wav.load("stage15/sounds/nomaru.wav", 0) to Wav.load("stage15/sounds/nomaru.wav", 2) for:
+
+Wav.play(false, 2)
+-------------------------------------------------------
+Fixed Stage 7 question 5 is always wrong.
+
+--elseif name == question[RanNumber].answer and question[RanNumber].answer == question[5].answer and gomenwav == 5 then
+elseif name == question[RanNumber].answer and question[RanNumber].answer == question[5].answer then
+-------------------------------------------------------
+Notes: (I do not know the proper way stop unload or simply unload)
+Stage 13 needs stop unload (if just unload it will crash), index .mp3 is never unloaded, menu .wav is never unloaded and
+Stage 15 added stop unload
+
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+stage15back:free()
+bganimate:free()
+menuprompt = 1
+break 
+end
+
+to
+
+if pad:r() and pad:triangle() ~= oldpad:triangle() 
+then 
+Ogg.stop(0)
+Ogg.stop(1)
+Mp3.stop(0)
+Mp3.stop(1)
+Wav.stop(1)
+Wav.stop(2)
+Ogg.unload(0)
+Ogg.unload(1)
+Mp3.unload(0)
+Mp3.unload(1)
+Wav.unload(1)
+Wav.unload(2)
+stage15back:free()
+bganimate:free()
+menuprompt = 1
+break 
+end
+
+
+
+
+

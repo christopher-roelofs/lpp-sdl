@@ -1,0 +1,36 @@
+Change Log - Paint Lite [App]
+By MasterMen (2016 - 2020)
+Contacts: vk.com/pspporting
+
+---------------------------------
+- * Paint Lite 0.3.0 (202X.XX.XX)
+---------------------------------
+	- Fully Rewritten Code (Now with Classes)
+	-
+	-
+	-
+	-
+
+---------------------------------
+- * Paint Lite 0.2.0 (2019.12.20)
+---------------------------------
+	- New Updated Design (Style and Tool Pack)
+	- New Speed Modifier (Old - Sensity)
+	- New Size Modifier (Old - 6 Types)
+	- L Trigger and R Trigger Drawing
+	- 48 Colors
+	- 2 Brush Variants: Square (50 Types) and Circle (10 Types)
+	- Eraser (Useless)
+	- Filling Tool (Filling Everything)
+	
+---------------------------------
+- Paint Lite 0.1 (2017.02.14)
+---------------------------------
+	(Initial Relese)
+	
+	- Floating Pencil
+	- 6 Sizes of Brush (3 of Square and 3 of "Circle")
+	- 9 Basic Colors
+	- Sensity
+	- X and Y Coordinates Output
+	- Main Menu, Paint Menu and Info Menu

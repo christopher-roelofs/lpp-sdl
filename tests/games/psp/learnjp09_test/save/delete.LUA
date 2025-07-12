@@ -1,0 +1,40 @@
+file = io.open("./save/sdata.lua","w")
+file:write("")
+file:close()
+
+nexxchk = 0
+nexx = 1
+menuprompt = 0
+menupromtsv = 0
+mode2 = 1
+s1check = 0
+s2save = 0 
+s2check = 0
+s3save = 0 
+s3check = 0
+s4save = 0 
+s4check = 0
+s5save = 0 
+s5check = 0
+s6save = 0 
+s6check = 0
+s7save = 0 
+s7check = 0
+s8save = 0 
+s8check = 0
+s9save = 0 
+s9check = 0
+s10save = 0 
+s10check = 0
+s11save = 0 
+s11check = 0
+s12save = 0 
+s12check = 0
+s13save = 0 
+s13check = 0
+s14save = 0 
+s14check = 0
+s15save = 0 
+s15check = 0
+sg15note = 0
+sg15notesv = 0

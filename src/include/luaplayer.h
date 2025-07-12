@@ -49,7 +49,8 @@ extern bool should_exit; // Global flag to signal application exit
 typedef enum {
     LPP_COMPAT_NATIVE = 0,  // Native SDL mode - no compatibility layer
     LPP_COMPAT_VITA = 1,    // Vita compatibility mode
-    LPP_COMPAT_3DS = 2      // 3DS compatibility mode
+    LPP_COMPAT_3DS = 2,     // 3DS compatibility mode
+    LPP_COMPAT_PSP = 3      // PSP compatibility mode
 } lpp_compat_mode_t;
 
 // 3DS screen orientation enum
@@ -82,6 +83,10 @@ void setScreenViewport(int screen_id);
 // Screen dimensions - defined here for global access (Vita resolution)
 const int SCREEN_WIDTH = 960;
 const int SCREEN_HEIGHT = 544;
+
+// PSP screen dimensions: 480x272 resolution
+const int PSP_SCREEN_WIDTH = 480;
+const int PSP_SCREEN_HEIGHT = 272;
 
 // Native mode logical resolution (set dynamically based on display)
 extern int NATIVE_LOGICAL_WIDTH;

@@ -1,0 +1,3 @@
+--if pad:l() and pad:r() then
+--name = question[qcount].answer
+--end

@@ -54,7 +54,7 @@ static bool previous_mouse_pressed = false;
 static const Uint8* keyboard_state = NULL;
 
 // Store current and previous keyboard state for edge detection
-static bool current_keys[SDL_NUM_SCANCODES] = {false};
+bool current_keys[SDL_NUM_SCANCODES] = {false};
 static bool previous_keys[SDL_NUM_SCANCODES] = {false};
 static int frame_counter = 0;
 
@@ -438,6 +438,16 @@ static void update_input_state() {
         }
     }
     
+    // Copy keyboard state to current_keys for compatibility modes that need direct keyboard access
+    if (g_compat_mode == LPP_COMPAT_PSP || g_compat_mode == LPP_COMPAT_VITA) {
+        // PSP and Vita modes: Copy all keyboard state directly for button method access
+        for (int i = 0; i < SDL_NUM_SCANCODES; i++) {
+            current_keys[i] = keyboard_state[i];
+        }
+    }
+    // Native mode: No keyboard copying here - handled in lua_readC() for frame-based detection
+    // Note: 3DS mode already handles current_keys through gamepad mapping above
+    
     // Update mouse state
     Uint32 mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y);
     mouse_pressed = (mouse_state & SDL_BUTTON_LMASK) != 0;
@@ -565,7 +575,7 @@ static int lua_readC(lua_State *L){
             }
         }
     } else if (g_compat_mode == LPP_COMPAT_NATIVE) {
-        // Native mode: Keyboard and gamepad work completely independently
+        // Native mode: Frame-based edge detection like original (matches old working version)
         memcpy(previous_keys, current_keys, sizeof(current_keys));
         
         // Update current keys from SDL keyboard state only
@@ -616,6 +626,186 @@ static int lua_readC(lua_State *L){
         
         lua_pushinteger(L, button_state);
         return 1;
+    } else if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP mode: Copy current to previous BEFORE updating with keyboard state
+        memcpy(previous_keys, current_keys, sizeof(current_keys));
+        
+        // Note: Keyboard state already copied earlier in update_input_state()
+        // No need to copy again here to avoid overwriting
+        
+        // Add gamepad support for PSP mode (similar to Vita mode)
+        if (g_gamepad_enabled && controllers[0] && SDL_GameControllerGetAttached(controllers[0])) {
+            // Apply controller layout swapping for gamepad-to-keyboard mapping
+            extern int g_gamepad_layout; // 0=Nintendo, 1=Xbox
+            
+            if (g_gamepad_layout == 0) {
+                // Nintendo layout: Swap A/B and X/Y to match Nintendo physical layout
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                    current_keys[SDL_SCANCODE_X] = true; // Nintendo A (right) = X (PSP Cross)
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Nintendo B (bottom) = Circle
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                    current_keys[SDL_SCANCODE_C] = true; // Nintendo X (top) = Square  
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                    current_keys[SDL_SCANCODE_V] = true; // Nintendo Y (left) = Triangle
+                }
+            } else {
+                // Xbox layout: Direct mapping
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_A)) {
+                    current_keys[SDL_SCANCODE_X] = true; // Xbox A (bottom) = Cross
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_B)) {
+                    current_keys[SDL_SCANCODE_BACKSPACE] = true; // Xbox B (right) = Circle
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_X)) {
+                    current_keys[SDL_SCANCODE_C] = true; // Xbox X (left) = Square
+                }
+                if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_Y)) {
+                    current_keys[SDL_SCANCODE_V] = true; // Xbox Y (top) = Triangle
+                }
+            }
+            
+            // D-pad
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+                current_keys[SDL_SCANCODE_UP] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+                current_keys[SDL_SCANCODE_DOWN] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+                current_keys[SDL_SCANCODE_LEFT] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+                current_keys[SDL_SCANCODE_RIGHT] = true;
+            }
+            
+            // Shoulder buttons
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+                current_keys[SDL_SCANCODE_Q] = true; // L
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+                current_keys[SDL_SCANCODE_E] = true; // R
+            }
+            
+            // Start/Select
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_START)) {
+                current_keys[SDL_SCANCODE_RETURN] = true;
+            }
+            if (SDL_GameControllerGetButton(controllers[0], SDL_CONTROLLER_BUTTON_BACK)) {
+                current_keys[SDL_SCANCODE_TAB] = true;
+            }
+        }
+        
+        // PSP mode: Return a Controls object with button methods
+        lua_newtable(L);
+        
+        // Create metatable for PSP Controls object
+        luaL_newmetatable(L, "PSP_Controls");
+        
+        // __index method for Controls object methods
+        lua_pushstring(L, "__index");
+        lua_pushcfunction(L, [](lua_State *L) -> int {
+            const char* method = lua_tostring(L, 2);
+            
+            // PSP button methods - check current input state
+            if (strcmp(method, "r") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    // Check right shoulder button (E key - matches Vita SCE_CTRL_RTRIGGER)
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_E]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "l") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_Q]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "cross") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_X]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "up") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_UP]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "down") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_DOWN]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "left") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_LEFT]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "right") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_RIGHT]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "circle") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_BACKSPACE]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "square") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_C]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "triangle") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_V]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "start") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_RETURN]);
+                    return 1;
+                });
+                return 1;
+            } else if (strcmp(method, "select") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    extern bool current_keys[];
+                    lua_pushboolean(L, current_keys[SDL_SCANCODE_TAB]);
+                    return 1;
+                });
+                return 1;
+            }
+            
+            return luaL_error(L, "PSP Controls method %s not found", method);
+        });
+        lua_settable(L, -3);
+        
+        // Set metatable on the Controls object
+        lua_setmetatable(L, -2);
+        
+        return 1;
     } else {
         // For Vita/Native modes, return frame counter for edge detection (different value each frame)
         frame_counter++;
@@ -638,8 +828,20 @@ static int lua_readleft(lua_State *L){
 #endif
     }
     update_input_state();
-    lua_pushinteger(L, left_analog_x / 256);
-    lua_pushinteger(L, left_analog_y / 256);
+    
+    // Platform-specific analog stick ranges:
+    // Vita: 0-255, PSP: -128 to +127, 3DS/Native: 0-255
+    if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP analog range: -128 to +127 (256 total range, centered at 0)
+        int psp_x = (left_analog_x / 256) - 128; // Convert 0-255 to -128 to +127
+        int psp_y = (left_analog_y / 256) - 128;
+        lua_pushinteger(L, psp_x);
+        lua_pushinteger(L, psp_y);
+    } else {
+        // Vita, 3DS, Native: 0-255 range
+        lua_pushinteger(L, left_analog_x / 256);
+        lua_pushinteger(L, left_analog_y / 256);
+    }
     return 2;
 }
 
@@ -656,8 +858,18 @@ static int lua_readright(lua_State *L){
 #endif
     }
     update_input_state();
-    lua_pushinteger(L, right_analog_x / 256);
-    lua_pushinteger(L, right_analog_y / 256);
+    
+    // Platform-specific analog stick behavior:
+    // PSP: Only has one analog stick, right analog returns center position
+    if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP has no right analog stick, return center position (0,0 in PSP's -128 to +127 range)
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+    } else {
+        // Vita, 3DS, Native: has right analog stick, use 0-255 range
+        lua_pushinteger(L, right_analog_x / 256);
+        lua_pushinteger(L, right_analog_y / 256);
+    }
     return 2;
 }
 

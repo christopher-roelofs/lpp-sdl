@@ -1,0 +1,9295 @@
+1995
+1
+1
+NEW MOON
+1995
+1
+4
+Earth at Perihelion
+1995
+1
+8
+FIRST QUARTER
+1995
+1
+11
+Moon at Apogee: 405206 km
+1995
+1
+13
+Neptune-Sun Conjunction
+1995
+1
+13
+Venus at Greatest Elong: 47.0'W
+1995
+1
+16
+FULL MOON
+1995
+1
+17
+Uranus-Sun Conjunction
+1995
+1
+19
+Mercury at Greatest Elong: 18.7'E
+1995
+1
+24
+LAST QUARTER
+1995
+1
+26
+Jupiter 1.7'S of Moon
+1995
+1
+27
+Venus 0.2'S of Moon: Occn.
+1995
+1
+27
+Moon at Perigee: 365883 km
+1995
+1
+30
+NEW MOON
+1995
+2
+3
+Mercury at Inferior Conjunction
+1995
+2
+7
+FIRST QUARTER
+1995
+2
+8
+Moon at Apogee: 404422 km
+1995
+2
+12
+Mars at Opposition
+1995
+2
+15
+FULL MOON
+1995
+2
+22
+LAST QUARTER
+1995
+2
+23
+Moon at Perigee: 370175 km
+1995
+2
+23
+Jupiter 2.2'S of Moon
+1995
+2
+26
+Venus 3.8'S of Moon
+1995
+3
+1
+Mercury at Greatest Elong: 27.0'W
+1995
+3
+1
+NEW MOON
+1995
+3
+6
+Saturn-Sun Conjunction
+1995
+3
+8
+Moon at Apogee: 404307 km
+1995
+3
+9
+FIRST QUARTER
+1995
+3
+14
+Mars at Aphelion
+1995
+3
+17
+FULL MOON
+1995
+3
+20
+Moon at Perigee: 366967 km
+1995
+3
+21
+Vernal Equinox
+1995
+3
+22
+Jupiter 2.5'S of Moon
+1995
+3
+23
+LAST QUARTER
+1995
+3
+28
+Venus 5.7'S of Moon
+1995
+3
+31
+NEW MOON
+1995
+4
+5
+Moon at Apogee: 404977 km
+1995
+4
+8
+FIRST QUARTER
+1995
+4
+14
+Mercury at Superior Conjunction
+1995
+4
+15
+FULL MOON
+1995
+4
+15
+Partial Lunar Eclipse: mag=0.109
+1995
+4
+17
+Moon at Perigee: 361702 km
+1995
+4
+18
+Jupiter 2.5'S of Moon
+1995
+4
+20
+Venus at Aphelion
+1995
+4
+22
+LAST QUARTER
+1995
+4
+27
+Venus 4.5'S of Moon
+1995
+4
+29
+Annular Solar Eclipse: mag=0.949
+1995
+4
+29
+NEW MOON
+1995
+5
+3
+Moon at Apogee: 405927 km
+1995
+5
+7
+FIRST QUARTER
+1995
+5
+12
+Mercury at Greatest Elong: 21.6'E
+1995
+5
+14
+FULL MOON
+1995
+5
+15
+Moon at Perigee: 358039 km
+1995
+5
+16
+Jupiter 2.3'S of Moon
+1995
+5
+21
+LAST QUARTER
+1995
+5
+27
+Venus 0.8'S of Moon: Occn.
+1995
+5
+29
+NEW MOON
+1995
+5
+30
+Moon at Apogee: 406517 km
+1995
+6
+1
+Jupiter at Opposition
+1995
+6
+5
+Mercury at Inferior Conjunction
+1995
+6
+6
+FIRST QUARTER
+1995
+6
+12
+Jupiter 2.1'S of Moon
+1995
+6
+13
+Moon at Perigee: 357007 km
+1995
+6
+13
+FULL MOON
+1995
+6
+19
+LAST QUARTER
+1995
+6
+21
+Summer Solstice
+1995
+6
+26
+Mercury 0.6'S of Moon: Occn.
+1995
+6
+26
+Moon at Apogee: 406445 km
+1995
+6
+26
+Venus 3.1'N of Moon
+1995
+6
+28
+NEW MOON
+1995
+6
+29
+Mercury at Greatest Elong: 22.0'W
+1995
+7
+4
+Earth at Aphelion
+1995
+7
+4
+Mars 4.4'N of Moon
+1995
+7
+5
+FIRST QUARTER
+1995
+7
+9
+Jupiter 2.1'S of Moon
+1995
+7
+11
+Moon at Perigee: 358776 km
+1995
+7
+12
+FULL MOON
+1995
+7
+16
+Neptune at Opposition
+1995
+7
+19
+LAST QUARTER
+1995
+7
+22
+Uranus at Opposition
+1995
+7
+23
+Moon at Apogee: 405719 km
+1995
+7
+27
+NEW MOON
+1995
+7
+28
+Mercury at Superior Conjunction
+1995
+8
+1
+Mars 2.4'N of Moon
+1995
+8
+4
+FIRST QUARTER
+1995
+8
+5
+Jupiter 2.4'S of Moon
+1995
+8
+8
+Moon at Perigee: 362863 km
+1995
+8
+10
+FULL MOON
+1995
+8
+11
+Venus at Perihelion
+1995
+8
+18
+LAST QUARTER
+1995
+8
+20
+Moon at Apogee: 404766 km
+1995
+8
+21
+Venus at Superior Conjunction
+1995
+8
+26
+NEW MOON
+1995
+8
+28
+Mercury 1.8'N of Moon
+1995
+8
+30
+Mars 0.2'N of Moon: Occn.
+1995
+9
+2
+Jupiter 2.8'S of Moon
+1995
+9
+2
+FIRST QUARTER
+1995
+9
+5
+Moon at Perigee: 367910 km
+1995
+9
+9
+FULL MOON
+1995
+9
+9
+Mercury at Greatest Elong: 27.0'E
+1995
+9
+14
+Saturn at Opposition
+1995
+9
+16
+LAST QUARTER
+1995
+9
+17
+Moon at Apogee: 404264 km
+1995
+9
+23
+Autumnal Equinox
+1995
+9
+24
+NEW MOON
+1995
+9
+27
+Mars 2.0'S of Moon
+1995
+9
+29
+Jupiter 3.2'S of Moon
+1995
+9
+30
+Moon at Perigee: 369504 km
+1995
+10
+1
+FIRST QUARTER
+1995
+10
+5
+Mercury at Inferior Conjunction
+1995
+10
+8
+FULL MOON
+1995
+10
+8
+Pen. Lunar Eclipse: mag=0.814
+1995
+10
+15
+Moon at Apogee: 404607 km
+1995
+10
+16
+LAST QUARTER
+1995
+10
+20
+Mercury at Greatest Elong: 18.2'W
+1995
+10
+24
+Total Solar Eclipse: mag=1.020
+1995
+10
+24
+NEW MOON
+1995
+10
+25
+Venus 1.9'S of Moon
+1995
+10
+26
+Mars 3.9'S of Moon
+1995
+10
+26
+Moon at Perigee: 364792 km
+1995
+10
+27
+Jupiter 3.6'S of Moon
+1995
+10
+30
+FIRST QUARTER
+1995
+11
+7
+FULL MOON
+1995
+11
+11
+Moon at Apogee: 405534 km
+1995
+11
+15
+LAST QUARTER
+1995
+11
+22
+NEW MOON
+1995
+11
+23
+Mercury at Superior Conjunction
+1995
+11
+23
+Moon at Perigee: 359667 km
+1995
+11
+24
+Venus 5.6'S of Moon
+1995
+11
+29
+FIRST QUARTER
+1995
+12
+7
+FULL MOON
+1995
+12
+9
+Moon at Apogee: 406323 km
+1995
+12
+15
+LAST QUARTER
+1995
+12
+18
+Jupiter-Sun Conjunction
+1995
+12
+22
+NEW MOON
+1995
+12
+22
+Winter Solstice
+1995
+12
+22
+Moon at Perigee: 356798 km
+1995
+12
+24
+Venus 7.0'S of Moon
+1995
+12
+28
+FIRST QUARTER
+1996
+1
+2
+Mercury at Greatest Elong: 19.5'E
+1996
+1
+4
+Earth at Perihelion
+1996
+1
+5
+Moon at Apogee: 406530 km
+1996
+1
+5
+FULL MOON
+1996
+1
+13
+LAST QUARTER
+1996
+1
+15
+Neptune-Sun Conjunction
+1996
+1
+18
+Jupiter 4.6'S of Moon
+1996
+1
+18
+Mercury at Inferior Conjunction
+1996
+1
+19
+Moon at Perigee: 357253 km
+1996
+1
+20
+NEW MOON
+1996
+1
+21
+Uranus-Sun Conjunction
+1996
+1
+23
+Venus 4.9'S of Moon
+1996
+1
+24
+Saturn 4.7'S of Moon
+1996
+1
+27
+FIRST QUARTER
+1996
+2
+1
+Moon at Apogee: 406165 km
+1996
+2
+4
+FULL MOON
+1996
+2
+11
+Mercury at Greatest Elong: 25.9'W
+1996
+2
+12
+LAST QUARTER
+1996
+2
+15
+Jupiter 4.9'S of Moon
+1996
+2
+17
+Moon at Perigee: 360881 km
+1996
+2
+18
+NEW MOON
+1996
+2
+20
+Mars at Perihelion
+1996
+2
+20
+Saturn 4.3'S of Moon
+1996
+2
+22
+Venus 0.1'N of Moon: Occn.
+1996
+2
+26
+FIRST QUARTER
+1996
+2
+29
+Moon at Apogee: 405277 km
+1996
+3
+4
+Mars-Sun Conjunction
+1996
+3
+5
+FULL MOON
+1996
+3
+12
+LAST QUARTER
+1996
+3
+16
+Moon at Perigee: 366290 km
+1996
+3
+17
+Saturn-Sun Conjunction
+1996
+3
+19
+NEW MOON
+1996
+3
+20
+Vernal Equinox
+1996
+3
+22
+Venus at Perihelion
+1996
+3
+23
+Venus 5.4'N of Moon
+1996
+3
+27
+FIRST QUARTER
+1996
+3
+28
+Moon at Apogee: 404466 km
+1996
+3
+28
+Mercury at Superior Conjunction
+1996
+4
+1
+Venus at Greatest Elong: 46.0'E
+1996
+4
+4
+FULL MOON
+1996
+4
+4
+Total Lunar Eclipse: mag=1.384
+1996
+4
+10
+LAST QUARTER
+1996
+4
+11
+Moon at Perigee: 369911 km
+1996
+4
+16
+Saturn 3.7'S of Moon
+1996
+4
+17
+Partial Solar Eclipse: mag=0.879
+1996
+4
+17
+NEW MOON
+1996
+4
+23
+Mercury at Greatest Elong: 20.2'E
+1996
+4
+24
+Moon at Apogee: 404376 km
+1996
+4
+25
+FIRST QUARTER
+1996
+5
+3
+FULL MOON
+1996
+5
+6
+Moon at Perigee: 366530 km
+1996
+5
+10
+LAST QUARTER
+1996
+5
+13
+Saturn 3.4'S of Moon
+1996
+5
+15
+Mercury at Inferior Conjunction
+1996
+5
+17
+NEW MOON
+1996
+5
+22
+Moon at Apogee: 405075 km
+1996
+5
+25
+FIRST QUARTER
+1996
+6
+1
+FULL MOON
+1996
+6
+3
+Moon at Perigee: 361489 km
+1996
+6
+8
+LAST QUARTER
+1996
+6
+9
+Saturn 3.2'S of Moon
+1996
+6
+10
+Mercury at Greatest Elong: 23.7'W
+1996
+6
+10
+Venus at Inferior Conjunction
+1996
+6
+14
+Mercury 0.4'N of Moon: Occn.
+1996
+6
+14
+Mars 3.6'N of Moon
+1996
+6
+16
+NEW MOON
+1996
+6
+19
+Moon at Apogee: 406034 km
+1996
+6
+21
+Summer Solstice
+1996
+6
+24
+FIRST QUARTER
+1996
+7
+1
+FULL MOON
+1996
+7
+1
+Jupiter 5.1'S of Moon
+1996
+7
+1
+Moon at Perigee: 357948 km
+1996
+7
+4
+Jupiter at Opposition
+1996
+7
+5
+Earth at Aphelion
+1996
+7
+7
+Saturn 2.9'S of Moon
+1996
+7
+7
+LAST QUARTER
+1996
+7
+11
+Mercury at Superior Conjunction
+1996
+7
+12
+Venus 0.4'S of Moon: Occn.
+1996
+7
+13
+Venus at Aphelion
+1996
+7
+15
+NEW MOON
+1996
+7
+16
+Moon at Apogee: 406600 km
+1996
+7
+18
+Neptune at Opposition
+1996
+7
+23
+FIRST QUARTER
+1996
+7
+25
+Uranus at Opposition
+1996
+7
+30
+Moon at Perigee: 356949 km
+1996
+7
+30
+FULL MOON
+1996
+8
+3
+Saturn 2.8'S of Moon
+1996
+8
+6
+LAST QUARTER
+1996
+8
+10
+Venus 1.2'N of Moon
+1996
+8
+12
+Moon at Apogee: 406477 km
+1996
+8
+14
+NEW MOON
+1996
+8
+16
+Mercury 0.3'N of Moon: Occn.
+1996
+8
+20
+Venus at Greatest Elong: 45.8'W
+1996
+8
+21
+Mercury at Greatest Elong: 27.4'E
+1996
+8
+22
+FIRST QUARTER
+1996
+8
+27
+Moon at Perigee: 358777 km
+1996
+8
+28
+FULL MOON
+1996
+8
+30
+Saturn 2.9'S of Moon
+1996
+9
+4
+LAST QUARTER
+1996
+9
+8
+Venus 3.3'N of Moon
+1996
+9
+9
+Moon at Apogee: 405736 km
+1996
+9
+12
+NEW MOON
+1996
+9
+17
+Mercury at Inferior Conjunction
+1996
+9
+20
+FIRST QUARTER
+1996
+9
+22
+Autumnal Equinox
+1996
+9
+24
+Moon at Perigee: 363058 km
+1996
+9
+26
+Saturn at Opposition
+1996
+9
+27
+FULL MOON
+1996
+9
+27
+Total Lunar Eclipse: mag=1.234
+1996
+9
+27
+Saturn 3.1'S of Moon
+1996
+10
+3
+Mercury at Greatest Elong: 17.9'W
+1996
+10
+4
+LAST QUARTER
+1996
+10
+6
+Moon at Apogee: 404792 km
+1996
+10
+9
+Venus 3.6'N of Moon
+1996
+10
+12
+Partial Solar Eclipse: mag=0.760
+1996
+10
+12
+NEW MOON
+1996
+10
+19
+FIRST QUARTER
+1996
+10
+22
+Moon at Perigee: 368341 km
+1996
+10
+24
+Saturn 3.3'S of Moon
+1996
+10
+26
+FULL MOON
+1996
+11
+2
+Mercury at Superior Conjunction
+1996
+11
+2
+Venus at Perihelion
+1996
+11
+3
+LAST QUARTER
+1996
+11
+3
+Moon at Apogee: 404312 km
+1996
+11
+8
+Venus 1.4'N of Moon
+1996
+11
+11
+NEW MOON
+1996
+11
+16
+Moon at Perigee: 369457 km
+1996
+11
+18
+FIRST QUARTER
+1996
+11
+20
+Saturn 3.2'S of Moon
+1996
+11
+25
+FULL MOON
+1996
+12
+1
+Moon at Apogee: 404656 km
+1996
+12
+3
+LAST QUARTER
+1996
+12
+3
+Mars 3.8'N of Moon
+1996
+12
+8
+Venus 2.0'S of Moon
+1996
+12
+10
+NEW MOON
+1996
+12
+13
+Moon at Perigee: 364232 km
+1996
+12
+15
+Mercury at Greatest Elong: 20.5'E
+1996
+12
+17
+FIRST QUARTER
+1996
+12
+17
+Saturn 2.8'S of Moon
+1996
+12
+21
+Winter Solstice
+1996
+12
+24
+FULL MOON
+1996
+12
+29
+Moon at Apogee: 405525 km
+1997
+1
+1
+Mars 3.1'N of Moon
+1997
+1
+2
+Earth at Perihelion
+1997
+1
+2
+Mercury at Inferior Conjunction
+1997
+1
+2
+LAST QUARTER
+1997
+1
+7
+Venus 4.5'S of Moon
+1997
+1
+9
+NEW MOON
+1997
+1
+10
+Moon at Perigee: 359233 km
+1997
+1
+14
+Saturn 2.3'S of Moon
+1997
+1
+15
+FIRST QUARTER
+1997
+1
+17
+Neptune-Sun Conjunction
+1997
+1
+19
+Jupiter-Sun Conjunction
+1997
+1
+23
+FULL MOON
+1997
+1
+24
+Mercury at Greatest Elong: 24.5'W
+1997
+1
+24
+Uranus-Sun Conjunction
+1997
+1
+25
+Moon at Apogee: 406229 km
+1997
+1
+28
+Mars 2.9'N of Moon
+1997
+1
+29
+Mars at Aphelion
+1997
+1
+31
+LAST QUARTER
+1997
+2
+7
+NEW MOON
+1997
+2
+7
+Moon at Perigee: 356846 km
+1997
+2
+10
+Saturn 1.8'S of Moon
+1997
+2
+14
+FIRST QUARTER
+1997
+2
+21
+Moon at Apogee: 406396 km
+1997
+2
+22
+FULL MOON
+1997
+2
+22
+Venus at Aphelion
+1997
+2
+25
+Mars 3.5'N of Moon
+1997
+3
+2
+LAST QUARTER
+1997
+3
+6
+Jupiter 4.5'S of Moon
+1997
+3
+8
+Moon at Perigee: 357760 km
+1997
+3
+9
+NEW MOON
+1997
+3
+9
+Total Solar Eclipse: mag=1.042
+1997
+3
+11
+Mercury at Superior Conjunction
+1997
+3
+16
+FIRST QUARTER
+1997
+3
+17
+Mars at Opposition
+1997
+3
+20
+Vernal Equinox
+1997
+3
+21
+Moon at Apogee: 405959 km
+1997
+3
+23
+Mars 4.1'N of Moon
+1997
+3
+24
+Partial Lunar Eclipse: mag=0.913
+1997
+3
+24
+FULL MOON
+1997
+3
+30
+Saturn-Sun Conjunction
+1997
+3
+31
+LAST QUARTER
+1997
+4
+2
+Venus at Superior Conjunction
+1997
+4
+3
+Jupiter 4.2'S of Moon
+1997
+4
+5
+Moon at Perigee: 361500 km
+1997
+4
+6
+Mercury at Greatest Elong: 19.2'E
+1997
+4
+7
+NEW MOON
+1997
+4
+14
+FIRST QUARTER
+1997
+4
+17
+Moon at Apogee: 405005 km
+1997
+4
+19
+Mars 3.7'N of Moon
+1997
+4
+22
+FULL MOON
+1997
+4
+25
+Mercury at Inferior Conjunction
+1997
+4
+30
+LAST QUARTER
+1997
+4
+30
+Jupiter 3.9'S of Moon
+1997
+5
+3
+Moon at Perigee: 366626 km
+1997
+5
+4
+Saturn 0.8'S of Moon: Occn.
+1997
+5
+6
+NEW MOON
+1997
+5
+14
+FIRST QUARTER
+1997
+5
+15
+Moon at Apogee: 404213 km
+1997
+5
+16
+Mars 2.2'N of Moon
+1997
+5
+22
+FULL MOON
+1997
+5
+22
+Mercury at Greatest Elong: 25.4'W
+1997
+5
+28
+Jupiter 3.7'S of Moon
+1997
+5
+29
+Moon at Perigee: 369791 km
+1997
+5
+29
+LAST QUARTER
+1997
+6
+1
+Saturn 0.5'S of Moon: Occn.
+1997
+6
+3
+Mercury 1.6'N of Moon
+1997
+6
+5
+NEW MOON
+1997
+6
+6
+Venus 6.0'N of Moon
+1997
+6
+12
+Moon at Apogee: 404187 km
+1997
+6
+13
+FIRST QUARTER
+1997
+6
+13
+Mars 0.3'N of Moon: Occn.
+1997
+6
+15
+Venus at Perihelion
+1997
+6
+20
+FULL MOON
+1997
+6
+21
+Summer Solstice
+1997
+6
+24
+Moon at Perigee: 366495 km
+1997
+6
+24
+Jupiter 3.6'S of Moon
+1997
+6
+25
+Mercury at Superior Conjunction
+1997
+6
+27
+LAST QUARTER
+1997
+6
+28
+Saturn 0.2'S of Moon: Occn.
+1997
+7
+4
+NEW MOON
+1997
+7
+4
+Earth at Aphelion
+1997
+7
+7
+Venus 5.1'N of Moon
+1997
+7
+9
+Moon at Apogee: 404946 km
+1997
+7
+12
+Mars 1.9'S of Moon
+1997
+7
+12
+FIRST QUARTER
+1997
+7
+20
+FULL MOON
+1997
+7
+20
+Neptune at Opposition
+1997
+7
+21
+Jupiter 3.7'S of Moon
+1997
+7
+21
+Moon at Perigee: 361577 km
+1997
+7
+25
+Saturn 0.0'N of Moon: Occn.
+1997
+7
+26
+LAST QUARTER
+1997
+7
+30
+Uranus at Opposition
+1997
+8
+3
+NEW MOON
+1997
+8
+4
+Mercury at Greatest Elong: 27.3'E
+1997
+8
+5
+Mercury 1.0'S of Moon: Occn.
+1997
+8
+6
+Venus 1.6'N of Moon
+1997
+8
+6
+Moon at Apogee: 405940 km
+1997
+8
+9
+Mars 3.9'S of Moon
+1997
+8
+9
+Jupiter at Opposition
+1997
+8
+11
+FIRST QUARTER
+1997
+8
+17
+Jupiter 4.0'S of Moon
+1997
+8
+18
+FULL MOON
+1997
+8
+19
+Moon at Perigee: 358018 km
+1997
+8
+22
+Saturn 0.0'N of Moon: Occn.
+1997
+8
+25
+LAST QUARTER
+1997
+8
+31
+Mercury at Inferior Conjunction
+1997
+9
+1
+NEW MOON
+1997
+9
+2
+Partial Solar Eclipse: mag=0.902
+1997
+9
+2
+Moon at Apogee: 406481 km
+1997
+9
+5
+Venus 3.3'S of Moon
+1997
+9
+10
+FIRST QUARTER
+1997
+9
+14
+Jupiter 4.3'S of Moon
+1997
+9
+16
+Moon at Perigee: 356966 km
+1997
+9
+16
+Total Lunar Eclipse: mag=1.188
+1997
+9
+16
+FULL MOON
+1997
+9
+16
+Mercury at Greatest Elong: 17.9'W
+1997
+9
+18
+Saturn 0.2'S of Moon: Occn.
+1997
+9
+22
+Autumnal Equinox
+1997
+9
+23
+LAST QUARTER
+1997
+9
+30
+Moon at Apogee: 406331 km
+1997
+10
+1
+NEW MOON
+1997
+10
+5
+Venus at Aphelion
+1997
+10
+9
+FIRST QUARTER
+1997
+10
+10
+Saturn at Opposition
+1997
+10
+11
+Jupiter 4.2'S of Moon
+1997
+10
+13
+Mercury at Superior Conjunction
+1997
+10
+15
+Moon at Perigee: 358861 km
+1997
+10
+15
+Saturn 0.4'S of Moon: Occn.
+1997
+10
+16
+FULL MOON
+1997
+10
+23
+LAST QUARTER
+1997
+10
+27
+Moon at Apogee: 405606 km
+1997
+10
+31
+NEW MOON
+1997
+11
+6
+Venus at Greatest Elong: 47.1'E
+1997
+11
+7
+Jupiter 3.9'S of Moon
+1997
+11
+7
+FIRST QUARTER
+1997
+11
+12
+Saturn 0.4'S of Moon: Occn.
+1997
+11
+12
+Moon at Perigee: 363379 km
+1997
+11
+14
+FULL MOON
+1997
+11
+22
+LAST QUARTER
+1997
+11
+24
+Moon at Apogee: 404696 km
+1997
+11
+28
+Mercury at Greatest Elong: 21.6'E
+1997
+11
+30
+NEW MOON
+1997
+12
+3
+Venus 6.7'S of Moon
+1997
+12
+5
+Jupiter 3.3'S of Moon
+1997
+12
+7
+FIRST QUARTER
+1997
+12
+9
+Saturn 0.2'S of Moon: Occn.
+1997
+12
+9
+Moon at Perigee: 368878 km
+1997
+12
+14
+FULL MOON
+1997
+12
+17
+Mercury at Inferior Conjunction
+1997
+12
+21
+Winter Solstice
+1997
+12
+21
+LAST QUARTER
+1997
+12
+21
+Moon at Apogee: 404264 km
+1997
+12
+29
+NEW MOON
+1997
+12
+31
+Venus 1.3'S of Moon
+1998
+1
+1
+Mars 3.9'S of Moon
+1998
+1
+1
+Jupiter 2.7'S of Moon
+1998
+1
+3
+Moon at Perigee: 369238 km
+1998
+1
+4
+Earth at Perihelion
+1998
+1
+5
+Saturn 0.2'N of Moon: Occn.
+1998
+1
+5
+FIRST QUARTER
+1998
+1
+6
+Mercury at Greatest Elong: 23.1'W
+1998
+1
+7
+Mars at Perihelion
+1998
+1
+12
+FULL MOON
+1998
+1
+16
+Venus at Inferior Conjunction
+1998
+1
+18
+Moon at Apogee: 404635 km
+1998
+1
+19
+Neptune-Sun Conjunction
+1998
+1
+20
+LAST QUARTER
+1998
+1
+25
+Venus at Perihelion
+1998
+1
+27
+Venus 3.1'N of Moon
+1998
+1
+28
+NEW MOON
+1998
+1
+29
+Uranus-Sun Conjunction
+1998
+1
+30
+Mars 1.7'S of Moon
+1998
+1
+30
+Moon at Perigee: 363799 km
+1998
+2
+1
+Saturn 0.7'N of Moon: Occn.
+1998
+2
+3
+FIRST QUARTER
+1998
+2
+11
+FULL MOON
+1998
+2
+15
+Moon at Apogee: 405495 km
+1998
+2
+19
+LAST QUARTER
+1998
+2
+22
+Mercury at Superior Conjunction
+1998
+2
+23
+Jupiter-Sun Conjunction
+1998
+2
+23
+Venus 1.6'N of Moon
+1998
+2
+26
+NEW MOON
+1998
+2
+26
+Total Solar Eclipse: mag=1.042
+1998
+2
+27
+Moon at Perigee: 359088 km
+1998
+3
+1
+Saturn 1.0'N of Moon: Occn.
+1998
+3
+5
+FIRST QUARTER
+1998
+3
+13
+Pen. Lunar Eclipse: mag=0.699
+1998
+3
+13
+FULL MOON
+1998
+3
+15
+Moon at Apogee: 406188 km
+1998
+3
+20
+Mercury at Greatest Elong: 18.5'E
+1998
+3
+20
+Vernal Equinox
+1998
+3
+21
+LAST QUARTER
+1998
+3
+24
+Venus 0.1'S of Moon: Occn.
+1998
+3
+26
+Jupiter 0.8'S of Moon: Occn.
+1998
+3
+27
+Venus at Greatest Elong: 46.5'W
+1998
+3
+28
+NEW MOON
+1998
+3
+28
+Moon at Perigee: 357027 km
+1998
+4
+3
+FIRST QUARTER
+1998
+4
+6
+Mercury at Inferior Conjunction
+1998
+4
+11
+Moon at Apogee: 406347 km
+1998
+4
+11
+FULL MOON
+1998
+4
+13
+Saturn-Sun Conjunction
+1998
+4
+19
+LAST QUARTER
+1998
+4
+23
+Jupiter 0.2'S of Moon: Occn.
+1998
+4
+23
+Venus 0.1'N of Moon: Occn.
+1998
+4
+24
+Mercury 0.9'N of Moon: Occn.
+1998
+4
+25
+Moon at Perigee: 358043 km
+1998
+4
+26
+NEW MOON
+1998
+5
+3
+FIRST QUARTER
+1998
+5
+4
+Mercury at Greatest Elong: 26.7'W
+1998
+5
+8
+Moon at Apogee: 405862 km
+1998
+5
+11
+FULL MOON
+1998
+5
+12
+Mars-Sun Conjunction
+1998
+5
+18
+Venus at Aphelion
+1998
+5
+19
+LAST QUARTER
+1998
+5
+20
+Jupiter 0.4'N of Moon: Occn.
+1998
+5
+22
+Venus 1.7'N of Moon
+1998
+5
+23
+Saturn 1.7'N of Moon
+1998
+5
+24
+Moon at Perigee: 361661 km
+1998
+5
+25
+NEW MOON
+1998
+6
+2
+FIRST QUARTER
+1998
+6
+5
+Moon at Apogee: 404923 km
+1998
+6
+10
+FULL MOON
+1998
+6
+10
+Mercury at Superior Conjunction
+1998
+6
+17
+LAST QUARTER
+1998
+6
+17
+Jupiter 0.8'N of Moon: Occn.
+1998
+6
+19
+Saturn 2.0'N of Moon
+1998
+6
+20
+Moon at Perigee: 366593 km
+1998
+6
+21
+Summer Solstice
+1998
+6
+21
+Venus 3.3'N of Moon
+1998
+6
+24
+NEW MOON
+1998
+7
+1
+FIRST QUARTER
+1998
+7
+2
+Moon at Apogee: 404222 km
+1998
+7
+4
+Earth at Aphelion
+1998
+7
+9
+FULL MOON
+1998
+7
+14
+Jupiter 1.0'N of Moon: Occn.
+1998
+7
+16
+Moon at Perigee: 369696 km
+1998
+7
+16
+LAST QUARTER
+1998
+7
+17
+Mercury at Greatest Elong: 26.7'E
+1998
+7
+17
+Saturn 2.2'N of Moon
+1998
+7
+23
+Neptune at Opposition
+1998
+7
+23
+NEW MOON
+1998
+7
+25
+Mercury 2.1'S of Moon
+1998
+7
+30
+Moon at Apogee: 404305 km
+1998
+7
+31
+FIRST QUARTER
+1998
+8
+3
+Uranus at Opposition
+1998
+8
+8
+FULL MOON
+1998
+8
+8
+Pen. Lunar Eclipse: mag=0.118
+1998
+8
+11
+Jupiter 0.9'N of Moon: Occn.
+1998
+8
+11
+Moon at Perigee: 366446 km
+1998
+8
+13
+Saturn 2.2'N of Moon
+1998
+8
+14
+Mercury at Inferior Conjunction
+1998
+8
+14
+LAST QUARTER
+1998
+8
+19
+Mars 3.8'N of Moon
+1998
+8
+20
+Venus 2.7'N of Moon
+1998
+8
+22
+NEW MOON
+1998
+8
+22
+Annular Solar Eclipse: mag=0.969
+1998
+8
+27
+Moon at Apogee: 405152 km
+1998
+8
+30
+FIRST QUARTER
+1998
+8
+31
+Mercury at Greatest Elong: 18.2'W
+1998
+9
+6
+Pen. Lunar Eclipse: mag=0.804
+1998
+9
+6
+FULL MOON
+1998
+9
+7
+Jupiter 0.5'N of Moon: Occn.
+1998
+9
+7
+Venus at Perihelion
+1998
+9
+8
+Moon at Perigee: 361374 km
+1998
+9
+9
+Saturn 2.0'N of Moon
+1998
+9
+13
+LAST QUARTER
+1998
+9
+16
+Jupiter at Opposition
+1998
+9
+17
+Mars 2.5'N of Moon
+1998
+9
+20
+NEW MOON
+1998
+9
+23
+Autumnal Equinox
+1998
+9
+23
+Moon at Apogee: 406173 km
+1998
+9
+25
+Mercury at Superior Conjunction
+1998
+9
+28
+FIRST QUARTER
+1998
+10
+4
+Jupiter 0.2'N of Moon: Occn.
+1998
+10
+5
+FULL MOON
+1998
+10
+6
+Moon at Perigee: 357633 km
+1998
+10
+7
+Saturn 1.8'N of Moon
+1998
+10
+12
+LAST QUARTER
+1998
+10
+16
+Mars 1.0'N of Moon: Occn.
+1998
+10
+20
+NEW MOON
+1998
+10
+21
+Moon at Apogee: 406667 km
+1998
+10
+23
+Saturn at Opposition
+1998
+10
+28
+FIRST QUARTER
+1998
+10
+30
+Venus at Superior Conjunction
+1998
+10
+31
+Jupiter 0.2'N of Moon: Occn.
+1998
+11
+3
+Saturn 1.7'N of Moon
+1998
+11
+4
+Moon at Perigee: 356615 km
+1998
+11
+4
+FULL MOON
+1998
+11
+11
+LAST QUARTER
+1998
+11
+11
+Mercury at Greatest Elong: 22.9'E
+1998
+11
+13
+Mars 0.5'S of Moon: Occn.
+1998
+11
+17
+Moon at Apogee: 406494 km
+1998
+11
+19
+NEW MOON
+1998
+11
+27
+FIRST QUARTER
+1998
+11
+28
+Jupiter 0.6'N of Moon: Occn.
+1998
+11
+30
+Saturn 1.8'N of Moon
+1998
+12
+1
+Mercury at Inferior Conjunction
+1998
+12
+2
+Moon at Perigee: 358844 km
+1998
+12
+3
+FULL MOON
+1998
+12
+10
+LAST QUARTER
+1998
+12
+12
+Mars 1.8'S of Moon
+1998
+12
+14
+Moon at Apogee: 405758 km
+1998
+12
+17
+Mars at Aphelion
+1998
+12
+18
+NEW MOON
+1998
+12
+20
+Mercury at Greatest Elong: 21.6'W
+1998
+12
+22
+Winter Solstice
+1998
+12
+25
+Jupiter 1.2'N of Moon: Occn.
+1998
+12
+26
+FIRST QUARTER
+1998
+12
+27
+Saturn 2.2'N of Moon
+1998
+12
+29
+Venus at Aphelion
+1998
+12
+30
+Moon at Perigee: 363787 k
+1999
+1
+2
+FULL MOON
+1999
+1
+3
+Earth at Perihelion
+1999
+1
+9
+LAST QUARTER
+1999
+1
+9
+Mars 2.7'S of Moon
+1999
+1
+11
+Moon at Apogee: 404828 km
+1999
+1
+17
+NEW MOON
+1999
+1
+19
+Venus 2.0'S of Moon
+1999
+1
+21
+Jupiter 1.8'N of Moon
+1999
+1
+22
+Neptune-Sun Conjunction
+1999
+1
+24
+Saturn 2.5'N of Moon
+1999
+1
+24
+FIRST QUARTER
+1999
+1
+26
+Moon at Perigee: 369262 km
+1999
+1
+31
+FULL MOON
+1999
+1
+31
+Pen. Lunar Eclipse: mag=1.002
+1999
+2
+2
+Uranus-Sun Conjunction
+1999
+2
+4
+Mercury at Superior Conjunction
+1999
+2
+7
+Mars 3.1'S of Moon
+1999
+2
+8
+Moon at Apogee: 404386 km
+1999
+2
+8
+LAST QUARTER
+1999
+2
+16
+Annular Solar Eclipse: mag=0.987
+1999
+2
+16
+NEW MOON
+1999
+2
+18
+Venus 1.9'N of Moon
+1999
+2
+18
+Jupiter 2.4'N of Moon
+1999
+2
+20
+Moon at Perigee: 368654 km
+1999
+2
+20
+Saturn 2.7'N of Moon
+1999
+2
+23
+FIRST QUARTER
+1999
+3
+2
+FULL MOON
+1999
+3
+3
+Mercury at Greatest Elong: 18.2'E
+1999
+3
+7
+Mars 3.1'S of Moon
+1999
+3
+8
+Moon at Apogee: 404752 km
+1999
+3
+10
+LAST QUARTER
+1999
+3
+17
+NEW MOON
+1999
+3
+19
+Mercury at Inferior Conjunction
+1999
+3
+20
+Moon at Perigee: 363270 km
+1999
+3
+20
+Venus 5.3'N of Moon
+1999
+3
+20
+Saturn 2.8'N of Moon
+1999
+3
+21
+Vernal Equinox
+1999
+3
+24
+FIRST QUARTER
+1999
+3
+31
+FULL MOON
+1999
+4
+1
+Jupiter-Sun Conjunction
+1999
+4
+3
+Mars 3.2'S of Moon
+1999
+4
+4
+Moon at Apogee: 405599 km
+1999
+4
+9
+LAST QUARTER
+1999
+4
+14
+Mercury 1.1'N of Moon: Occn.
+1999
+4
+16
+NEW MOON
+1999
+4
+16
+Mercury at Greatest Elong: 27.6'W
+1999
+4
+17
+Moon at Perigee: 358893 km
+1999
+4
+18
+Venus 6.6'N of Moon
+1999
+4
+20
+Venus at Perihelion
+1999
+4
+22
+FIRST QUARTER
+1999
+4
+24
+Mars at Opposition
+1999
+4
+27
+Saturn-Sun Conjunction
+1999
+4
+29
+Mars 3.9'S of Moon
+1999
+4
+30
+FULL MOON
+1999
+5
+2
+Moon at Apogee: 406279 km
+1999
+5
+5
+Jupiter at Perihelion
+1999
+5
+8
+LAST QUARTER
+1999
+5
+13
+Jupiter 3.6'N of Moon
+1999
+5
+15
+NEW MOON
+1999
+5
+15
+Moon at Perigee: 357097 km
+1999
+5
+18
+Venus 5.6'N of Moon
+1999
+5
+22
+FIRST QUARTER
+1999
+5
+25
+Mercury at Superior Conjunction
+1999
+5
+29
+Moon at Apogee: 406398 km
+1999
+5
+30
+FULL MOON
+1999
+6
+7
+LAST QUARTER
+1999
+6
+10
+Jupiter 3.9'N of Moon
+1999
+6
+11
+Saturn 3.0'N of Moon
+1999
+6
+11
+Venus at Greatest Elong: 45.4'E
+1999
+6
+13
+Moon at Perigee: 358191 km
+1999
+6
+13
+NEW MOON
+1999
+6
+15
+Mercury 4.5'N of Moon
+1999
+6
+17
+Venus 2.3'N of Moon
+1999
+6
+20
+FIRST QUARTER
+1999
+6
+21
+Summer Solstice
+1999
+6
+25
+Moon at Apogee: 405859 km
+1999
+6
+28
+FULL MOON
+1999
+6
+28
+Mercury at Greatest Elong: 25.5'E
+1999
+7
+6
+LAST QUARTER
+1999
+7
+6
+Earth at Aphelion
+1999
+7
+7
+Jupiter 4.1'N of Moon
+1999
+7
+8
+Saturn 3.1'N of Moon
+1999
+7
+11
+Moon at Perigee: 361777 km
+1999
+7
+13
+NEW MOON
+1999
+7
+15
+Venus 3.2'S of Moon
+1999
+7
+20
+FIRST QUARTER
+1999
+7
+23
+Moon at Apogee: 404926 km
+1999
+7
+26
+Neptune at Opposition
+1999
+7
+26
+Mercury at Inferior Conjunction
+1999
+7
+28
+FULL MOON
+1999
+7
+28
+Partial Lunar Eclipse: mag=0.399
+1999
+8
+4
+Jupiter 4.1'N of Moon
+1999
+8
+4
+LAST QUARTER
+1999
+8
+5
+Saturn 3.0'N of Moon
+1999
+8
+8
+Moon at Perigee: 366713 km
+1999
+8
+8
+Uranus at Opposition
+1999
+8
+10
+Venus at Aphelion
+1999
+8
+11
+Total Solar Eclipse: mag=1.024
+1999
+8
+11
+NEW MOON
+1999
+8
+14
+Mercury at Greatest Elong: 18.8'W
+1999
+8
+19
+FIRST QUARTER
+1999
+8
+19
+Moon at Apogee: 404261 km
+1999
+8
+20
+Venus at Inferior Conjunction
+1999
+8
+26
+FULL MOON
+1999
+8
+31
+Jupiter 3.9'N of Moon
+1999
+9
+1
+Saturn 2.9'N of Moon
+1999
+9
+2
+Moon at Perigee: 369817 km
+1999
+9
+2
+LAST QUARTER
+1999
+9
+8
+Mercury at Superior Conjunction
+1999
+9
+9
+NEW MOON
+1999
+9
+16
+Moon at Apogee: 404387 km
+1999
+9
+17
+FIRST QUARTER
+1999
+9
+23
+Autumnal Equinox
+1999
+9
+25
+FULL MOON
+1999
+9
+27
+Jupiter 3.7'N of Moon
+1999
+9
+28
+Saturn 2.6'N of Moon
+1999
+9
+28
+Moon at Perigee: 366254 km
+1999
+10
+2
+LAST QUARTER
+1999
+10
+5
+Venus 4.5'S of Moon
+1999
+10
+9
+NEW MOON
+1999
+10
+14
+Moon at Apogee: 405253 km
+1999
+10
+17
+FIRST QUARTER
+1999
+10
+23
+Jupiter at Opposition
+1999
+10
+24
+Jupiter 3.6'N of Moon
+1999
+10
+24
+FULL MOON
+1999
+10
+24
+Mercury at Greatest Elong: 24.3'E
+1999
+10
+25
+Saturn 2.5'N of Moon
+1999
+10
+26
+Moon at Perigee: 360951 km
+1999
+10
+31
+Venus at Greatest Elong: 46.5'W
+1999
+10
+31
+LAST QUARTER
+1999
+11
+4
+Venus 3.2'S of Moon
+1999
+11
+6
+Saturn at Opposition
+1999
+11
+8
+NEW MOON
+1999
+11
+11
+Moon at Apogee: 406217 km
+1999
+11
+13
+Mars 3.0'S of Moon
+1999
+11
+15
+Mercury at Inferior Conjunction
+1999
+11
+16
+FIRST QUARTER
+1999
+11
+20
+Jupiter 3.7'N of Moon
+1999
+11
+22
+Saturn 2.5'N of Moon
+1999
+11
+23
+FULL MOON
+1999
+11
+23
+Moon at Perigee: 357281 km
+1999
+11
+25
+Mars at Perihelion
+1999
+11
+29
+LAST QUARTER
+1999
+12
+1
+Venus at Perihelion
+1999
+12
+3
+Mercury at Greatest Elong: 20.4'W
+1999
+12
+3
+Venus 3.0'S of Moon
+1999
+12
+6
+Mercury 2.8'S of Moon
+1999
+12
+7
+NEW MOON
+1999
+12
+8
+Moon at Apogee: 406626 km
+1999
+12
+12
+Mars 0.6'S of Moon: Occn.
+1999
+12
+16
+FIRST QUARTER
+1999
+12
+18
+Jupiter 4.0'N of Moon
+1999
+12
+19
+Saturn 2.8'N of Moon
+1999
+12
+22
+Winter Solstice
+1999
+12
+22
+Moon at Perigee: 356655 km
+1999
+12
+22
+FULL MOON
+1999
+12
+29
+LAST QUARTER
+2000
+1
+3
+Venus 2.6'S of Moon
+2000
+1
+3
+Earth at Perihelion
+2000
+1
+4
+Moon at Apogee: 406414 km
+2000
+1
+6
+NEW MOON
+2000
+1
+10
+Mars 1.9'N of Moon
+2000
+1
+14
+FIRST QUARTER
+2000
+1
+14
+Jupiter 4.3'N of Moon
+2000
+1
+15
+Saturn 3.0'N of Moon
+2000
+1
+16
+Mercury at Superior Conjunction
+2000
+1
+19
+Moon at Perigee: 359363 km
+2000
+1
+21
+FULL MOON
+2000
+1
+21
+Total Lunar Eclipse: mag=1.328
+2000
+1
+24
+Neptune-Sun Conjunction
+2000
+1
+28
+LAST QUARTER
+2000
+2
+1
+Moon at Apogee: 405609 km
+2000
+2
+2
+Venus 1.4'S of Moon
+2000
+2
+5
+Partial Solar Eclipse: mag=0.575
+2000
+2
+5
+NEW MOON
+2000
+2
+6
+Uranus-Sun Conjunction
+2000
+2
+8
+Mars 3.9'N of Moon
+2000
+2
+11
+Jupiter 4.5'N of Moon
+2000
+2
+12
+Saturn 3.1'N of Moon
+2000
+2
+12
+FIRST QUARTER
+2000
+2
+15
+Mercury at Greatest Elong: 18.1'E
+2000
+2
+17
+Moon at Perigee: 364500 km
+2000
+2
+19
+FULL MOON
+2000
+2
+27
+LAST QUARTER
+2000
+2
+28
+Moon at Apogee: 404619 km
+2000
+3
+1
+Mercury at Inferior Conjunction
+2000
+3
+4
+Venus 0.6'N of Moon: Occn.
+2000
+3
+6
+NEW MOON
+2000
+3
+9
+Jupiter 4.4'N of Moon
+2000
+3
+10
+Saturn 3.1'N of Moon
+2000
+3
+13
+FIRST QUARTER
+2000
+3
+15
+Moon at Perigee: 369530 km
+2000
+3
+20
+FULL MOON
+2000
+3
+20
+Vernal Equinox
+2000
+3
+22
+Venus at Aphelion
+2000
+3
+27
+Moon at Apogee: 404169 km
+2000
+3
+28
+LAST QUARTER
+2000
+3
+28
+Mercury at Greatest Elong: 27.8'W
+2000
+4
+2
+Mercury 1.6'N of Moon
+2000
+4
+3
+Venus 2.8'N of Moon
+2000
+4
+4
+NEW MOON
+2000
+4
+6
+Jupiter 4.3'N of Moon
+2000
+4
+6
+Saturn 2.9'N of Moon
+2000
+4
+8
+Moon at Perigee: 368258 km
+2000
+4
+11
+FIRST QUARTER
+2000
+4
+18
+FULL MOON
+2000
+4
+24
+Moon at Apogee: 404560 km
+2000
+4
+26
+LAST QUARTER
+2000
+5
+4
+NEW MOON
+2000
+5
+6
+Moon at Perigee: 363172 km
+2000
+5
+8
+Jupiter-Sun Conjunction
+2000
+5
+9
+Mercury at Superior Conjunction
+2000
+5
+10
+Saturn-Sun Conjunction
+2000
+5
+10
+FIRST QUARTER
+2000
+5
+18
+FULL MOON
+2000
+5
+22
+Moon at Apogee: 405427 km
+2000
+5
+26
+LAST QUARTER
+2000
+6
+2
+NEW MOON
+2000
+6
+3
+Moon at Perigee: 359093 km
+2000
+6
+4
+Mercury 3.6'N of Moon
+2000
+6
+9
+FIRST QUARTER
+2000
+6
+9
+Mercury at Greatest Elong: 24.0'E
+2000
+6
+11
+Venus at Superior Conjunction
+2000
+6
+16
+FULL MOON
+2000
+6
+18
+Moon at Apogee: 406112 km
+2000
+6
+21
+Summer Solstice
+2000
+6
+25
+LAST QUARTER
+2000
+6
+28
+Saturn 2.6'N of Moon
+2000
+6
+29
+Jupiter 3.6'N of Moon
+2000
+7
+1
+Mars-Sun Conjunction
+2000
+7
+1
+NEW MOON
+2000
+7
+1
+Partial Solar Eclipse: mag=0.481
+2000
+7
+1
+Moon at Perigee: 357363 km
+2000
+7
+3
+Earth at Aphelion
+2000
+7
+6
+Mercury at Inferior Conjunction
+2000
+7
+8
+FIRST QUARTER
+2000
+7
+12
+Venus at Perihelion
+2000
+7
+15
+Moon at Apogee: 406200 km
+2000
+7
+16
+Total Lunar Eclipse: mag=1.773
+2000
+7
+16
+FULL MOON
+2000
+7
+24
+LAST QUARTER
+2000
+7
+26
+Saturn 2.4'N of Moon
+2000
+7
+26
+Jupiter 3.3'N of Moon
+2000
+7
+27
+Mercury at Greatest Elong: 19.8'W
+2000
+7
+27
+Neptune at Opposition
+2000
+7
+30
+Moon at Perigee: 358379 km
+2000
+7
+31
+Partial Solar Eclipse: mag=0.598
+2000
+7
+31
+NEW MOON
+2000
+8
+7
+FIRST QUARTER
+2000
+8
+11
+Uranus at Opposition
+2000
+8
+11
+Moon at Apogee: 405650 km
+2000
+8
+15
+FULL MOON
+2000
+8
+22
+Mercury at Superior Conjunction
+2000
+8
+22
+LAST QUARTER
+2000
+8
+22
+Saturn 2.1'N of Moon
+2000
+8
+23
+Jupiter 2.9'N of Moon
+2000
+8
+27
+Moon at Perigee: 361911 km
+2000
+8
+29
+NEW MOON
+2000
+8
+30
+Venus 3.8'S of Moon
+2000
+9
+5
+FIRST QUARTER
+2000
+9
+8
+Moon at Apogee: 404761 km
+2000
+9
+13
+FULL MOON
+2000
+9
+19
+Saturn 1.8'N of Moon
+2000
+9
+19
+Jupiter 2.5'N of Moon
+2000
+9
+21
+LAST QUARTER
+2000
+9
+22
+Autumnal Equinox
+2000
+9
+24
+Moon at Perigee: 366966 km
+2000
+9
+25
+Mars 2.3'S of Moon
+2000
+9
+27
+NEW MOON
+2000
+9
+30
+Venus 5.3'S of Moon
+2000
+10
+5
+FIRST QUARTER
+2000
+10
+6
+Moon at Apogee: 404169 km
+2000
+10
+6
+Mercury at Greatest Elong: 25.5'E
+2000
+10
+13
+FULL MOON
+2000
+10
+16
+Saturn 1.6'N of Moon
+2000
+10
+17
+Jupiter 2.3'N of Moon
+2000
+10
+19
+Moon at Perigee: 370113 km
+2000
+10
+20
+LAST QUARTER
+2000
+10
+24
+Mars 3.5'S of Moon
+2000
+10
+27
+NEW MOON
+2000
+10
+30
+Mercury at Inferior Conjunction
+2000
+10
+30
+Venus 4.5'S of Moon
+2000
+11
+3
+Mars at Aphelion
+2000
+11
+3
+Moon at Apogee: 404379 km
+2000
+11
+4
+FIRST QUARTER
+2000
+11
+11
+FULL MOON
+2000
+11
+12
+Saturn 1.6'N of Moon
+2000
+11
+13
+Jupiter 2.3'N of Moon
+2000
+11
+14
+Moon at Perigee: 366052 km
+2000
+11
+15
+Mercury at Greatest Elong: 19.3'W
+2000
+11
+18
+LAST QUARTER
+2000
+11
+19
+Saturn at Opposition
+2000
+11
+21
+Mars 4.1'S of Moon
+2000
+11
+25
+NEW MOON
+2000
+11
+28
+Jupiter at Opposition
+2000
+11
+29
+Venus 2.0'S of Moon
+2000
+12
+1
+Moon at Apogee: 405274 km
+2000
+12
+4
+FIRST QUARTER
+2000
+12
+9
+Saturn 1.8'N of Moon
+2000
+12
+10
+Jupiter 2.6'N of Moon
+2000
+12
+11
+FULL MOON
+2000
+12
+12
+Moon at Perigee: 360601 km
+2000
+12
+18
+LAST QUARTER
+2000
+12
+20
+Mars 4.2'S of Moon
+2000
+12
+21
+Winter Solstice
+2000
+12
+25
+NEW MOON
+2000
+12
+25
+Partial Solar Eclipse: mag=0.729
+2000
+12
+25
+Mercury at Superior Conjunction
+2000
+12
+28
+Moon at Apogee: 406191 km
+2000
+12
+29
+Venus 1.8'N of Moon
+2001
+1
+2
+FIRST QUARTER
+2001
+1
+4
+Earth at Perihelion
+2001
+1
+6
+Saturn 2.0'N of Moon
+2001
+1
+6
+Jupiter 3.0'N of Moon
+2001
+1
+9
+Total Lunar Eclipse: mag=1.181
+2001
+1
+9
+FULL MOON
+2001
+1
+10
+Moon at Perigee: 357132 km
+2001
+1
+16
+LAST QUARTER
+2001
+1
+17
+Venus at Greatest Elong: 47.1'E
+2001
+1
+17
+Mars 3.6'S of Moon
+2001
+1
+24
+NEW MOON
+2001
+1
+24
+Moon at Apogee: 406565 km
+2001
+1
+25
+Neptune-Sun Conjunction
+2001
+1
+28
+Mercury at Greatest Elong: 18.4'E
+2001
+2
+1
+FIRST QUARTER
+2001
+2
+2
+Saturn 2.1'N of Moon
+2001
+2
+2
+Jupiter 3.1'N of Moon
+2001
+2
+7
+Moon at Perigee: 356853 km
+2001
+2
+8
+FULL MOON
+2001
+2
+9
+Uranus-Sun Conjunction
+2001
+2
+13
+Mercury at Inferior Conjunction
+2001
+2
+15
+LAST QUARTER
+2001
+2
+15
+Mars 2.7'S of Moon
+2001
+2
+20
+Moon at Apogee: 406332 km
+2001
+2
+22
+Venus at Perihelion
+2001
+2
+23
+NEW MOON
+2001
+3
+1
+Saturn 2.0'N of Moon
+2001
+3
+2
+Jupiter 2.8'N of Moon
+2001
+3
+3
+FIRST QUARTER
+2001
+3
+8
+Moon at Perigee: 359779 km
+2001
+3
+9
+FULL MOON
+2001
+3
+11
+Mercury at Greatest Elong: 27.5'W
+2001
+3
+15
+Mars 1.8'S of Moon
+2001
+3
+16
+LAST QUARTER
+2001
+3
+20
+Moon at Apogee: 405473 km
+2001
+3
+20
+Vernal Equinox
+2001
+3
+22
+Mercury 2.2'N of Moon
+2001
+3
+25
+NEW MOON
+2001
+3
+29
+Saturn 1.7'N of Moon
+2001
+3
+29
+Jupiter 2.4'N of Moon
+2001
+3
+30
+Venus at Inferior Conjunction
+2001
+4
+1
+FIRST QUARTER
+2001
+4
+5
+Moon at Perigee: 364815 km
+2001
+4
+8
+FULL MOON
+2001
+4
+13
+Mars 1.3'S of Moon
+2001
+4
+15
+LAST QUARTER
+2001
+4
+17
+Moon at Apogee: 404501 km
+2001
+4
+23
+Mercury at Superior Conjunction
+2001
+4
+23
+NEW MOON
+2001
+4
+25
+Saturn 1.4'N of Moon
+2001
+4
+26
+Jupiter 1.8'N of Moon
+2001
+4
+30
+FIRST QUARTER
+2001
+5
+2
+Moon at Perigee: 369426 km
+2001
+5
+7
+FULL MOON
+2001
+5
+10
+Mars 1.9'S of Moon
+2001
+5
+15
+Moon at Apogee: 404141 km
+2001
+5
+15
+LAST QUARTER
+2001
+5
+19
+Venus 4.5'N of Moon
+2001
+5
+22
+Mercury at Greatest Elong: 22.4'E
+2001
+5
+23
+NEW MOON
+2001
+5
+24
+Mercury 2.8'N of Moon
+2001
+5
+25
+Saturn-Sun Conjunction
+2001
+5
+27
+Moon at Perigee: 368036 km
+2001
+5
+29
+FIRST QUARTER
+2001
+6
+6
+FULL MOON
+2001
+6
+6
+Mars 3.9'S of Moon
+2001
+6
+8
+Venus at Greatest Elong: 45.8'W
+2001
+6
+11
+Moon at Apogee: 404630 km
+2001
+6
+13
+Mars at Opposition
+2001
+6
+14
+LAST QUARTER
+2001
+6
+14
+Jupiter-Sun Conjunction
+2001
+6
+14
+Venus at Aphelion
+2001
+6
+16
+Mercury at Inferior Conjunction
+2001
+6
+17
+Venus 1.7'N of Moon
+2001
+6
+19
+Saturn 0.9'N of Moon: Occn.
+2001
+6
+21
+Summer Solstice
+2001
+6
+21
+NEW MOON
+2001
+6
+21
+Total Solar Eclipse: mag=1.047
+2001
+6
+23
+Moon at Perigee: 363135 km
+2001
+6
+28
+FIRST QUARTER
+2001
+7
+4
+Earth at Aphelion
+2001
+7
+5
+Partial Lunar Eclipse: mag=0.487
+2001
+7
+5
+FULL MOON
+2001
+7
+9
+Moon at Apogee: 405565 km
+2001
+7
+9
+Mercury at Greatest Elong: 21.1'W
+2001
+7
+13
+LAST QUARTER
+2001
+7
+17
+Saturn 0.6'N of Moon: Occn.
+2001
+7
+17
+Venus 0.3'S of Moon: Occn.
+2001
+7
+19
+Jupiter 0.2'N of Moon: Occn.
+2001
+7
+20
+NEW MOON
+2001
+7
+21
+Moon at Perigee: 359027 km
+2001
+7
+27
+FIRST QUARTER
+2001
+7
+30
+Neptune at Opposition
+2001
+8
+4
+FULL MOON
+2001
+8
+5
+Moon at Apogee: 406268 km
+2001
+8
+5
+Mercury at Superior Conjunction
+2001
+8
+12
+LAST QUARTER
+2001
+8
+14
+Saturn 0.2'N of Moon: Occn.
+2001
+8
+15
+Jupiter 0.4'S of Moon: Occn.
+2001
+8
+16
+Uranus at Opposition
+2001
+8
+16
+Venus 1.9'S of Moon
+2001
+8
+19
+NEW MOON
+2001
+8
+19
+Moon at Perigee: 357159 km
+2001
+8
+25
+FIRST QUARTER
+2001
+9
+1
+Moon at Apogee: 406332 km
+2001
+9
+2
+FULL MOON
+2001
+9
+10
+Saturn 0.2'S of Moon: Occn.
+2001
+9
+10
+LAST QUARTER
+2001
+9
+12
+Jupiter 1.0'S of Moon: Occn.
+2001
+9
+15
+Venus 3.3'S of Moon
+2001
+9
+16
+Moon at Perigee: 358128 km
+2001
+9
+17
+NEW MOON
+2001
+9
+18
+Mercury at Greatest Elong: 26.5'E
+2001
+9
+22
+Autumnal Equinox
+2001
+9
+24
+FIRST QUARTER
+2001
+9
+25
+Mars 2.4'S of Moon
+2001
+9
+29
+Moon at Apogee: 405791 km
+2001
+10
+2
+FULL MOON
+2001
+10
+5
+Venus at Perihelion
+2001
+10
+7
+Saturn 0.5'S of Moon: Occn.
+2001
+10
+10
+Jupiter 1.4'S of Moon
+2001
+10
+10
+LAST QUARTER
+2001
+10
+12
+Mars at Perihelion
+2001
+10
+14
+Mercury at Inferior Conjunction
+2001
+10
+14
+Moon at Perigee: 361864 km
+2001
+10
+15
+Venus 3.8'S of Moon
+2001
+10
+16
+NEW MOON
+2001
+10
+23
+Mars 0.1'N of Moon: Occn.
+2001
+10
+24
+FIRST QUARTER
+2001
+10
+26
+Moon at Apogee: 404937 km
+2001
+10
+29
+Mercury at Greatest Elong: 18.6'W
+2001
+11
+1
+FULL MOON
+2001
+11
+3
+Saturn 0.6'S of Moon: Occn.
+2001
+11
+6
+Jupiter 1.7'S of Moon
+2001
+11
+8
+LAST QUARTER
+2001
+11
+11
+Moon at Perigee: 367259 km
+2001
+11
+15
+NEW MOON
+2001
+11
+21
+Mars 2.5'N of Moon
+2001
+11
+22
+FIRST QUARTER
+2001
+11
+23
+Moon at Apogee: 404396 km
+2001
+11
+30
+FULL MOON
+2001
+12
+1
+Saturn 0.5'S of Moon: Occn.
+2001
+12
+3
+Jupiter 1.6'S of Moon
+2001
+12
+3
+Saturn at Opposition
+2001
+12
+4
+Mercury at Superior Conjunction
+2001
+12
+6
+Moon at Perigee: 370114 km
+2001
+12
+7
+LAST QUARTER
+2001
+12
+14
+NEW MOON
+2001
+12
+14
+Annular Solar Eclipse: mag=0.964
+2001
+12
+20
+Mars 4.4'N of Moon
+2001
+12
+21
+Moon at Apogee: 404634 km
+2001
+12
+21
+Winter Solstice
+2001
+12
+22
+FIRST QUARTER
+2001
+12
+28
+Saturn 0.2'S of Moon: Occn.
+2001
+12
+30
+Pen. Lunar Eclipse: mag=0.880
+2001
+12
+30
+FULL MOON
+2001
+12
+30
+Jupiter 1.2'S of Moon: Occn.
+2002
+1
+1
+Jupiter at Opposition
+2002
+1
+2
+Moon at Perigee: 365412 km
+2002
+1
+2
+Earth at Perihelion
+2002
+1
+6
+LAST QUARTER
+2002
+1
+12
+Mercury at Greatest Elong: 19.0'E
+2002
+1
+13
+NEW MOON
+2002
+1
+14
+Venus at Superior Conjunction
+2002
+1
+18
+Moon at Apogee: 405503 km
+2002
+1
+21
+FIRST QUARTER
+2002
+1
+24
+Saturn 0.1'S of Moon: Occn.
+2002
+1
+25
+Venus at Aphelion
+2002
+1
+26
+Jupiter 0.9'S of Moon: Occn.
+2002
+1
+27
+Mercury at Inferior Conjunction
+2002
+1
+28
+Neptune-Sun Conjunction
+2002
+1
+28
+FULL MOON
+2002
+1
+30
+Moon at Perigee: 359997 km
+2002
+2
+4
+LAST QUARTER
+2002
+2
+12
+NEW MOON
+2002
+2
+14
+Uranus-Sun Conjunction
+2002
+2
+14
+Moon at Apogee: 406361 km
+2002
+2
+20
+FIRST QUARTER
+2002
+2
+21
+Saturn 0.2'S of Moon: Occn.
+2002
+2
+21
+Mercury at Greatest Elong: 26.6'W
+2002
+2
+23
+Jupiter 0.9'S of Moon: Occn.
+2002
+2
+27
+FULL MOON
+2002
+2
+27
+Moon at Perigee: 356898 km
+2002
+3
+6
+LAST QUARTER
+2002
+3
+12
+Mercury 2.7'N of Moon
+2002
+3
+14
+Moon at Apogee: 406705 km
+2002
+3
+14
+NEW MOON
+2002
+3
+18
+Mars 3.9'N of Moon
+2002
+3
+20
+Saturn 0.5'S of Moon: Occn.
+2002
+3
+20
+Vernal Equinox
+2002
+3
+22
+FIRST QUARTER
+2002
+3
+22
+Jupiter 1.1'S of Moon: Occn.
+2002
+3
+28
+Moon at Perigee: 357012 km
+2002
+3
+28
+FULL MOON
+2002
+4
+4
+LAST QUARTER
+2002
+4
+7
+Mercury at Superior Conjunction
+2002
+4
+10
+Moon at Apogee: 406409 km
+2002
+4
+12
+NEW MOON
+2002
+4
+14
+Venus 3.0'N of Moon
+2002
+4
+15
+Mars 2.3'N of Moon
+2002
+4
+16
+Saturn 0.8'S of Moon: Occn.
+2002
+4
+18
+Jupiter 1.6'S of Moon
+2002
+4
+20
+FIRST QUARTER
+2002
+4
+25
+Moon at Perigee: 360088 km
+2002
+4
+27
+FULL MOON
+2002
+5
+4
+Mercury at Greatest Elong: 21.0'E
+2002
+5
+4
+LAST QUARTER
+2002
+5
+7
+Moon at Apogee: 405483 km
+2002
+5
+12
+NEW MOON
+2002
+5
+14
+Saturn 1.1'S of Moon: Occn.
+2002
+5
+14
+Mars 0.6'N of Moon: Occn.
+2002
+5
+14
+Venus 0.8'N of Moon: Occn.
+2002
+5
+16
+Jupiter 2.1'S of Moon
+2002
+5
+17
+Venus at Perihelion
+2002
+5
+19
+FIRST QUARTER
+2002
+5
+23
+Moon at Perigee: 364985 km
+2002
+5
+26
+FULL MOON
+2002
+5
+26
+Pen. Lunar Eclipse: mag=0.686
+2002
+5
+27
+Mercury at Inferior Conjunction
+2002
+6
+3
+LAST QUARTER
+2002
+6
+4
+Moon at Apogee: 404524 km
+2002
+6
+9
+Saturn-Sun Conjunction
+2002
+6
+10
+Annular Solar Eclipse: mag=0.992
+2002
+6
+10
+NEW MOON
+2002
+6
+13
+Jupiter 2.5'S of Moon
+2002
+6
+13
+Venus 1.5'S of Moon
+2002
+6
+18
+FIRST QUARTER
+2002
+6
+19
+Moon at Perigee: 369308 km
+2002
+6
+21
+Summer Solstice
+2002
+6
+21
+Mercury at Greatest Elong: 22.7'W
+2002
+6
+24
+Pen. Lunar Eclipse: mag=0.199
+2002
+6
+24
+FULL MOON
+2002
+7
+2
+Moon at Apogee: 404211 km
+2002
+7
+2
+LAST QUARTER
+2002
+7
+6
+Earth at Aphelion
+2002
+7
+8
+Saturn 1.7'S of Moon
+2002
+7
+10
+NEW MOON
+2002
+7
+13
+Venus 3.9'S of Moon
+2002
+7
+14
+Moon at Perigee: 367853 km
+2002
+7
+17
+FIRST QUARTER
+2002
+7
+20
+Jupiter-Sun Conjunction
+2002
+7
+21
+Mercury at Superior Conjunction
+2002
+7
+24
+FULL MOON
+2002
+7
+30
+Moon at Apogee: 404742 km
+2002
+8
+1
+LAST QUARTER
+2002
+8
+1
+Neptune at Opposition
+2002
+8
+5
+Saturn 2.1'S of Moon
+2002
+8
+8
+NEW MOON
+2002
+8
+10
+Mars-Sun Conjunction
+2002
+8
+11
+Moon at Perigee: 362928 km
+2002
+8
+11
+Venus 6.1'S of Moon
+2002
+8
+15
+FIRST QUARTER
+2002
+8
+20
+Uranus at Opposition
+2002
+8
+22
+Venus at Greatest Elong: 46.0'E
+2002
+8
+22
+FULL MOON
+2002
+8
+26
+Moon at Apogee: 405694 km
+2002
+8
+31
+LAST QUARTER
+2002
+9
+1
+Mercury at Greatest Elong: 27.2'E
+2002
+9
+1
+Saturn 2.5'S of Moon
+2002
+9
+4
+Jupiter 3.7'S of Moon
+2002
+9
+7
+NEW MOON
+2002
+9
+8
+Moon at Perigee: 358745 km
+2002
+9
+13
+FIRST QUARTER
+2002
+9
+21
+Mars at Aphelion
+2002
+9
+21
+FULL MOON
+2002
+9
+23
+Moon at Apogee: 406351 km
+2002
+9
+23
+Autumnal Equinox
+2002
+9
+27
+Mercury at Inferior Conjunction
+2002
+9
+29
+Saturn 2.9'S of Moon
+2002
+9
+29
+LAST QUARTER
+2002
+10
+2
+Jupiter 4.1'S of Moon
+2002
+10
+6
+NEW MOON
+2002
+10
+6
+Moon at Perigee: 356920 km
+2002
+10
+13
+FIRST QUARTER
+2002
+10
+13
+Mercury at Greatest Elong: 18.1'W
+2002
+10
+20
+Moon at Apogee: 406358 km
+2002
+10
+21
+FULL MOON
+2002
+10
+26
+Saturn 3.1'S of Moon
+2002
+10
+29
+LAST QUARTER
+2002
+10
+29
+Jupiter 4.4'S of Moon
+2002
+10
+31
+Venus at Inferior Conjunction
+2002
+11
+2
+Mars 3.8'S of Moon
+2002
+11
+4
+Moon at Perigee: 358154 km
+2002
+11
+4
+NEW MOON
+2002
+11
+11
+FIRST QUARTER
+2002
+11
+14
+Mercury at Superior Conjunction
+2002
+11
+16
+Moon at Apogee: 405795 km
+2002
+11
+20
+FULL MOON
+2002
+11
+20
+Pen. Lunar Eclipse: mag=0.857
+2002
+11
+22
+Saturn 3.1'S of Moon
+2002
+11
+26
+Jupiter 4.5'S of Moon
+2002
+11
+27
+LAST QUARTER
+2002
+12
+1
+Mars 2.7'S of Moon
+2002
+12
+1
+Venus 2.1'S of Moon
+2002
+12
+2
+Moon at Perigee: 362294 km
+2002
+12
+4
+Total Solar Eclipse: mag=1.021
+2002
+12
+4
+NEW MOON
+2002
+12
+11
+FIRST QUARTER
+2002
+12
+14
+Moon at Apogee: 404912 km
+2002
+12
+17
+Saturn at Opposition
+2002
+12
+19
+Saturn 2.8'S of Moon
+2002
+12
+19
+FULL MOON
+2002
+12
+22
+Winter Solstice
+2002
+12
+23
+Jupiter 4.3'S of Moon
+2002
+12
+26
+Mercury at Greatest Elong: 19.9'E
+2002
+12
+27
+LAST QUARTER
+2002
+12
+28
+Venus at Perihelion
+2002
+12
+30
+Mars 1.2'S of Moon: Occn.
+2002
+12
+30
+Moon at Perigee: 367904 km
+2002
+12
+30
+Venus 2.2'N of Moon
+2003
+1
+2
+NEW MOON
+2003
+1
+4
+Earth at Perihelion
+2003
+1
+10
+FIRST QUARTER
+2003
+1
+11
+Moon at Apogee: 404343 km
+2003
+1
+11
+Venus at Greatest Elong: 47.0'W
+2003
+1
+11
+Mercury at Inferior Conjunction
+2003
+1
+15
+Saturn 2.6'S of Moon
+2003
+1
+18
+FULL MOON
+2003
+1
+19
+Jupiter 4.0'S of Moon
+2003
+1
+23
+Moon at Perigee: 369912 km
+2003
+1
+25
+LAST QUARTER
+2003
+1
+27
+Mars 0.4'N of Moon: Occn.
+2003
+1
+28
+Venus 4.3'N of Moon
+2003
+1
+30
+Mercury 4.8'N of Moon
+2003
+1
+30
+Neptune-Sun Conjunction
+2003
+2
+1
+NEW MOON
+2003
+2
+2
+Jupiter at Opposition
+2003
+2
+4
+Mercury at Greatest Elong: 25.4'W
+2003
+2
+7
+Moon at Apogee: 404551 km
+2003
+2
+9
+FIRST QUARTER
+2003
+2
+12
+Saturn 2.6'S of Moon
+2003
+2
+15
+Jupiter 3.8'S of Moon
+2003
+2
+16
+FULL MOON
+2003
+2
+18
+Uranus-Sun Conjunction
+2003
+2
+19
+Moon at Perigee: 364844 km
+2003
+2
+23
+LAST QUARTER
+2003
+2
+25
+Mars 1.9'N of Moon
+2003
+2
+27
+Venus 5.1'N of Moon
+2003
+3
+3
+NEW MOON
+2003
+3
+7
+Moon at Apogee: 405383 km
+2003
+3
+11
+FIRST QUARTER
+2003
+3
+11
+Saturn 2.8'S of Moon
+2003
+3
+15
+Jupiter 3.9'S of Moon
+2003
+3
+18
+FULL MOON
+2003
+3
+19
+Moon at Perigee: 359818 km
+2003
+3
+21
+Vernal Equinox
+2003
+3
+21
+Mercury at Superior Conjunction
+2003
+3
+25
+LAST QUARTER
+2003
+3
+25
+Mars 2.9'N of Moon
+2003
+3
+29
+Venus 4.7'N of Moon
+2003
+4
+1
+NEW MOON
+2003
+4
+4
+Moon at Apogee: 406211 km
+2003
+4
+7
+Saturn 3.1'S of Moon
+2003
+4
+9
+FIRST QUARTER
+2003
+4
+11
+Jupiter 4.1'S of Moon
+2003
+4
+16
+Mercury at Greatest Elong: 19.8'E
+2003
+4
+16
+FULL MOON
+2003
+4
+17
+Moon at Perigee: 357158 km
+2003
+4
+19
+Venus at Aphelion
+2003
+4
+23
+Mars 3.4'N of Moon
+2003
+4
+23
+LAST QUARTER
+2003
+4
+28
+Venus 2.7'N of Moon
+2003
+5
+1
+Moon at Apogee: 406530 km
+2003
+5
+1
+NEW MOON
+2003
+5
+5
+Saturn 3.3'S of Moon
+2003
+5
+7
+Mercury at Inferior Conjunction
+2003
+5
+8
+Jupiter 4.3'S of Moon
+2003
+5
+9
+FIRST QUARTER
+2003
+5
+15
+Moon at Perigee: 357449 km
+2003
+5
+16
+FULL MOON
+2003
+5
+16
+Total Lunar Eclipse: mag=1.129
+2003
+5
+21
+Mars 3.0'N of Moon
+2003
+5
+23
+LAST QUARTER
+2003
+5
+28
+Moon at Apogee: 406171 km
+2003
+5
+29
+Mercury 2.5'S of Moon
+2003
+5
+29
+Venus 0.1'S of Moon: Occn.
+2003
+5
+31
+Annular Solar Eclipse mag=0.937
+2003
+5
+31
+NEW MOON
+2003
+6
+3
+Mercury at Greatest Elong: 24.4'W
+2003
+6
+5
+Jupiter 4.4'S of Moon
+2003
+6
+7
+FIRST QUARTER
+2003
+6
+12
+Moon at Perigee: 360427 km
+2003
+6
+14
+FULL MOON
+2003
+6
+19
+Mars 1.7'N of Moon
+2003
+6
+21
+LAST QUARTER
+2003
+6
+21
+Summer Solstice
+2003
+6
+24
+Saturn-Sun Conjunction
+2003
+6
+25
+Moon at Apogee: 405233 km
+2003
+6
+29
+NEW MOON
+2003
+7
+2
+Jupiter 4.5'S of Moon
+2003
+7
+4
+Earth at Aphelion
+2003
+7
+5
+Mercury at Superior Conjunction
+2003
+7
+7
+FIRST QUARTER
+2003
+7
+9
+Saturn at Perihelion
+2003
+7
+10
+Moon at Perigee: 365143 km
+2003
+7
+13
+FULL MOON
+2003
+7
+17
+Mars 0.3'S of Moon: Occn.
+2003
+7
+21
+LAST QUARTER
+2003
+7
+22
+Moon at Apogee: 404330 km
+2003
+7
+27
+Saturn 4.0'S of Moon
+2003
+7
+29
+NEW MOON
+2003
+7
+31
+Mercury 4.8'S of Moon
+2003
+8
+4
+Neptune at Opposition
+2003
+8
+5
+FIRST QUARTER
+2003
+8
+6
+Moon at Perigee: 369437 km
+2003
+8
+10
+Venus at Perihelion
+2003
+8
+12
+FULL MOON
+2003
+8
+13
+Mars 1.9'S of Moon
+2003
+8
+14
+Mercury at Greatest Elong: 27.4'E
+2003
+8
+18
+Venus at Superior Conjunction
+2003
+8
+19
+Moon at Apogee: 404102 km
+2003
+8
+20
+LAST QUARTER
+2003
+8
+22
+Jupiter-Sun Conjunction
+2003
+8
+23
+Saturn 4.3'S of Moon
+2003
+8
+24
+Uranus at Opposition
+2003
+8
+27
+NEW MOON
+2003
+8
+28
+Mars at Opposition
+2003
+8
+30
+Mars at Perihelion
+2003
+8
+31
+Moon at Perigee: 367929 km
+2003
+9
+3
+FIRST QUARTER
+2003
+9
+9
+Mars 1.2'S of Moon
+2003
+9
+10
+FULL MOON
+2003
+9
+11
+Mercury at Inferior Conjunction
+2003
+9
+16
+Moon at Apogee: 404713 km
+2003
+9
+18
+LAST QUARTER
+2003
+9
+23
+Autumnal Equinox
+2003
+9
+24
+Jupiter 4.4'S of Moon
+2003
+9
+26
+NEW MOON
+2003
+9
+27
+Mercury at Greatest Elong: 17.9'W
+2003
+9
+28
+Moon at Perigee: 362837 km
+2003
+10
+2
+FIRST QUARTER
+2003
+10
+6
+Mars 1.1'N of Moon: Occn.
+2003
+10
+10
+FULL MOON
+2003
+10
+14
+Moon at Apogee: 405692 km
+2003
+10
+18
+LAST QUARTER
+2003
+10
+21
+Jupiter 4.4'S of Moon
+2003
+10
+25
+Mercury at Superior Conjunction
+2003
+10
+25
+NEW MOON
+2003
+10
+26
+Moon at Perigee: 358549 km
+2003
+10
+26
+Venus 0.1'N of Moon: Occn.
+2003
+11
+1
+FIRST QUARTER
+2003
+11
+3
+Mars 3.1'N of Moon
+2003
+11
+9
+FULL MOON
+2003
+11
+9
+Total Lunar Eclipse: mag=1.018
+2003
+11
+10
+Moon at Apogee: 406298 km
+2003
+11
+17
+LAST QUARTER
+2003
+11
+18
+Jupiter 4.2'S of Moon
+2003
+11
+23
+Total Solar Eclipse: mag=1.037
+2003
+11
+23
+NEW MOON
+2003
+11
+23
+Moon at Perigee: 356812 km
+2003
+11
+25
+Venus 2.0'N of Moon
+2003
+11
+30
+FIRST QUARTER
+2003
+12
+1
+Mars 4.1'N of Moon
+2003
+12
+7
+Moon at Apogee: 406281 km
+2003
+12
+8
+FULL MOON
+2003
+12
+9
+Mercury at Greatest Elong: 20.9'E
+2003
+12
+16
+Jupiter 3.8'S of Moon
+2003
+12
+16
+LAST QUARTER
+2003
+12
+22
+Winter Solstice
+2003
+12
+22
+Moon at Perigee: 358342 km
+2003
+12
+23
+NEW MOON
+2003
+12
+25
+Venus 3.2'N of Moon
+2003
+12
+27
+Mercury at Inferior Conjunction
+2003
+12
+30
+Mars 3.8'N of Moon
+2003
+12
+30
+FIRST QUARTER
+2003
+12
+31
+Saturn at Opposition
+2004
+1
+3
+Moon at Apogee: 405707 km
+2004
+1
+4
+Earth at Perihelion
+2004
+1
+7
+FULL MOON
+2004
+1
+12
+Jupiter 3.4'S of Moon
+2004
+1
+15
+LAST QUARTER
+2004
+1
+17
+Mercury at Greatest Elong: 23.9'W
+2004
+1
+19
+Moon at Perigee: 362768 km
+2004
+1
+20
+Mercury 4.7'N of Moon
+2004
+1
+21
+NEW MOON
+2004
+1
+24
+Venus 3.6'N of Moon
+2004
+1
+28
+Mars 2.6'N of Moon
+2004
+1
+29
+FIRST QUARTER
+2004
+1
+31
+Moon at Apogee: 404807 km
+2004
+2
+2
+Neptune-Sun Conjunction
+2004
+2
+3
+Saturn 4.5'S of Moon
+2004
+2
+6
+FULL MOON
+2004
+2
+8
+Jupiter 3.2'S of Moon
+2004
+2
+13
+LAST QUARTER
+2004
+2
+16
+Moon at Perigee: 368320 km
+2004
+2
+20
+NEW MOON
+2004
+2
+22
+Uranus-Sun Conjunction
+2004
+2
+23
+Venus 3.0'N of Moon
+2004
+2
+26
+Mars 0.9'N of Moon: Occn.
+2004
+2
+28
+FIRST QUARTER
+2004
+2
+28
+Moon at Apogee: 404259 km
+2004
+3
+4
+Mercury at Superior Conjunction
+2004
+3
+4
+Jupiter at Opposition
+2004
+3
+6
+Jupiter 3.2'S of Moon
+2004
+3
+6
+FULL MOON
+2004
+3
+12
+Moon at Perigee: 369511 km
+2004
+3
+13
+LAST QUARTER
+2004
+3
+20
+Vernal Equinox
+2004
+3
+20
+NEW MOON
+2004
+3
+21
+Venus at Perihelion
+2004
+3
+24
+Venus 2.2'N of Moon
+2004
+3
+26
+Mars 0.8'S of Moon: Occn.
+2004
+3
+27
+Moon at Apogee: 404520 km
+2004
+3
+28
+FIRST QUARTER
+2004
+3
+29
+Mercury at Greatest Elong: 18.9'E
+2004
+3
+29
+Venus at Greatest Elong: 46.0'E
+2004
+4
+2
+Jupiter 3.5'S of Moon
+2004
+4
+5
+FULL MOON
+2004
+4
+8
+Moon at Perigee: 364548 km
+2004
+4
+12
+LAST QUARTER
+2004
+4
+17
+Mercury at Inferior Conjunction
+2004
+4
+19
+NEW MOON
+2004
+4
+19
+Partial Solar Eclipse: mag=0.741
+2004
+4
+23
+Venus 1.5'N of Moon
+2004
+4
+23
+Mars 2.2'S of Moon
+2004
+4
+24
+Moon at Apogee: 405403 km
+2004
+4
+27
+FIRST QUARTER
+2004
+4
+30
+Jupiter 3.7'S of Moon
+2004
+5
+4
+Total Lunar Eclipse: mag=1.296
+2004
+5
+4
+FULL MOON
+2004
+5
+6
+Moon at Perigee: 359812 km
+2004
+5
+11
+LAST QUARTER
+2004
+5
+14
+Mercury at Greatest Elong: 26.0'W
+2004
+5
+16
+Mercury 2.6'S of Moon
+2004
+5
+19
+NEW MOON
+2004
+5
+21
+Moon at Apogee: 406262 km
+2004
+5
+21
+Venus 0.3'S of Moon: Occn.
+2004
+5
+22
+Mars 3.2'S of Moon
+2004
+5
+27
+FIRST QUARTER
+2004
+5
+27
+Jupiter 3.7'S of Moon
+2004
+6
+3
+FULL MOON
+2004
+6
+3
+Moon at Perigee: 357249 km
+2004
+6
+8
+Venus at Inferior Conjunction
+2004
+6
+9
+LAST QUARTER
+2004
+6
+17
+Moon at Apogee: 406575 km
+2004
+6
+17
+NEW MOON
+2004
+6
+18
+Mercury at Superior Conjunction
+2004
+6
+20
+Mars 3.8'S of Moon
+2004
+6
+21
+Summer Solstice
+2004
+6
+23
+Jupiter 3.4'S of Moon
+2004
+6
+25
+FIRST QUARTER
+2004
+7
+1
+Moon at Perigee: 357450 km
+2004
+7
+2
+FULL MOON
+2004
+7
+5
+Earth at Aphelion
+2004
+7
+8
+Saturn-Sun Conjunction
+2004
+7
+9
+LAST QUARTER
+2004
+7
+12
+Venus at Aphelion
+2004
+7
+14
+Moon at Apogee: 406192 km
+2004
+7
+17
+NEW MOON
+2004
+7
+21
+Jupiter 3.1'S of Moon
+2004
+7
+25
+FIRST QUARTER
+2004
+7
+27
+Mercury at Greatest Elong: 27.1'E
+2004
+7
+30
+Moon at Perigee: 360326 km
+2004
+7
+31
+FULL MOON
+2004
+8
+5
+Neptune at Opposition
+2004
+8
+7
+LAST QUARTER
+2004
+8
+8
+Mars at Aphelion
+2004
+8
+11
+Moon at Apogee: 405291 km
+2004
+8
+16
+NEW MOON
+2004
+8
+17
+Venus at Greatest Elong: 45.8'W
+2004
+8
+18
+Jupiter 2.6'S of Moon
+2004
+8
+23
+FIRST QUARTER
+2004
+8
+23
+Mercury at Inferior Conjunction
+2004
+8
+27
+Moon at Perigee: 365106 km
+2004
+8
+28
+Uranus at Opposition
+2004
+8
+30
+FULL MOON
+2004
+9
+6
+LAST QUARTER
+2004
+9
+8
+Moon at Apogee: 404464 km
+2004
+9
+9
+Mercury at Greatest Elong: 18.0'W
+2004
+9
+14
+NEW MOON
+2004
+9
+15
+Mars-Sun Conjunction
+2004
+9
+21
+FIRST QUARTER
+2004
+9
+22
+Jupiter-Sun Conjunction
+2004
+9
+22
+Autumnal Equinox
+2004
+9
+22
+Moon at Perigee: 369600 km
+2004
+9
+28
+FULL MOON
+2004
+10
+5
+Mercury at Superior Conjunction
+2004
+10
+5
+Moon at Apogee: 404328 km
+2004
+10
+6
+LAST QUARTER
+2004
+10
+10
+Venus 3.9'S of Moon
+2004
+10
+14
+NEW MOON
+2004
+10
+14
+Partial Solar Eclipse: mag=0.925
+2004
+10
+18
+Moon at Perigee: 367758 km
+2004
+10
+20
+FIRST QUARTER
+2004
+10
+28
+Total Lunar Eclipse: mag=1.308
+2004
+10
+28
+FULL MOON
+2004
+11
+1
+Venus at Perihelion
+2004
+11
+2
+Moon at Apogee: 404999 km
+2004
+11
+5
+LAST QUARTER
+2004
+11
+9
+Jupiter 1.0'S of Moon: Occn.
+2004
+11
+10
+Venus 0.2'N of Moon: Occn.
+2004
+11
+12
+NEW MOON
+2004
+11
+14
+Mercury 0.9'N of Moon: Occn.
+2004
+11
+14
+Moon at Perigee: 362313 km
+2004
+11
+19
+FIRST QUARTER
+2004
+11
+21
+Mercury at Greatest Elong: 22.2'E
+2004
+11
+26
+FULL MOON
+2004
+11
+30
+Moon at Apogee: 405953 km
+2004
+12
+5
+LAST QUARTER
+2004
+12
+7
+Jupiter 0.4'S of Moon: Occn.
+2004
+12
+10
+Mars 2.1'N of Moon
+2004
+12
+10
+Venus 3.5'N of Moon
+2004
+12
+10
+Mercury at Inferior Conjunction
+2004
+12
+12
+NEW MOON
+2004
+12
+12
+Moon at Perigee: 357986 km
+2004
+12
+18
+FIRST QUARTER
+2004
+12
+21
+Winter Solstice
+2004
+12
+26
+FULL MOON
+2004
+12
+27
+Moon at Apogee: 406488 km
+2004
+12
+29
+Mercury at Greatest Elong: 22.4'W
+2005
+1
+1
+Earth at Perihelion
+2005
+1
+3
+LAST QUARTER
+2005
+1
+4
+Jupiter 0.3'N of Moon: Occn.
+2005
+1
+7
+Mars 3.4'N of Moon
+2005
+1
+9
+Mercury 4.8'N of Moon
+2005
+1
+9
+Venus 4.8'N of Moon
+2005
+1
+10
+Moon at Perigee: 356572 km
+2005
+1
+10
+NEW MOON
+2005
+1
+13
+Saturn at Opposition
+2005
+1
+17
+FIRST QUARTER
+2005
+1
+23
+Moon at Apogee: 406444 km
+2005
+1
+25
+FULL MOON
+2005
+1
+31
+Jupiter 0.9'N of Moon: Occn.
+2005
+2
+2
+LAST QUARTER
+2005
+2
+3
+Neptune-Sun Conjunction
+2005
+2
+5
+Mars 4.3'N of Moon
+2005
+2
+7
+Moon at Perigee: 358564 km
+2005
+2
+8
+NEW MOON
+2005
+2
+14
+Mercury at Superior Conjunction
+2005
+2
+16
+FIRST QUARTER
+2005
+2
+20
+Moon at Apogee: 405806 km
+2005
+2
+22
+Venus at Aphelion
+2005
+2
+24
+FULL MOON
+2005
+2
+25
+Uranus-Sun Conjunction
+2005
+2
+27
+Jupiter 1.2'N of Moon: Occn.
+2005
+3
+3
+LAST QUARTER
+2005
+3
+6
+Mars 4.5'N of Moon
+2005
+3
+8
+Moon at Perigee: 363235 km
+2005
+3
+10
+NEW MOON
+2005
+3
+12
+Mercury at Greatest Elong: 18.3'E
+2005
+3
+17
+FIRST QUARTER
+2005
+3
+19
+Moon at Apogee: 404848 km
+2005
+3
+20
+Vernal Equinox
+2005
+3
+25
+FULL MOON
+2005
+3
+26
+Jupiter 1.0'N of Moon: Occn.
+2005
+3
+29
+Mercury at Inferior Conjunction
+2005
+3
+31
+Venus at Superior Conjunction
+2005
+4
+2
+LAST QUARTER
+2005
+4
+3
+Jupiter at Opposition
+2005
+4
+3
+Mars 4.1'N of Moon
+2005
+4
+4
+Moon at Perigee: 368492 km
+2005
+4
+8
+NEW MOON
+2005
+4
+8
+Ann/Total Solar Eclipse mag=1.005
+2005
+4
+10
+Jupiter at Aphelion
+2005
+4
+16
+FIRST QUARTER
+2005
+4
+16
+Moon at Apogee: 404304 km
+2005
+4
+22
+Jupiter 0.6'N of Moon: Occn.
+2005
+4
+24
+Pen. Lunar Eclipse: mag=0.849
+2005
+4
+24
+FULL MOON
+2005
+4
+26
+Mercury at Greatest Elong: 27.2'W
+2005
+4
+29
+Moon at Perigee: 369029 km
+2005
+5
+1
+LAST QUARTER
+2005
+5
+2
+Mars 2.7'N of Moon
+2005
+5
+6
+Mercury 3.1'S of Moon
+2005
+5
+8
+NEW MOON
+2005
+5
+14
+Moon at Apogee: 404601 km
+2005
+5
+16
+FIRST QUARTER
+2005
+5
+19
+Jupiter 0.4'N of Moon: Occn.
+2005
+5
+23
+FULL MOON
+2005
+5
+26
+Moon at Perigee: 364241 km
+2005
+5
+30
+LAST QUARTER
+2005
+5
+31
+Mars 0.5'N of Moon: Occn.
+2005
+6
+3
+Mercury at Superior Conjunction
+2005
+6
+6
+NEW MOON
+2005
+6
+8
+Venus 3.8'S of Moon
+2005
+6
+11
+Moon at Apogee: 405506 km
+2005
+6
+14
+Venus at Perihelion
+2005
+6
+15
+FIRST QUARTER
+2005
+6
+16
+Jupiter 0.4'N of Moon: Occn.
+2005
+6
+21
+Summer Solstice
+2005
+6
+22
+FULL MOON
+2005
+6
+23
+Moon at Perigee: 359675 km
+2005
+6
+28
+LAST QUARTER
+2005
+6
+29
+Mars 2.1'S of Moon
+2005
+7
+5
+Earth at Aphelion
+2005
+7
+6
+NEW MOON
+2005
+7
+8
+Moon at Apogee: 406363 km
+2005
+7
+8
+Venus 3.1'S of Moon
+2005
+7
+9
+Mercury at Greatest Elong: 26.3'E
+2005
+7
+13
+Jupiter 0.8'N of Moon: Occn.
+2005
+7
+14
+FIRST QUARTER
+2005
+7
+17
+Mars at Perihelion
+2005
+7
+21
+FULL MOON
+2005
+7
+21
+Moon at Perigee: 357160 km
+2005
+7
+23
+Saturn-Sun Conjunction
+2005
+7
+27
+Mars 4.3'S of Moon
+2005
+7
+28
+LAST QUARTER
+2005
+8
+4
+Moon at Apogee: 406631 km
+2005
+8
+5
+NEW MOON
+2005
+8
+6
+Mercury at Inferior Conjunction
+2005
+8
+8
+Venus 1.2'S of Moon
+2005
+8
+8
+Neptune at Opposition
+2005
+8
+10
+Jupiter 1.3'N of Moon
+2005
+8
+13
+FIRST QUARTER
+2005
+8
+19
+Moon at Perigee: 357396 km
+2005
+8
+19
+FULL MOON
+2005
+8
+23
+Mercury at Greatest Elong: 18.4'W
+2005
+8
+26
+LAST QUARTER
+2005
+9
+1
+Moon at Apogee: 406210 km
+2005
+9
+1
+Uranus at Opposition
+2005
+9
+3
+NEW MOON
+2005
+9
+7
+Jupiter 1.8'N of Moon
+2005
+9
+7
+Venus 0.6'N of Moon: Occn.
+2005
+9
+11
+FIRST QUARTER
+2005
+9
+16
+Moon at Perigee: 360406 km
+2005
+9
+18
+FULL MOON
+2005
+9
+18
+Mercury at Superior Conjunction
+2005
+9
+22
+Autumnal Equinox
+2005
+9
+25
+LAST QUARTER
+2005
+9
+28
+Moon at Apogee: 405307 km
+2005
+10
+3
+NEW MOON
+2005
+10
+3
+Annular Solar Eclipse: mag=0.956
+2005
+10
+4
+Venus at Aphelion
+2005
+10
+7
+Venus 1.4'N of Moon
+2005
+10
+10
+FIRST QUARTER
+2005
+10
+14
+Moon at Perigee: 365450 km
+2005
+10
+17
+Partial Lunar Eclipse: mag=0.061
+2005
+10
+17
+FULL MOON
+2005
+10
+22
+Jupiter-Sun Conjunction
+2005
+10
+25
+LAST QUARTER
+2005
+10
+25
+Saturn 4.5'S of Moon
+2005
+10
+26
+Moon at Apogee: 404493 km
+2005
+11
+2
+NEW MOON
+2005
+11
+3
+Mercury at Greatest Elong: 23.5'E
+2005
+11
+3
+Venus at Greatest Elong: 47.1'E
+2005
+11
+3
+Mercury 1.3'N of Moon
+2005
+11
+5
+Venus 1.4'N of Moon
+2005
+11
+7
+Mars at Opposition
+2005
+11
+9
+FIRST QUARTER
+2005
+11
+10
+Moon at Perigee: 370014 km
+2005
+11
+15
+Mars 2.7'S of Moon
+2005
+11
+16
+FULL MOON
+2005
+11
+22
+Saturn 4.2'S of Moon
+2005
+11
+23
+Moon at Apogee: 404371 km
+2005
+11
+23
+LAST QUARTER
+2005
+11
+24
+Mercury at Inferior Conjunction
+2005
+11
+29
+Jupiter 3.5'N of Moon
+2005
+12
+1
+NEW MOON
+2005
+12
+4
+Venus 2.4'N of Moon
+2005
+12
+5
+Moon at Perigee: 367365 km
+2005
+12
+8
+FIRST QUARTER
+2005
+12
+12
+Mars 1.3'S of Moon
+2005
+12
+12
+Mercury at Greatest Elong: 21.1'W
+2005
+12
+15
+FULL MOON
+2005
+12
+19
+Saturn 3.9'S of Moon
+2005
+12
+21
+Moon at Apogee: 405014 km
+2005
+12
+21
+Winter Solstice
+2005
+12
+23
+LAST QUARTER
+2005
+12
+27
+Jupiter 4.1'N of Moon
+2005
+12
+31
+NEW MOON
+2006
+1
+1
+Moon at Perigee: 361750 km
+2006
+1
+4
+Earth at Perihelion
+2006
+1
+6
+FIRST QUARTER
+2006
+1
+8
+Mars 1.4'S of Moon
+2006
+1
+14
+Venus at Inferior Conjunction
+2006
+1
+14
+FULL MOON
+2006
+1
+15
+Saturn 3.8'S of Moon
+2006
+1
+17
+Moon at Apogee: 405886 km
+2006
+1
+22
+LAST QUARTER
+2006
+1
+23
+Jupiter 4.7'N of Moon
+2006
+1
+25
+Venus at Perihelion
+2006
+1
+26
+Mercury at Superior Conjunction
+2006
+1
+27
+Saturn at Opposition
+2006
+1
+29
+NEW MOON
+2006
+1
+30
+Moon at Perigee: 357781 km
+2006
+2
+5
+FIRST QUARTER
+2006
+2
+5
+Mars 2.2'S of Moon
+2006
+2
+5
+Neptune-Sun Conjunction
+2006
+2
+11
+Saturn 3.9'S of Moon
+2006
+2
+13
+FULL MOON
+2006
+2
+14
+Moon at Apogee: 406362 km
+2006
+2
+21
+LAST QUARTER
+2006
+2
+24
+Mercury at Greatest Elong: 18.1'E
+2006
+2
+27
+Moon at Perigee: 356885 km
+2006
+2
+28
+NEW MOON
+2006
+3
+1
+Uranus-Sun Conjunction
+2006
+3
+6
+Mars 3.0'S of Moon
+2006
+3
+6
+FIRST QUARTER
+2006
+3
+10
+Saturn 4.0'S of Moon
+2006
+3
+12
+Mercury at Inferior Conjunction
+2006
+3
+13
+Moon at Apogee: 406273 km
+2006
+3
+14
+FULL MOON
+2006
+3
+14
+Pen. Lunar Eclipse: mag=1.025
+2006
+3
+20
+Vernal Equinox
+2006
+3
+22
+LAST QUARTER
+2006
+3
+25
+Venus at Greatest Elong: 46.5'W
+2006
+3
+25
+Venus 5.9'N of Moon
+2006
+3
+27
+Mercury 2.4'N of Moon
+2006
+3
+28
+Moon at Perigee: 359170 km
+2006
+3
+29
+Total Solar Eclipse: mag=1.051
+2006
+3
+29
+NEW MOON
+2006
+4
+3
+Mars 3.5'S of Moon
+2006
+4
+5
+FIRST QUARTER
+2006
+4
+6
+Saturn 4.0'S of Moon
+2006
+4
+8
+Mercury at Greatest Elong: 27.8'W
+2006
+4
+9
+Moon at Apogee: 405551 km
+2006
+4
+13
+FULL MOON
+2006
+4
+21
+LAST QUARTER
+2006
+4
+24
+Venus 0.5'N of Moon: Occn.
+2006
+4
+25
+Moon at Perigee: 363737 km
+2006
+4
+26
+Mercury 4.0'S of Moon
+2006
+4
+27
+NEW MOON
+2006
+5
+2
+Mars 3.6'S of Moon
+2006
+5
+4
+Saturn 3.8'S of Moon
+2006
+5
+4
+Jupiter at Opposition
+2006
+5
+5
+FIRST QUARTER
+2006
+5
+7
+Moon at Apogee: 404572 km
+2006
+5
+13
+FULL MOON
+2006
+5
+17
+Venus at Aphelion
+2006
+5
+18
+Mercury at Superior Conjunction
+2006
+5
+20
+LAST QUARTER
+2006
+5
+22
+Moon at Perigee: 368615 km
+2006
+5
+24
+Venus 4.3'S of Moon
+2006
+5
+27
+NEW MOON
+2006
+5
+31
+Mars 3.2'S of Moon
+2006
+5
+31
+Saturn 3.5'S of Moon
+2006
+6
+3
+FIRST QUARTER
+2006
+6
+4
+Moon at Apogee: 404080 km
+2006
+6
+11
+FULL MOON
+2006
+6
+16
+Moon at Perigee: 368926 km
+2006
+6
+18
+LAST QUARTER
+2006
+6
+20
+Mercury at Greatest Elong: 24.9'E
+2006
+6
+21
+Summer Solstice
+2006
+6
+23
+Venus 6.2'S of Moon
+2006
+6
+25
+NEW MOON
+2006
+6
+26
+Mars at Aphelion
+2006
+6
+28
+Saturn 3.2'S of Moon
+2006
+6
+28
+Mars 2.4'S of Moon
+2006
+7
+1
+Moon at Apogee: 404448 km
+2006
+7
+3
+FIRST QUARTER
+2006
+7
+4
+Earth at Aphelion
+2006
+7
+11
+FULL MOON
+2006
+7
+13
+Moon at Perigee: 364287 km
+2006
+7
+17
+LAST QUARTER
+2006
+7
+18
+Mercury at Inferior Conjunction
+2006
+7
+23
+Venus 5.6'S of Moon
+2006
+7
+25
+NEW MOON
+2006
+7
+27
+Mars 1.1'S of Moon: Occn.
+2006
+7
+29
+Moon at Apogee: 405405 km
+2006
+8
+2
+FIRST QUARTER
+2006
+8
+7
+Mercury at Greatest Elong: 19.2'W
+2006
+8
+7
+Saturn-Sun Conjunction
+2006
+8
+9
+FULL MOON
+2006
+8
+10
+Moon at Perigee: 359755 km
+2006
+8
+10
+Neptune at Opposition
+2006
+8
+16
+LAST QUARTER
+2006
+8
+22
+Venus 3.1'S of Moon
+2006
+8
+23
+NEW MOON
+2006
+8
+26
+Moon at Apogee: 406271 km
+2006
+8
+31
+FIRST QUARTER
+2006
+9
+1
+Mercury at Superior Conjunction
+2006
+9
+5
+Uranus at Opposition
+2006
+9
+6
+Venus at Perihelion
+2006
+9
+7
+FULL MOON
+2006
+9
+7
+Partial Lunar Eclipse: mag=0.176
+2006
+9
+8
+Moon at Perigee: 357175 km
+2006
+9
+14
+LAST QUARTER
+2006
+9
+19
+Saturn 2.4'S of Moon
+2006
+9
+22
+Moon at Apogee: 406500 km
+2006
+9
+22
+Annular Solar Eclipse: mag=0.935
+2006
+9
+22
+NEW MOON
+2006
+9
+23
+Autumnal Equinox
+2006
+9
+30
+FIRST QUARTER
+2006
+10
+6
+Moon at Perigee: 357410 km
+2006
+10
+7
+FULL MOON
+2006
+10
+14
+LAST QUARTER
+2006
+10
+16
+Saturn 2.0'S of Moon
+2006
+10
+17
+Mercury at Greatest Elong: 24.8'E
+2006
+10
+19
+Moon at Apogee: 406075 km
+2006
+10
+22
+NEW MOON
+2006
+10
+23
+Mars-Sun Conjunction
+2006
+10
+24
+Mercury 1.4'N of Moon
+2006
+10
+27
+Venus at Superior Conjunction
+2006
+10
+29
+FIRST QUARTER
+2006
+11
+4
+Moon at Perigee: 360598 km
+2006
+11
+5
+FULL MOON
+2006
+11
+8
+Mercury at Inferior Conjunction
+2006
+11
+12
+LAST QUARTER
+2006
+11
+13
+Saturn 1.6'S of Moon
+2006
+11
+15
+Moon at Apogee: 405193 km
+2006
+11
+20
+NEW MOON
+2006
+11
+22
+Jupiter-Sun Conjunction
+2006
+11
+25
+Mercury at Greatest Elong: 19.9'W
+2006
+11
+28
+FIRST QUARTER
+2006
+12
+2
+Moon at Perigee: 365923 km
+2006
+12
+5
+FULL MOON
+2006
+12
+10
+Saturn 1.2'S of Moon: Occn.
+2006
+12
+12
+LAST QUARTER
+2006
+12
+13
+Moon at Apogee: 404418 km
+2006
+12
+20
+NEW MOON
+2006
+12
+22
+Winter Solstice
+2006
+12
+27
+FIRST QUARTER
+2006
+12
+28
+Moon at Perigee: 370321 km
+2007
+1
+3
+FULL MOON
+2007
+1
+3
+Earth at Perihelion
+2007
+1
+6
+Saturn 0.9'S of Moon: Occn.
+2007
+1
+7
+Mercury at Superior Conjunction
+2007
+1
+10
+Moon at Apogee: 404335 km
+2007
+1
+11
+LAST QUARTER
+2007
+1
+17
+Mars 4.5'N of Moon
+2007
+1
+19
+NEW MOON
+2007
+1
+20
+Venus 0.8'N of Moon: Occn.
+2007
+1
+22
+Moon at Perigee: 366929 km
+2007
+1
+25
+FIRST QUARTER
+2007
+2
+2
+FULL MOON
+2007
+2
+2
+Saturn 0.9'S of Moon: Occn.
+2007
+2
+7
+Moon at Apogee: 404990 km
+2007
+2
+7
+Mercury at Greatest Elong: 18.2'E
+2007
+2
+8
+Neptune-Sun Conjunction
+2007
+2
+10
+LAST QUARTER
+2007
+2
+10
+Saturn at Opposition
+2007
+2
+15
+Mars 3.6'N of Moon
+2007
+2
+17
+NEW MOON
+2007
+2
+19
+Moon at Perigee: 361440 km
+2007
+2
+19
+Venus 2.5'S of Moon
+2007
+2
+23
+Mercury at Inferior Conjunction
+2007
+2
+24
+FIRST QUARTER
+2007
+3
+2
+Saturn 1.1'S of Moon: Occn.
+2007
+3
+3
+FULL MOON
+2007
+3
+3
+Total Lunar Eclipse: mag=1.230
+2007
+3
+6
+Uranus-Sun Conjunction
+2007
+3
+7
+Moon at Apogee: 405851 km
+2007
+3
+12
+LAST QUARTER
+2007
+3
+16
+Mars 1.9'N of Moon
+2007
+3
+17
+Mercury 1.4'N of Moon
+2007
+3
+19
+Partial Solar Eclipse: mag=0.872
+2007
+3
+19
+NEW MOON
+2007
+3
+19
+Moon at Perigee: 357816 km
+2007
+3
+21
+Vernal Equinox
+2007
+3
+21
+Venus 4.0'S of Moon
+2007
+3
+22
+Mercury at Greatest Elong: 27.7'W
+2007
+3
+25
+FIRST QUARTER
+2007
+3
+29
+Saturn 1.2'S of Moon
+2007
+4
+2
+FULL MOON
+2007
+4
+3
+Moon at Apogee: 406327 km
+2007
+4
+10
+LAST QUARTER
+2007
+4
+14
+Mars 0.5'S of Moon: Occn.
+2007
+4
+17
+Moon at Perigee: 357138 km
+2007
+4
+17
+NEW MOON
+2007
+4
+19
+Venus at Perihelion
+2007
+4
+20
+Venus 3.3'S of Moon
+2007
+4
+24
+FIRST QUARTER
+2007
+4
+25
+Saturn 1.1'S of Moon: Occn.
+2007
+4
+30
+Moon at Apogee: 406209 km
+2007
+5
+2
+FULL MOON
+2007
+5
+3
+Mercury at Superior Conjunction
+2007
+5
+10
+LAST QUARTER
+2007
+5
+13
+Mars 3.1'S of Moon
+2007
+5
+15
+Moon at Perigee: 359393 km
+2007
+5
+16
+NEW MOON
+2007
+5
+20
+Venus 1.7'S of Moon
+2007
+5
+22
+Saturn 0.8'S of Moon: Occn.
+2007
+5
+23
+FIRST QUARTER
+2007
+5
+27
+Moon at Apogee: 405458 km
+2007
+6
+1
+FULL MOON
+2007
+6
+2
+Mercury at Greatest Elong: 23.4'E
+2007
+6
+4
+Mars at Perihelion
+2007
+6
+6
+Jupiter at Opposition
+2007
+6
+8
+LAST QUARTER
+2007
+6
+9
+Venus at Greatest Elong: 45.4'E
+2007
+6
+12
+Moon at Perigee: 363778 km
+2007
+6
+15
+NEW MOON
+2007
+6
+18
+Venus 0.6'S of Moon: Occn.
+2007
+6
+19
+Saturn 0.4'S of Moon: Occn.
+2007
+6
+21
+Summer Solstice
+2007
+6
+22
+FIRST QUARTER
+2007
+6
+24
+Moon at Apogee: 404540 km
+2007
+6
+28
+Mercury at Inferior Conjunction
+2007
+6
+30
+FULL MOON
+2007
+7
+6
+Earth at Aphelion
+2007
+7
+7
+LAST QUARTER
+2007
+7
+9
+Moon at Perigee: 368534 km
+2007
+7
+14
+NEW MOON
+2007
+7
+16
+Saturn 0.0'N of Moon: Occn.
+2007
+7
+17
+Venus 2.7'S of Moon
+2007
+7
+20
+Mercury at Greatest Elong: 20.3'W
+2007
+7
+22
+FIRST QUARTER
+2007
+7
+22
+Moon at Apogee: 404152 km
+2007
+7
+30
+FULL MOON
+2007
+8
+4
+Moon at Perigee: 368892 km
+2007
+8
+5
+LAST QUARTER
+2007
+8
+9
+Venus at Aphelion
+2007
+8
+12
+NEW MOON
+2007
+8
+13
+Neptune at Opposition
+2007
+8
+15
+Mercury at Superior Conjunction
+2007
+8
+18
+Venus at Inferior Conjunction
+2007
+8
+19
+Moon at Apogee: 404621 km
+2007
+8
+20
+FIRST QUARTER
+2007
+8
+21
+Saturn-Sun Conjunction
+2007
+8
+28
+Total Lunar Eclipse: mag=1.473
+2007
+8
+28
+FULL MOON
+2007
+8
+31
+Moon at Perigee: 364174 km
+2007
+9
+4
+LAST QUARTER
+2007
+9
+10
+Uranus at Opposition
+2007
+9
+11
+Partial Solar Eclipse: mag=0.753
+2007
+9
+11
+NEW MOON
+2007
+9
+13
+Mercury 2.5'N of Moon
+2007
+9
+15
+Moon at Apogee: 405645 km
+2007
+9
+19
+FIRST QUARTER
+2007
+9
+23
+Autumnal Equinox
+2007
+9
+26
+FULL MOON
+2007
+9
+28
+Moon at Perigee: 359420 km
+2007
+9
+29
+Mercury at Greatest Elong: 26.0'E
+2007
+10
+2
+Mars 4.7'S of Moon
+2007
+10
+3
+LAST QUARTER
+2007
+10
+7
+Venus 3.5'S of Moon
+2007
+10
+7
+Saturn 1.3'N of Moon
+2007
+10
+11
+NEW MOON
+2007
+10
+13
+Moon at Apogee: 406491 km
+2007
+10
+19
+FIRST QUARTER
+2007
+10
+24
+Mercury at Inferior Conjunction
+2007
+10
+26
+FULL MOON
+2007
+10
+26
+Moon at Perigee: 356755 km
+2007
+10
+28
+Venus at Greatest Elong: 46.5'W
+2007
+10
+30
+Mars 3.2'S of Moon
+2007
+11
+1
+LAST QUARTER
+2007
+11
+4
+Saturn 1.8'N of Moon
+2007
+11
+5
+Venus 3.1'N of Moon
+2007
+11
+8
+Mercury at Greatest Elong: 19.0'W
+2007
+11
+9
+Moon at Apogee: 406671 km
+2007
+11
+9
+NEW MOON
+2007
+11
+17
+FIRST QUARTER
+2007
+11
+24
+Moon at Perigee: 357196 km
+2007
+11
+24
+FULL MOON
+2007
+11
+27
+Mars 1.7'S of Moon
+2007
+11
+30
+Venus at Perihelion
+2007
+12
+1
+LAST QUARTER
+2007
+12
+1
+Saturn 2.4'N of Moon
+2007
+12
+6
+Moon at Apogee: 406235 km
+2007
+12
+9
+NEW MOON
+2007
+12
+17
+FIRST QUARTER
+2007
+12
+17
+Mercury at Superior Conjunction
+2007
+12
+22
+Winter Solstice
+2007
+12
+22
+Moon at Perigee: 360817 km
+2007
+12
+23
+Jupiter-Sun Conjunction
+2007
+12
+24
+FULL MOON
+2007
+12
+24
+Mars 0.9'S of Moon: Occn.
+2007
+12
+24
+Mars at Opposition
+2007
+12
+28
+Saturn 2.8'N of Moon
+2007
+12
+31
+LAST QUARTER
+2008
+1
+3
+Earth at Perihelion
+2008
+1
+3
+Moon at Apogee: 405328 km
+2008
+1
+8
+NEW MOON
+2008
+1
+15
+FIRST QUARTER
+2008
+1
+19
+Moon at Perigee: 366436 km
+2008
+1
+20
+Mars 1.1'S of Moon: Occn.
+2008
+1
+22
+Mercury at Greatest Elong: 18.6'E
+2008
+1
+22
+FULL MOON
+2008
+1
+25
+Saturn 3.0'N of Moon
+2008
+1
+30
+LAST QUARTER
+2008
+1
+31
+Moon at Apogee: 404532 km
+2008
+2
+4
+Jupiter 4.0'N of Moon
+2008
+2
+4
+Venus 4.3'N of Moon
+2008
+2
+6
+Mercury at Inferior Conjunction
+2008
+2
+7
+NEW MOON
+2008
+2
+7
+Annular Solar Eclipse: mag=0.960
+2008
+2
+10
+Neptune-Sun Conjunction
+2008
+2
+14
+Moon at Perigee: 370216 km
+2008
+2
+14
+FIRST QUARTER
+2008
+2
+16
+Mars 1.6'S of Moon
+2008
+2
+21
+Total Lunar Eclipse: mag=1.107
+2008
+2
+21
+FULL MOON
+2008
+2
+21
+Saturn 2.8'N of Moon
+2008
+2
+24
+Saturn at Opposition
+2008
+2
+28
+Moon at Apogee: 404442 km
+2008
+2
+29
+LAST QUARTER
+2008
+3
+3
+Jupiter 3.6'N of Moon
+2008
+3
+3
+Mercury at Greatest Elong: 27.1'W
+2008
+3
+5
+Mercury 0.2'N of Moon: Occn.
+2008
+3
+5
+Venus 0.2'S of Moon: Occn.
+2008
+3
+7
+NEW MOON
+2008
+3
+9
+Uranus-Sun Conjunction
+2008
+3
+10
+Moon at Perigee: 366302 km
+2008
+3
+14
+FIRST QUARTER
+2008
+3
+15
+Mars 1.7'S of Moon
+2008
+3
+19
+Saturn 2.6'N of Moon
+2008
+3
+20
+Vernal Equinox
+2008
+3
+21
+Venus at Aphelion
+2008
+3
+21
+FULL MOON
+2008
+3
+26
+Moon at Apogee: 405094 km
+2008
+3
+29
+LAST QUARTER
+2008
+3
+30
+Jupiter 3.2'N of Moon
+2008
+4
+5
+Venus 4.7'S of Moon
+2008
+4
+6
+NEW MOON
+2008
+4
+7
+Moon at Perigee: 361083 km
+2008
+4
+12
+Mars 1.2'S of Moon: Occn.
+2008
+4
+12
+FIRST QUARTER
+2008
+4
+15
+Saturn 2.6'N of Moon
+2008
+4
+16
+Mercury at Superior Conjunction
+2008
+4
+20
+FULL MOON
+2008
+4
+23
+Moon at Apogee: 405945 km
+2008
+4
+27
+Jupiter 2.8'N of Moon
+2008
+4
+28
+LAST QUARTER
+2008
+5
+5
+NEW MOON
+2008
+5
+6
+Moon at Perigee: 357772 km
+2008
+5
+10
+Mars 0.2'S of Moon: Occn.
+2008
+5
+12
+FIRST QUARTER
+2008
+5
+13
+Saturn 2.8'N of Moon
+2008
+5
+13
+Mars at Aphelion
+2008
+5
+14
+Mercury at Greatest Elong: 21.8'E
+2008
+5
+20
+FULL MOON
+2008
+5
+20
+Moon at Apogee: 406404 km
+2008
+5
+24
+Jupiter 2.5'N of Moon
+2008
+5
+28
+LAST QUARTER
+2008
+6
+3
+Moon at Perigee: 357251 km
+2008
+6
+3
+NEW MOON
+2008
+6
+7
+Mercury at Inferior Conjunction
+2008
+6
+8
+Mars 1.1'N of Moon: Occn.
+2008
+6
+9
+Venus at Superior Conjunction
+2008
+6
+9
+Saturn 3.1'N of Moon
+2008
+6
+10
+FIRST QUARTER
+2008
+6
+16
+Moon at Apogee: 406229 km
+2008
+6
+18
+FULL MOON
+2008
+6
+20
+Jupiter 2.4'N of Moon
+2008
+6
+21
+Summer Solstice
+2008
+6
+26
+LAST QUARTER
+2008
+7
+1
+Mercury at Greatest Elong: 21.8'W
+2008
+7
+1
+Moon at Perigee: 359513 km
+2008
+7
+3
+NEW MOON
+2008
+7
+4
+Earth at Aphelion
+2008
+7
+6
+Mars 2.6'N of Moon
+2008
+7
+6
+Saturn 3.5'N of Moon
+2008
+7
+9
+Jupiter at Opposition
+2008
+7
+10
+FIRST QUARTER
+2008
+7
+11
+Venus at Perihelion
+2008
+7
+14
+Moon at Apogee: 405452 km
+2008
+7
+17
+Jupiter 2.6'N of Moon
+2008
+7
+18
+FULL MOON
+2008
+7
+25
+LAST QUARTER
+2008
+7
+29
+Mercury at Superior Conjunction
+2008
+7
+29
+Moon at Perigee: 363887 km
+2008
+8
+1
+NEW MOON
+2008
+8
+1
+Total Solar Eclipse: mag=1.036
+2008
+8
+2
+Venus 2.3'N of Moon
+2008
+8
+3
+Saturn 3.8'N of Moon
+2008
+8
+4
+Mars 4.0'N of Moon
+2008
+8
+8
+FIRST QUARTER
+2008
+8
+10
+Moon at Apogee: 404558 km
+2008
+8
+13
+Jupiter 2.8'N of Moon
+2008
+8
+15
+Neptune at Opposition
+2008
+8
+16
+Partial Lunar Eclipse: mag=0.805
+2008
+8
+16
+FULL MOON
+2008
+8
+23
+LAST QUARTER
+2008
+8
+26
+Moon at Perigee: 368693 km
+2008
+8
+30
+NEW MOON
+2008
+9
+1
+Venus 5.3'N of Moon
+2008
+9
+1
+Mercury 2.9'N of Moon
+2008
+9
+4
+Saturn-Sun Conjunction
+2008
+9
+7
+FIRST QUARTER
+2008
+9
+7
+Moon at Apogee: 404210 km
+2008
+9
+9
+Jupiter 2.8'N of Moon
+2008
+9
+11
+Mercury at Greatest Elong: 26.9'E
+2008
+9
+13
+Uranus at Opposition
+2008
+9
+15
+FULL MOON
+2008
+9
+20
+Moon at Perigee: 368890 km
+2008
+9
+22
+LAST QUARTER
+2008
+9
+22
+Autumnal Equinox
+2008
+9
+27
+Saturn 4.5'N of Moon
+2008
+9
+29
+NEW MOON
+2008
+10
+2
+Venus 5.1'N of Moon
+2008
+10
+5
+Moon at Apogee: 404716 km
+2008
+10
+6
+Mercury at Inferior Conjunction
+2008
+10
+7
+Jupiter 2.5'N of Moon
+2008
+10
+7
+FIRST QUARTER
+2008
+10
+14
+FULL MOON
+2008
+10
+17
+Moon at Perigee: 363828 km
+2008
+10
+21
+LAST QUARTER
+2008
+10
+22
+Mercury at Greatest Elong: 18.3'W
+2008
+10
+28
+NEW MOON
+2008
+11
+1
+Venus 2.6'N of Moon
+2008
+11
+2
+Moon at Apogee: 405723 km
+2008
+11
+3
+Jupiter 1.9'N of Moon
+2008
+11
+6
+FIRST QUARTER
+2008
+11
+13
+FULL MOON
+2008
+11
+14
+Moon at Perigee: 358973 km
+2008
+11
+19
+LAST QUARTER
+2008
+11
+25
+Mercury at Superior Conjunction
+2008
+11
+27
+NEW MOON
+2008
+11
+29
+Moon at Apogee: 406480 km
+2008
+12
+1
+Jupiter 1.3'N of Moon
+2008
+12
+1
+Venus 0.8'S of Moon: Occn.
+2008
+12
+5
+FIRST QUARTER
+2008
+12
+5
+Mars-Sun Conjunction
+2008
+12
+12
+FULL MOON
+2008
+12
+12
+Moon at Perigee: 356568 km
+2008
+12
+19
+LAST QUARTER
+2008
+12
+21
+Winter Solstice
+2008
+12
+26
+Moon at Apogee: 406602 km
+2008
+12
+27
+NEW MOON
+2008
+12
+29
+Jupiter 0.6'N of Moon: Occn.
+2008
+12
+31
+Venus 3.4'S of Moon
+2009
+1
+3
+Quadrantids Meteor Shower
+2009
+1
+11
+FULL MOON
+2009
+1
+26
+NEW MOON
+2009
+1
+26
+Annular Solar Eclipse
+2009
+2
+9
+FULL MOON
+2009
+2
+9
+Pen. Lunar Eclipse
+2009
+2
+22
+Conjunction of Jupiter Mercury and Mars
+2009
+2
+25
+NEW MOON
+2009
+3
+8
+Saturn at Opposition
+2009
+3
+11
+FULL MOON
+2009
+3
+20
+Vernal Equinox
+2009
+3
+25
+Venus both morning and evening star
+2009
+3
+26
+NEW MOON
+2009
+4
+9
+FULL MOON
+2009
+4
+21
+Lyrids Meteor shower
+2009
+4
+22
+Occultation of Venus
+2009
+4
+25
+NEW MOON
+2009
+5
+5
+Eta Aquarids Meteor shower
+2009
+5
+9
+FULL MOON
+2009
+5
+24
+NEW MOON
+2009
+6
+7
+FULL MOON
+2009
+6
+21
+Occultation of Antares
+2009
+6
+21
+Summer Solstice
+2009
+6
+22
+NEW MOON
+2009
+7
+7
+Penumbral lunar eclipse
+2009
+7
+7
+FULL MOON
+2009
+7
+22
+Total solar eclipse
+2009
+7
+22
+NEW MOON
+2009
+7
+28
+Southern Delta Aquarids Meteor shower
+2009
+8
+6
+Penumbral lunar eclipse
+2009
+8
+6
+FULL MOON
+2009
+8
+10
+Saturn without rings
+2009
+8
+12
+Perseids Meteor shower
+2009
+8
+14
+Jupiter at Opposition
+2009
+8
+17
+Neptune at Opposition
+2009
+8
+20
+NEW MOON
+2009
+9
+2
+Jupiter without moons
+2009
+9
+4
+FULL MOON
+2009
+9
+17
+Uranus at Opposition
+2009
+9
+18
+NEW MOON
+2009
+9
+22
+Close conjuntion of Mercury and Saturn
+2009
+9
+22
+Autumnal Equinox
+2009
+10
+4
+FULL MOON
+2009
+10
+13
+Close conjuntion of Venus and Saturn
+2009
+10
+18
+NEW MOON
+2009
+10
+21
+Orionids Meteor shower
+2009
+11
+2
+FULL MOON
+2009
+11
+16
+NEW MOON
+2009
+11
+17
+Leonids Meteor shower
+2009
+12
+2
+FULL MOON
+2009
+12
+13
+Geminids Meteor shower
+2009
+12
+16
+NEW MOON
+2009
+12
+21
+Winter Solstice
+2009
+12
+31
+Partial Lunar Eclipse
+2009
+12
+31
+FULL MOON
+2010
+1
+3
+Quadrantids Meteor Shower
+2010
+1
+15
+Annular Solar Eclipse
+2010
+1
+15
+NEW MOON
+2010
+1
+29
+Mars at Opposition
+2010
+1
+30
+FULL MOON
+2010
+2
+14
+NEW MOON
+2010
+2
+28
+FULL MOON
+2010
+3
+15
+NEW MOON
+2010
+3
+20
+Vernal Equinox
+2010
+3
+22
+Saturn at Opposition
+2010
+3
+30
+FULL MOON
+2010
+4
+14
+NEW MOON
+2010
+4
+21
+Lyrids Meteor shower
+2010
+4
+28
+FULL MOON
+2010
+5
+5
+Eta Aquarids Meteor shower
+2010
+5
+14
+NEW MOON
+2010
+5
+27
+FULL MOON
+2010
+6
+12
+NEW MOON
+2010
+6
+21
+Summer Solstice
+2010
+6
+26
+Partial lunar eclipse
+2010
+6
+26
+FULL MOON
+2010
+7
+11
+Total solar eclipse
+2010
+7
+11
+NEW MOON
+2010
+7
+26
+FULL MOON
+2010
+7
+28
+Southern Delta Aquarids Meteor shower
+2010
+8
+10
+NEW MOON
+2010
+8
+12
+Perseids Meteor shower
+2010
+8
+20
+Neptune at Opposition
+2010
+8
+24
+FULL MOON
+2010
+9
+8
+NEW MOON
+2010
+9
+21
+Jupiter at Opposition
+2010
+9
+22
+Uranus at Opposition
+2010
+9
+23
+Autumnal Equinox
+2010
+9
+23
+FULL MOON
+2010
+10
+7
+NEW MOON
+2010
+10
+21
+Orionids Meteor shower
+2010
+10
+23
+FULL MOON
+2010
+11
+6
+NEW MOON
+2010
+11
+17
+Leonids Meteor shower
+2010
+11
+21
+FULL MOON
+2010
+12
+5
+NEW MOON
+2010
+12
+13
+Geminids Meteor shower
+2010
+12
+21
+FULL MOON
+2010
+12
+21
+Total Lunar eclipse
+2010
+12
+21
+Winter Solstice
+2011
+1
+2
+Earth at perihelion at 11 a.m. tomorrow (91.407.257 miles)
+2011
+1
+3
+Quadrantid meteor shower peaks before dawn tomorrow
+2011
+1
+8
+Venus and Mercury bright at dawn this week
+2011
+1
+9
+Jupiter near crescent moon at dusk tonight
+2011
+1
+19
+Full Wolf moon rises at dusk tonight
+2011
+1
+28
+Crescent moon to the right of brilliant Venus at dawn tomorrow
+2011
+1
+29
+Crescent moon to the left of brilliant Venus at dawn tomorrow
+2011
+1
+31
+Crescent moon near the bright planet Mercury at dawn tomorrow 1
+2011
+2
+6
+Crescent moon next to bright planet Jupiter tonight at dusk
+2011
+2
+17
+Full Snow moon rises at dusk tonight
+2011
+2
+27
+Crescent moon to the right of brilliant Venus at dawn tomorrow
+2011
+2
+28
+Crescent moon to the left of brilliant Venus at dawn tomorrow
+2011
+3
+12
+Daylight Saving Time begins tomorrow
+ set clocks ahead one hour
+2011
+3
+15
+Jupiter just to the left of Mercury low in west at dusk tonight
+2011
+3
+19
+Full Worm moon rises at dusk tonight
+2011
+3
+20
+Spring equinox occurs at 4:21 p.m. PDT today
+2011
+3
+30
+Crescent moon near brilliant planet Venus at dawn tomorrow
+2011
+4
+3
+Ringed planet Saturn at opposition
+ rises at sunset?
+2011
+4
+17
+Full Pink moon rises at dusk tonight
+2011
+4
+18
+Mercury to left of Mars low in east at dawn tomorrow
+2011
+4
+21
+Lyrid meteor shower peaks before dawn tomorrow
+2011
+4
+29
+Crescent moon above brilliant planet Venus at dawn tomorrow
+2011
+4
+30
+Crescent moon above bright planet Jupiter and Mars at dawn tomorrow
+2011
+5
+5
+Eta Aquarid meteor shower peaks late tonight and before dawn tomorrow
+2011
+5
+6
+Mercury near brilliant Venus low in east at dawn next two mornings
+2011
+5
+10
+Jupiter. Venus and Mercury align low in east at dawn tomorrow
+2011
+5
+16
+Full Flower moon rises at dusk tonight
+2011
+5
+19
+Mercury. Mars and Venus form a tight triangle low in east at dawn tomorrow
+2011
+5
+28
+Crescent moon near bright Jupiter low in east at dawn tomorrow
+2011
+5
+29
+Crescent moon above Mars. Venus & Mercury at dawn tomorrow
+2011
+5
+30
+Crescent moon to left of Mercury low in northeast at dawn tomorrow
+2011
+6
+15
+Full Strawberry moon rises at dusk tonight
+2011
+6
+20
+Summer Solstice occurs at 10:16 a.m. PDT tomorrow
+2011
+6
+25
+Crescent moon near bright Jupiter at dawn tomorrow
+2011
+6
+27
+Crescent moon near Mars low in east at dawn tomorrow
+2011
+6
+28
+Crescent moon above brilliant Venus low in east at dawn tomorrow
+2011
+6
+30
+Bright star Fomalhaut in south at dawn this week
+2011
+7
+2
+Crescent moon near Mercury low in west-northwest at dusk tonight
+2011
+7
+3
+Earth at aphelion at 8 a.m. PDT tomorrow (94.511.888 miles)
+2011
+7
+7
+Quarter moon below Saturn after dark tonight
+2011
+7
+14
+Full Buck moon rises at dusk tonight
+2011
+7
+26
+Crescent moon near Mars in east at dawn tomorrow
+2011
+7
+28
+Southern Delta Aquarid meteor shower peaks before dawn tomorrow
+2011
+7
+31
+Crescent moon below Mercury low in west tonight at dusk
+2011
+8
+1
+Crescent moon above Mercury low in west tonight at dusk
+2011
+8
+3
+Crescent moon below Saturn at dusk tonight
+2011
+8
+11
+Perseid meteor shower peaks before dawn the next few mornings
+2011
+8
+13
+Full Sturgeon moon rises at dusk tonight
+2011
+8
+19
+Moon near Jupiter at dawn tomorrow
+2011
+8
+24
+Crescent moon near Mars at dawn tomorrow
+2011
+8
+26
+Crescent moon above Mercury low in east at dawn tomorrow
+2011
+8
+27
+Constellation Corona Borealis. high in west after dark
+2011
+8
+31
+Crescent moon near Saturn at dusk tonight
+2011
+9
+11
+Full Harvest moon rises at dusk tonight
+2011
+9
+15
+Moon next to Jupiter in west at dawn tomorrow
+2011
+9
+21
+Moon above Mars at dawn tomorrow
+2011
+9
+22
+Autumnal equinox occurs at 2:05 a.m. PDT tomorrow
+2011
+9
+28
+Crescent moon to left of Saturn and brilliant Venus at dusk tonight
+2011
+10
+11
+Full Hunter's moon rises at dusk tonight smallest full moon of 2011
+2011
+10
+12
+Moon near Jupiter at dawn tomorrow
+2011
+10
+20
+Orionids meteor shower peak before dawn tomorrow
+2011
+10
+27
+Crescent moon below Mercury & Venus low in southwest at dusk tonight
+2011
+10
+28
+Jupiter at opposition
+? rises at sunset
+2011
+11
+5
+Daylight Saving Time ends tomorrow set clocks back one hour
+2011
+11
+8
+Moon above Jupiter at dusk tonight
+2011
+11
+9
+Moon to left of Jupiter at dusk tonight
+2011
+11
+10
+Full Beaver moon rises at dusk tonight
+2011
+11
+11
+Mercury just below brilliant Venus low in southwest at dusk next few nights
+2011
+11
+18
+Leonid meteor shower peaks tomorrow before dawn
+2011
+11
+21
+Crescent moon near star Spica and planet Saturn at dawn tomorrow
+2011
+11
+25
+Crescent moon below and to left of Mercury and Venus at dusk tonight
+2011
+11
+26
+Crescent moon next to brilliant Venus at dusk tonight
+2011
+11
+27
+Crescent moon above brilliant Venus at dusk tonight
+2011
+12
+6
+Moon near Jupiter after dark tonight
+2011
+12
+9
+Full Cold moon rises at dusk tonight total lunar eclipse tomorrow at dawn
+2011
+12
+13
+Geminids meteor shower peaks tonight and before dawn tomorrow
+2011
+12
+16
+Moon near Mars at dawn tomorrow
+2011
+12
+18
+Moon to right of star Spica and planet Saturn at dawn tomorrow
+2011
+12
+19
+Moon below Saturn at dawn tomorrow
+2011
+12
+21
+Winter solstice occurs at 9:30 p.m. PST tonight
+2011
+12
+22
+Waning crescent moon below planet Mercury tomorrow at dawn
+2011
+12
+26
+Crescent moon to right of brilliant Venus low in southwest at dusk
+2011
+12
+27
+Crescent moon above brilliant Venus low in southwest at dusk
+2012
+12
+21
+Winter Solstice
+2013
+12
+21
+Winter Solstice
+2014
+12
+21
+Winter Solstice
+2015
+12
+21
+Winter Solstice
+2016
+12
+21
+Winter Solstice
+2017
+12
+21
+Winter Solstice
+2018
+12
+21
+Winter Solstice
+2019
+12
+21
+Winter Solstice
+2020
+12
+21
+Winter Solstice
+2021
+12
+21
+Winter Solstice
+2022
+12
+21
+Winter Solstice
+2023
+12
+21
+Winter Solstice
+2024
+12
+21
+Winter Solstice
+2025
+12
+21
+Winter Solstice
+2026
+12
+21
+Winter Solstice
+2027
+12
+21
+Winter Solstice
+2028
+12
+21
+Winter Solstice
+2029
+12
+21
+Winter Solstice
+2012
+12
+21
+Winter Solstice
+2013
+12
+21
+Winter Solstice
+2014
+12
+21
+Winter Solstice
+2015
+12
+21
+Winter Solstice
+2016
+12
+21
+Winter Solstice
+2017
+12
+21
+Winter Solstice
+2018
+12
+21
+Winter Solstice
+2019
+12
+21
+Winter Solstice
+2020
+12
+21
+Winter Solstice
+2021
+12
+21
+Winter Solstice
+2022
+12
+21
+Winter Solstice
+2023
+12
+21
+Winter Solstice
+2024
+12
+21
+Winter Solstice
+2025
+12
+21
+Winter Solstice
+2026
+12
+21
+Winter Solstice
+2027
+12
+21
+Winter Solstice
+2028
+12
+21
+Winter Solstice
+2029
+12
+21
+Winter Solstice

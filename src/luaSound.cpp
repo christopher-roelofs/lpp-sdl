@@ -980,6 +980,261 @@ void luaSound_init(lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, Sound_functions, 0);
 	lua_setglobal(L, "Sound");
+	// PSP compatibility: Ogg API - using existing Sound functions
+	lua_newtable(L);
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			const char* filename = luaL_checkstring(L, 1);
+			int channel = luaL_checkinteger(L, 2);
+			
+			// Try to load OGG, handle missing files gracefully
+			lua_pushcfunction(L, lua_openSound);
+			lua_pushvalue(L, 1);  // filename
+			int result = lua_pcall(L, 1, 1, 0);
+			if (result != LUA_OK) {
+				printf("PSP Ogg.load: Could not load %s (creating silent placeholder)\n", filename);
+				lua_pop(L, 1);  // Remove error message
+				lua_pushnil(L); // Return nil for compatibility
+			} else {
+				// Store the loaded OGG for later playback
+				lua_setglobal(L, "PSP_LOADED_OGG");
+				lua_pushboolean(L, true); // Return success
+			}
+			return 1;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "load");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			// Get the loaded OGG and play it
+			lua_getglobal(L, "PSP_LOADED_OGG");
+			if (!lua_isnil(L, -1)) {
+				// Play using the existing sound system
+				lua_pushcfunction(L, lua_play);
+				lua_pushvalue(L, -2); // sound object
+				lua_pushboolean(L, false); // no loop by default
+				int result = lua_pcall(L, 2, 0, 0);
+				if (result != LUA_OK) {
+					printf("PSP Ogg.play: Failed to play OGG\n");
+					lua_pop(L, 1); // Remove error
+				}
+			}
+			lua_pop(L, 1); // Remove PSP_LOADED_OGG from stack
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "play");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			// Stop current music (OGG files are typically played as music)
+			Mix_HaltMusic();
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "stop");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			float speed = luaL_checknumber(L, 1);
+			printf("PSP Ogg.speed: %f (not implemented)\n", speed);
+			// Speed control not implemented in SDL_mixer
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "speed");
+	lua_setglobal(L, "Ogg");
+	// PSP compatibility: Mp3 API - Channel-based music system
+	lua_newtable(L);
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			const char* filename = luaL_checkstring(L, 1);
+			int channel = luaL_checkinteger(L, 2);
+			
+			// Try to load music, handle missing files gracefully
+			lua_pushcfunction(L, lua_openMusic);
+			lua_pushvalue(L, 1);  // filename
+			int result = lua_pcall(L, 1, 1, 0);
+			if (result != LUA_OK) {
+				printf("PSP Mp3.load: Could not load %s (creating silent placeholder)\n", filename);
+				lua_pop(L, 1);  // Remove error message
+				lua_pushnil(L); // Return nil for compatibility
+			} else {
+				// Store the loaded music for later playback
+				lua_setglobal(L, "PSP_LOADED_MP3");
+				lua_pushboolean(L, true); // Return success
+			}
+			return 1;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "load");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			bool loop = lua_toboolean(L, 1);
+			int channel = luaL_checkinteger(L, 2);
+			
+			// Get the loaded MP3 and play it
+			lua_getglobal(L, "PSP_LOADED_MP3");
+			if (!lua_isnil(L, -1)) {
+				// Play using the existing sound system
+				lua_pushcfunction(L, lua_play);
+				lua_pushvalue(L, -2); // sound object
+				lua_pushboolean(L, loop);
+				int result = lua_pcall(L, 2, 0, 0);
+				if (result != LUA_OK) {
+					printf("PSP Mp3.play: Failed to play MP3\n");
+					lua_pop(L, 1); // Remove error
+				}
+			}
+			lua_pop(L, 1); // Remove PSP_LOADED_MP3 from stack
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "play");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			// Stop current music using SDL_mixer
+			Mix_HaltMusic();
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "stop");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			Mix_PauseMusic();
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "pause");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			Mix_ResumeMusic();
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "resume");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			int volume = luaL_checkinteger(L, 1);
+			// PSP volume range 0-100, SDL_mixer range 0-128
+			Mix_VolumeMusic((volume * 128) / 100);
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "volume");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			// Return whether music has finished playing
+			lua_pushboolean(L, !Mix_PlayingMusic());
+			lua_pushboolean(L, false);
+			return 1;
+		}
+		lua_pushboolean(L, true); 
+		return 1; 
+	});
+	lua_setfield(L, -2, "eos");
+	lua_setglobal(L, "Mp3");
+	
+	// PSP compatibility: Wav API - channel-based WAV playback
+	lua_newtable(L);
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			const char* filename = luaL_checkstring(L, 1);
+			int channel = luaL_checkinteger(L, 2);
+			
+			// Try to load sound, handle missing files gracefully
+			lua_pushcfunction(L, lua_openSound);
+			lua_pushvalue(L, 1);  // filename
+			int result = lua_pcall(L, 1, 1, 0);
+			if (result != LUA_OK) {
+				printf("PSP Wav.load: Could not load %s (creating silent placeholder)\n", filename);
+				lua_pop(L, 1);  // Remove error message
+				
+				// Create nil placeholder for missing files
+				lua_pushnil(L);
+			}
+			
+			// Store the loaded sound by channel
+			char channel_key[32];
+			snprintf(channel_key, sizeof(channel_key), "PSP_WAV_CH_%d", channel);
+			lua_setglobal(L, channel_key);
+			lua_pushboolean(L, true); // Return success
+			return 1;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "load");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			bool loop = lua_toboolean(L, 1);
+			int channel = luaL_checkinteger(L, 2);
+			
+			// Get the loaded sound for this channel
+			char channel_key[32];
+			snprintf(channel_key, sizeof(channel_key), "PSP_WAV_CH_%d", channel);
+			lua_getglobal(L, channel_key);
+			
+			if (!lua_isnil(L, -1)) {
+				// Play using the existing sound system
+				lua_pushcfunction(L, lua_play);
+				lua_pushvalue(L, -2); // sound object
+				lua_pushboolean(L, loop);
+				int result = lua_pcall(L, 2, 0, 0);
+				if (result != LUA_OK) {
+					printf("PSP Wav.play: Failed to play WAV on channel %d\n", channel);
+					lua_pop(L, 1); // Remove error
+				}
+			}
+			lua_pop(L, 1); // Remove sound from stack
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "play");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			int channel = luaL_checkinteger(L, 1);
+			
+			// Stop all sounds on the specified SDL_mixer channel
+			// SDL_mixer channels are different from PSP channels, but this is close enough
+			Mix_HaltChannel(channel);
+			return 0;
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "stop");
+	lua_pushcfunction(L, [](lua_State *L) -> int { 
+		extern lpp_compat_mode_t g_compat_mode;
+		if (g_compat_mode == LPP_COMPAT_PSP) {
+			// int channel = luaL_checkinteger(L, 1);
+			// printf("PSP Wav.unload: channel=%d (stub)\n", channel);
+		}
+		return 0; 
+	});
+	lua_setfield(L, -2, "unload");
+	lua_setglobal(L, "Wav");
+	
 	VariableRegister(L, NO_LOOP);
 	VariableRegister(L, LOOP);
 }

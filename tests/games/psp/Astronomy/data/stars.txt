@@ -1,0 +1,858 @@
+AND  alpha
+2.00
+29.08
+AND  beta
+17.25
+35.62
+AND  gamma
+30.75
+42.32
+AND  xi
+20.50
+45.52
+AQR  alpha
+331.25
+0.32
+AQR  beta
+322.75
+-4.43
+AQR  gamma
+335.25
+-0.62
+AQR  delta
+343.50
+-14.18
+AQR  epsilon
+311.75
+-8.52
+AQR  theta
+334.00
+-6.22
+AQR  kappa
+339.25
+-3.78
+ARI  alpha   
+31.75
+23.45
+ARI  beta
+28.50
+20.80
+ARI  gamma
+28.25
+19.28
+ARI  delta
+47.75
+19.72
+AUR  alpha
+79.00
+45.98
+AUR  beta
+89.75
+44.93
+AUR  epsilon
+75.25
+43.82
+AUR  zeta
+75.50
+41.07
+AUR  eta
+76.50
+41.23
+AUR  iota
+74.00
+33.15
+BOO  alpha
+213.75
+19.17
+BOO  beta
+225.25
+40.38
+BOO  gamma
+218.00
+38.30
+BOO  epsilon
+221.00
+27.07
+BOO  eta
+208.50
+18.38
+BOO  theta
+216.25
+51.85
+BOO  iota
+214.00
+51.37
+BOO  kappa
+213.25
+51.78
+BOO  mu
+231.00
+37.37
+CNC  alpha
+134.50
+11.85
+CNC  beta
+124.00
+9.18
+CNC  gamma
+130.75
+21.47
+CNC  delta
+131.00
+18.15
+CNC  zeta
+123.00
+17.63
+CVN  alpha
+194.00
+38.32
+CVN  beta
+188.25
+41.35
+CMA  alpha
+101.25
+-15.30
+CMA  beta
+95.50
+-16.05
+CMA  gamma
+105.75
+-14.37
+CMA  delta
+107.00
+-25.62
+CMA  epsilon
+104.50
+-27.03
+CMA  zeta
+95.00
+-29.95
+CMA  eta
+111.00
+-28.70
+CMI  alpha
+114.75
+5.22
+CMI  beta
+111.75
+8.28
+CAP  alpha
+304.25
+-11.50
+CAP  alpha
+304.50
+-11.47
+CAP  beta
+305.25
+-13.23
+CAP  gamma
+325.00
+-15.35
+CAP  delta
+326.75
+-15.88
+CAP  nu
+305.00
+-11.25
+CAR  alpha
+95.75
+-51.32
+CAR  beta
+138.25
+-68.28
+CAR  epsilon
+125.50
+-58.50
+CAR  iota
+139.25
+-58.73
+CAS  alpha
+10.00
+56.53
+CAS  beta
+2.25
+59.13
+CAS  delta
+21.25
+60.23
+CAS  epsilon
+28.50
+63.67
+CAS  eta
+12.25
+57.80
+CAS  theta
+17.75
+55.15
+CAS  mu
+17.00
+54.92
+CEN  alpha
+219.75
+-59.17
+CEN  beta
+210.75
+-59.63
+CEN  theta
+211.50
+-35.63
+CEP  alpha
+319.50
+62.58
+CEP  beta
+322.00
+70.55
+CEP  gamma
+354.75
+77.62
+CEP  mu
+325.75
+58.77
+CEP  xi
+330.75
+64.62
+CEP  rho
+337.25
+78.82
+CET  alpha
+45.50
+4.08
+CET  beta
+10.75
+-16.02
+CET  gamma
+40.75
+3.23
+CET  zeta
+27.75
+-9.67
+CET  eta
+17.00
+-9.83
+CET  iota
+4.75
+-7.18
+CET  lambda
+44.75
+8.90
+CET  omicron
+34.75
+-1.03
+COL  alpha
+84.75
+-33.93
+COL  beta
+87.50
+-34.23
+COM  alpha
+197.25
+17.52
+CRA  alpha
+287.25
+-36.10
+CRB  alpha
+233.50
+26.70
+CRB  beta
+231.75
+29.10
+CRV  alpha
+182.00
+-23.28
+CRV  beta
+188.50
+-22.62
+CRV  gamma
+183.75
+-16.47
+CRV  delta
+187.25
+-15.50
+CRV  epsilon
+182.50
+-21.38
+CRT  alpha
+164.75
+-17.72
+CRU  alpha
+186.50
+-62.92
+CRU  beta
+191.75
+-58.32
+CRU  gamma
+187.75
+-56.90
+CYG  alpha
+310.25
+45.27
+CYG  beta
+292.50
+27.95
+CYG  gamma
+305.50
+40.25
+CYG  epsilon
+311.50
+33.97
+CYG  pi
+325.50
+51.18
+CYG  omega
+307.75
+49.22
+DEL  alpha
+309.75
+15.90
+DEL  beta
+309.25
+14.58
+DEL  epsilon
+308.25
+11.30
+DRA  alpha
+211.00
+64.37
+DRA  beta
+262.50
+52.30
+DRA  gamma
+269.00
+51.48
+DRA  delta
+288.00
+67.65
+DRA  epsilon
+297.00
+70.27
+DRA  zeta
+257.00
+65.70
+DRA  iota
+231.00
+58.95
+DRA  lambda
+172.75
+69.32
+DRA  mu
+256.25
+54.47
+DRA  nu
+263.00
+55.17
+DRA  xi
+268.25
+56.87
+DRA  sigma
+293.00
+69.65
+DRA  psi
+265.25
+72.13
+EQU  alpha
+318.75
+5.23
+ERI  alpha
+24.25
+-56.77
+ERI  beta
+76.75
+-4.92
+ERI  gamma
+59.50
+-12.50
+ERI  delta
+55.75
+-8.25
+ERI  zeta
+48.75
+-7.18
+ERI  eta
+44.00
+-7.12
+ERI  theta
+44.50
+-39.70
+ERI  omicron
+62.75
+-5.17
+ERI  omicron
+63.75
+-6.35
+ERI  tau
+42.75
+-21.00
+ERI  upsilon
+68.75
+-29.45
+FOR  alpha
+48.00
+-27.02
+GEM  alpha
+113.50
+31.88
+GEM  beta
+116.25
+28.02
+GEM  gamma
+99.25
+16.38
+GEM  delta
+110.00
+21.97
+GEM  epsilon
+100.75
+25.12
+GEM  zeta
+106.00
+20.57
+GEM  eta
+93.50
+22.50
+GEM  iota
+111.25
+27.78
+GEM  mu
+95.50
+22.50
+GEM  xi
+101.25
+12.88
+GRU  alpha
+332.00
+-45.05
+HER  alpha
+258.50
+14.38
+HER  beta
+247.50
+21.48
+HER  delta
+258.75
+24.83
+HER  kappa
+242.00
+17.03
+HER  lambda
+262.50
+26.10
+HER  omega
+246.25
+14.03
+HYA  alpha
+141.75
+-7.35
+HYA  sigma
+129.50
+3.33
+HYI  alpha
+29.50
+-60.43
+LEO  alpha
+152.00
+11.97
+LEO  beta
+177.25
+14.57
+LEO  gamma
+154.75
+19.83
+LEO  delta
+168.50
+20.52
+LEO  epsilon
+146.25
+23.77
+LEO  zeta
+154.00
+23.42
+LEO  theta
+168.50
+15.42
+LEO  kappa
+141.00
+26.17
+LEO  lambda
+142.75
+22.97
+LEO  mu
+148.00
+26.00
+LEO  omicron
+145.25
+9.88
+LMI  beta
+156.75
+36.70
+LEP  alpha
+83.00
+-16.18
+LEP  beta
+82.00
+-19.25
+LIB  alpha
+222.50
+-15.97
+LIB  beta
+229.25
+-8.63
+LIB  gamma
+233.75
+-13.22
+LIB  delta
+225.00
+-7.48
+LIB  sigma
+226.00
+-24.73
+LYN  alpha
+140.25
+34.38
+LYR  alpha
+279.00
+38.78
+LYR  beta
+282.50
+33.35
+LYR  gamma
+284.50
+32.68
+LYR  epsilon
+281.00
+39.67
+LYR  epsilon
+281.00
+39.67
+LYR  epsilon
+281.00
+39.60
+LYR  epsilon
+281.00
+39.60
+LYR  eta
+288.25
+39.13
+LYR  mu
+276.00
+39.50
+OCT  sigma
+317.00
+-87.05
+OPH  alpha
+263.50
+12.55
+OPH  beta
+265.75
+4.57
+OPH  delta
+243.50
+-2.32
+OPH  epsilon
+244.50
+-3.32
+OPH  eta
+257.50
+-14.28
+OPH  lambda
+247.50
+1.98
+ORI  alpha
+88.75
+7.40
+ORI  beta
+78.50
+-7.80
+ORI  gamma
+81.25
+6.33
+ORI  delta
+83.00
+0.28
+ORI  epsilon
+84.00
+-0.80
+ORI  zeta
+85.00
+-0.07
+ORI  iota
+83.75
+-4.10
+ORI  kappa
+86.75
+-8.33
+ORI  lambda
+83.75
+9.93
+ORI  pi1
+73.50
+10.15
+ORI  pi2
+72.50
+8.90
+ORI  pi3
+72.25
+6.95
+ORI  pi4
+72.75
+5.60
+ORI  upsilon
+82.75
+-6.70
+PAV  alpha
+306.25
+-55.27
+PEG  alpha
+346.00
+15.20
+PEG  beta
+345.75
+28.07
+PEG  gamma
+3.25
+15.18
+PEG  epsilon
+326.00
+9.87
+PEG  zeta
+340.25
+10.82
+PEG  eta
+340.75
+30.22
+PEG  theta
+332.50
+6.18
+PEG  tau
+350.00
+23.73
+PER  alpha
+51.00
+49.85
+PER  beta
+47.00
+40.95
+PER  eta
+42.50
+55.88
+PER  xi
+59.50
+35.78
+PER  omicron
+56.00
+32.28
+PER  pi
+44.50
+39.65
+PER  rho
+46.25
+38.83
+PER  omega
+47.75
+39.60
+PHE  alpha
+6.50
+-41.70
+PSA  alpha
+344.25
+-28.38
+PSC  alpha
+30.50
+2.75
+PSC  beta
+345.75
+3.82
+PSC  omicron
+26.25
+9.15
+PUP  zeta
+120.75
+-40.00
+PUP  xi
+117.25
+-23.15
+SGE  alpha
+295.00
+18.00
+SGR  alpha
+290.75
+-39.40
+SGR  beta
+290.50
+-43.55
+SGR  beta
+290.75
+-43.22
+SGR  gamma
+271.25
+-29.58
+SGR  delta
+275.00
+-28.18
+SGR  epsilon
+276.00
+-33.62
+SGR  zeta
+285.50
+-28.13
+SGR  lambda
+276.75
+-24.58
+SGR  nu
+283.50
+-21.27
+SGR  pi
+287.25
+-20.98
+SGR  sigma
+283.75
+-25.72
+SGR  omega
+298.75
+-25.72
+SCO  alpha
+247.25
+-25.58
+SCO  beta
+241.25
+-18.20
+SCO  delta
+240.00
+-21.38
+SCO  theta
+264.25
+-41.02
+SCO  lambda
+263.25
+-36.90
+SCO  nu
+242.75
+-18.55
+SCO  xi
+241.00
+-10.63
+SCO  sigma
+245.25
+-24.42
+SCO  tau
+248.75
+-27.80
+SCO  upsilon
+262.50
+-36.72
+SER  alpha
+236.00
+6.42
+SER  theta
+284.00
+4.20
+TAU  alpha
+68.75
+16.50
+TAU  beta
+81.50
+28.60
+TAU  gamma
+64.75
+15.62
+TAU  delta
+65.50
+17.53
+TAU  epsilon
+67.00
+19.17
+TAU  eta
+56.75
+24.10
+TRI  alpha
+28.25
+29.57
+UMA  alpha
+165.75
+61.75
+UMA  beta
+165.25
+56.37
+UMA  gamma
+178.25
+53.68
+UMA  delta
+183.75
+57.02
+UMA  epsilon
+193.50
+55.95
+UMA  zeta
+200.75
+54.92
+UMA  eta
+206.75
+49.30
+UMA  iota
+134.75
+48.03
+UMA  lambda
+154.25
+42.90
+UMA  mu
+155.50
+41.48
+UMA  nu
+169.50
+33.08
+UMA  xi
+169.50
+31.52
+UMA  omicron
+127.50
+60.72
+UMA  pi
+129.75
+65.02
+UMA  pi
+130.00
+64.32
+UMI  alpha
+37.75
+89.25
+UMI  beta
+222.50
+74.15
+UMI  gamma
+230.00
+71.83
+UMI  delta
+263.00
+86.58
+VEL  gamma
+122.25
+-46.67
+VEL  lambda
+136.75
+-42.58
+VIR  alpha
+201.25
+-10.85
+VIR  beta
+177.50
+1.75
+VIR  gamma
+190.25
+-0.57
+VIR  epsilon
+195.50
+10.95
+VIR  zeta
+203.50
+0.58
+VIR  eta
+184.75
+0.67
+VIR  iota
+214.00
+-6.00
+VIR  mu
+220.75
+-4.35
+VUL  alpha
+292.00
+24.65

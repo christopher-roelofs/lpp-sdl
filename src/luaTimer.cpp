@@ -42,14 +42,81 @@ struct Timer {
 };
 
 // Timer.new()
-// Returns a Timer object (backwards compatible with Vita API)
+// Returns a Timer object (backwards compatible with Vita API and PSP compatibility)
 static int lua_timer_new(lua_State *L) {
-    Timer* new_timer = (Timer*)malloc(sizeof(Timer));
-    new_timer->tick = SDL_GetTicks();
-    new_timer->magic = 0x4C544D52;
-    new_timer->isPlaying = true;
-    lua_pushinteger(L, (uintptr_t)new_timer);
-    return 1;
+    extern lpp_compat_mode_t g_compat_mode;
+    
+    if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP mode: Return a Timer object with methods
+        Timer* new_timer = (Timer*)malloc(sizeof(Timer));
+        new_timer->tick = SDL_GetTicks();
+        new_timer->magic = 0x4C544D52;
+        new_timer->isPlaying = true;
+        
+        // Create a table to represent the timer object
+        lua_newtable(L);
+        
+        // Store the timer pointer in the table
+        lua_pushinteger(L, (uintptr_t)new_timer);
+        lua_setfield(L, -2, "_timer_ptr");
+        
+        // Create metatable for PSP Timer object
+        luaL_newmetatable(L, "PSP_Timer");
+        
+        // __index method for Timer object methods
+        lua_pushstring(L, "__index");
+        lua_pushcfunction(L, [](lua_State *L) -> int {
+            const char* method = lua_tostring(L, 2);
+            
+            if (strcmp(method, "time") == 0) {
+                lua_pushcfunction(L, [](lua_State *L) -> int {
+                    // Get the timer pointer from the table
+                    lua_getfield(L, 1, "_timer_ptr");
+                    Timer* timer = (Timer*)lua_tointeger(L, -1);
+                    lua_pop(L, 1);
+                    
+                    if (timer->magic != 0x4C544D52)
+                        return luaL_error(L, "attempt to access wrong memory block type");
+                    
+                    if (timer->isPlaying) {
+                        lua_pushinteger(L, SDL_GetTicks() - timer->tick);
+                    } else {
+                        lua_pushinteger(L, timer->tick);
+                    }
+                    return 1;
+                });
+                return 1;
+            }
+            
+            return 0;
+        });
+        lua_settable(L, -3);
+        
+        // __gc method for cleanup
+        lua_pushstring(L, "__gc");
+        lua_pushcfunction(L, [](lua_State *L) -> int {
+            lua_getfield(L, 1, "_timer_ptr");
+            Timer* timer = (Timer*)lua_tointeger(L, -1);
+            if (timer && timer->magic == 0x4C544D52) {
+                free(timer);
+            }
+            return 0;
+        });
+        lua_settable(L, -3);
+        
+        // Set the metatable
+        lua_setmetatable(L, -2);
+        
+        return 1;
+    } else {
+        // Vita/Native mode: Return integer pointer as before
+        Timer* new_timer = (Timer*)malloc(sizeof(Timer));
+        new_timer->tick = SDL_GetTicks();
+        new_timer->magic = 0x4C544D52;
+        new_timer->isPlaying = true;
+        lua_pushinteger(L, (uintptr_t)new_timer);
+        return 1;
+    }
 }
 
 // Timer.time(startTime) - original simplified API (for backwards compatibility)

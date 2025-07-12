@@ -1,0 +1,40 @@
+Controls Information for Paint Lite 0.3 b0001
+--------------------------------------------
+
+In Menu and Info State:
+	[Cross] Accept
+	[Circle] Cancel
+	[Up]/[Down] Navigate
+	[Select] Take a Screenshot
+
+In Paint State:
+	[Dir Pad] Move Cursor
+	[Left]/[Right] Change Brush Size
+	[Up]/[Down] Change Cursor Speed
+	[L] Use Left Color
+	[R] Use Right Color
+	[Square] Switch Between Pencil and Brush
+	[Circle] Switch to Eraser
+	[Triangle] Open a Workspace
+	[Select] Save Drawing
+	[Start] Open a Paint Menu
+
+In Paint Menu:
+	[Up]/[Down] Navigate
+	[Cross] Accept
+
+In Workspace State:
+	[Dir Pad] Move Cursor
+	[Up]/[Down] Change Cursor Speed
+	[Square] Switch Between Pencil and Brush
+	[Circle] Switch to Eraser
+	Cursor on Color Palette:
+		[Left]/[Right] Change Palettes
+		[L]/[R] Choose a Color
+	Cursor not on COlor Palette:
+		[Left] / [Right] Change Brush Size
+	Cursor on Tool Panel:
+		[Cross] Change Tool
+	[Triangle] Close Workspace
+	[Select] Take Screenshot
+	[Start] Open a Paint Menu

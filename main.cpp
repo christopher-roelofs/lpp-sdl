@@ -122,7 +122,8 @@ static const char* browser_compat_modes[] = {
     "3dscompat-vertical", 
     "3dscompat-horizontal",
     "3dscompat-1screen",
-    "vitacompat"
+    "vitacompat",
+    "pspcompat"
 };
 static const int browser_compat_modes_count = sizeof(browser_compat_modes) / sizeof(browser_compat_modes[0]);
 
@@ -1259,6 +1260,9 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
+        } else if (strcmp(current_arg, "-pspcompat") == 0) {
+            compat_mode = LPP_COMPAT_PSP;
+            printf("PSP compatibility mode enabled\n");
         } else if (strcmp(current_arg, "-debug") == 0) {
             g_debug_mode = true;
             printf("Debug mode enabled\n");
@@ -1312,6 +1316,7 @@ int main(int argc, char* args[]) {
             printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
             printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
             printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
+            printf("  -pspcompat               Enable PSP compatibility mode (480x272 resolution)\n");
             printf("\nController Options:\n");
             printf("  -gamepad:nintendo   Use Nintendo controller layout (A=right, B=bottom, X=top, Y=left) [DEFAULT]\n");
             printf("  -gamepad:xbox       Use Xbox controller layout (A=bottom, B=right, X=left, Y=top)\n");
@@ -1388,6 +1393,9 @@ int main(int argc, char* args[]) {
                 threeds_compat_mode = true;
                 vita_compat_mode = true;
                 printf("3DS compatibility mode enabled (single screen with TAB switching)\n");
+            } else if (strcmp(args[i], "-pspcompat") == 0) {
+                compat_mode = LPP_COMPAT_PSP;
+                printf("PSP compatibility mode enabled\n");
             } else if (strcmp(args[i], "-debug") == 0) {
                 g_debug_mode = true;
                 printf("Debug mode enabled\n");
@@ -1439,6 +1447,7 @@ int main(int argc, char* args[]) {
                 printf("  -3dscompat-horizontal    Enable 3DS mode with side-by-side screen layout\n");
                 printf("  -3dscompat-vertical      Enable 3DS mode with top/bottom screen layout\n");
                 printf("  -3dscompat-1screen       Enable 3DS mode with single screen (TAB to switch)\n");
+                printf("  -pspcompat               Enable PSP compatibility mode (480x272 resolution)\n");
                 printf("\nController Options:\n");
                 printf("  -gamepad:nintendo   Use Nintendo controller layout (A=right, B=bottom, X=top, Y=left) [DEFAULT]\n");
                 printf("  -gamepad:xbox       Use Xbox controller layout (A=bottom, B=right, X=left, Y=top)\n");
@@ -1728,6 +1737,9 @@ int main(int argc, char* args[]) {
             threeds_compat_mode = true;
             vita_compat_mode = true;
             printf("Compatibility mode: 3DS Single Screen (%s)\n", selected_mode);
+        } else if (strcmp(selected_mode, "pspcompat") == 0) {
+            compat_mode = LPP_COMPAT_PSP;
+            printf("Compatibility mode: PSP (%s)\n", selected_mode);
         } else {
             // native mode - no changes needed, defaults are already set
             printf("Compatibility mode: Native (%s)\n", selected_mode);
@@ -1825,6 +1837,17 @@ int main(int argc, char* args[]) {
                 const char* orientation_name = (g_3ds_orientation == LPP_3DS_VERTICAL) ? "vertical" : "horizontal";
                 printf("3DS dual-screen mode (%s): %dx%d layout\n", orientation_name, dual_width, dual_height);
             }
+        } else if (compat_mode == LPP_COMPAT_PSP) {
+            // PSP compatibility mode - use PSP aspect ratio (16:9) with integer scaling
+            g_3ds_single_screen_mode = false; // Not applicable for PSP mode
+            aspect_ratio = (float)PSP_SCREEN_WIDTH / (float)PSP_SCREEN_HEIGHT; // 480:272 ≈ 1.76 (16:9)
+            logical_height = PSP_SCREEN_HEIGHT; // 272
+            printf("PSP compatibility mode: Using PSP resolution %dx%d\n", PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
+            
+            // Force exact PSP window size for 1:1 pixel mapping (for debugging)
+            // This will help us identify if the issue is with SDL logical scaling
+            window_width = PSP_SCREEN_WIDTH;   // 480
+            window_height = PSP_SCREEN_HEIGHT; // 272
         } else {
             // Vita compatibility mode - check for small screens
             g_3ds_single_screen_mode = false; // Not applicable for Vita mode
@@ -1842,19 +1865,23 @@ int main(int argc, char* args[]) {
             }
         }
         
-        // Start with 70% of screen height, then calculate width to maintain aspect ratio
-        window_height = (display_mode.h * 7) / 10;
-        window_width = (int)(window_height * aspect_ratio);
-        
-        // If calculated width is too wide for display, scale based on width instead
-        if (window_width > (display_mode.w * 7) / 10) {
-            window_width = (display_mode.w * 7) / 10;
-            window_height = (int)(window_width / aspect_ratio);
+        // Calculate window size (skip for PSP as it's already set)
+        if (compat_mode != LPP_COMPAT_PSP) {
+            // Start with 70% of screen height, then calculate width to maintain aspect ratio
+            window_height = (display_mode.h * 7) / 10;
+            window_width = (int)(window_height * aspect_ratio);
+            
+            // If calculated width is too wide for display, scale based on width instead
+            if (window_width > (display_mode.w * 7) / 10) {
+                window_width = (display_mode.w * 7) / 10;
+                window_height = (int)(window_width / aspect_ratio);
+            }
         }
         
         // Ensure window is not larger than logical resolution scaled up by 2x
-        if (window_width > SCREEN_WIDTH * 2) {
-            window_width = SCREEN_WIDTH * 2;
+        int max_logical_width = (compat_mode == LPP_COMPAT_PSP) ? PSP_SCREEN_WIDTH : SCREEN_WIDTH;
+        if (window_width > max_logical_width * 2) {
+            window_width = max_logical_width * 2;
             window_height = (int)(window_width / aspect_ratio);
         }
         if (window_height > logical_height * 2) {
@@ -1872,8 +1899,10 @@ int main(int argc, char* args[]) {
                 // Dual-screen mode: use full dual screen dimensions
                 min_logical_width = (g_3ds_orientation == LPP_3DS_VERTICAL) ? DUAL_SCREEN_WIDTH_V : DUAL_SCREEN_WIDTH_H;
             }
+        } else if (compat_mode == LPP_COMPAT_PSP) {
+            min_logical_width = PSP_SCREEN_WIDTH; // 480
         } else {
-            min_logical_width = SCREEN_WIDTH;
+            min_logical_width = SCREEN_WIDTH; // 960 (Vita)
         }
         
         if (window_width < min_logical_width || window_height < logical_height) {
@@ -1903,6 +1932,9 @@ int main(int argc, char* args[]) {
                 printf("3DS compatibility mode (%s): Window size %dx%d for logical size %dx%d\n", 
                        orientation_name, window_width, window_height, dual_width, dual_height);
             }
+        } else if (compat_mode == LPP_COMPAT_PSP) {
+            printf("PSP compatibility mode: Window size %dx%d for logical size %dx%d\n", 
+                   window_width, window_height, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
         } else {
             printf("Vita compatibility mode: Window size %dx%d for logical size %dx%d\n", 
                    window_width, window_height, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -2082,6 +2114,22 @@ int main(int argc, char* args[]) {
                            orientation_name, logical_width, logical_height, window_width, window_height);
                 }
             }
+        } else if (compat_mode == LPP_COMPAT_PSP) {
+            // PSP compatibility mode: Use native PSP resolution (480x272)
+            int psp_logical_width = PSP_SCREEN_WIDTH;   // 480
+            int psp_logical_height = PSP_SCREEN_HEIGHT; // 272
+            
+            if (SDL_RenderSetLogicalSize(g_renderer, psp_logical_width, psp_logical_height) != 0) {
+                printf("Warning: Could not set logical size: %s\n", SDL_GetError());
+            } else {
+                printf("PSP compatibility mode: Set logical size to %dx%d in %dx%d window\n", 
+                       psp_logical_width, psp_logical_height, window_width, window_height);
+            }
+            
+            // Verify the logical size was set
+            int logical_w, logical_h;
+            SDL_RenderGetLogicalSize(g_renderer, &logical_w, &logical_h);
+            printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
         } else {
             // Vita compatibility mode with adaptive scaling
             int vita_logical_width, vita_logical_height;
@@ -2100,10 +2148,10 @@ int main(int argc, char* args[]) {
                 printf("Warning: Could not set logical size: %s\n", SDL_GetError());
             } else {
                 if (vita_logical_width == SCREEN_WIDTH) {
-                    printf("Set logical size to %dx%d (Vita resolution) in %dx%d window\n", 
+                    printf("Vita compatibility mode: Set logical size to %dx%d (Vita resolution) in %dx%d window\n", 
                            vita_logical_width, vita_logical_height, window_width, window_height);
                 } else {
-                    printf("Set adaptive logical size to %dx%d (scaled Vita) in %dx%d window\n", 
+                    printf("Vita compatibility mode: Set adaptive logical size to %dx%d (scaled Vita) in %dx%d window\n", 
                            vita_logical_width, vita_logical_height, window_width, window_height);
                 }
             }
@@ -2114,8 +2162,15 @@ int main(int argc, char* args[]) {
             printf("Confirmed logical size: %dx%d\n", logical_w, logical_h);
         }
         
-        // Disable integer scaling for smooth scaling
-        SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
+        // Configure scaling mode based on compatibility mode
+        if (compat_mode == LPP_COMPAT_PSP) {
+            // Enable integer scaling for PSP to ensure pixel-perfect rendering
+            SDL_RenderSetIntegerScale(g_renderer, SDL_TRUE);
+            printf("PSP mode: Enabled integer scaling for pixel-perfect rendering\n");
+        } else {
+            // Disable integer scaling for smooth scaling on other modes
+            SDL_RenderSetIntegerScale(g_renderer, SDL_FALSE);
+        }
         
         // Set scale quality to linear for smooth scaling
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");

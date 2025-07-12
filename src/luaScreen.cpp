@@ -260,6 +260,9 @@ static int lua_flip(lua_State *L) {
                         } else {
                             SDL_RenderSetLogicalSize(g_renderer, DUAL_SCREEN_WIDTH_H, DUAL_SCREEN_HEIGHT_H);
                         }
+                    } else if (g_compat_mode == LPP_COMPAT_PSP) {
+                        // PSP mode: use native PSP resolution (480x272)
+                        SDL_RenderSetLogicalSize(g_renderer, PSP_SCREEN_WIDTH, PSP_SCREEN_HEIGHT);
                     } else {
                         SDL_RenderSetLogicalSize(g_renderer, NATIVE_LOGICAL_WIDTH, NATIVE_LOGICAL_HEIGHT);
                     }
@@ -325,8 +328,10 @@ static int lua_flip(lua_State *L) {
             SDL_RenderFillRect(g_renderer, &right_padding);
         }
         
-        // In Vita compatibility mode, Graphics.termBlend() handles presentation
-        // Skip SDL_RenderPresent() here to prevent double presentation and flashing
+        // Platform-specific presentation behavior:
+        // Vita: Graphics.termBlend() handles presentation, Screen.flip() skipped to prevent double presentation
+        // PSP: Screen.flip() handles presentation (like 3DS and Native modes)
+        // Original PSP: Screen.flip() calls sceDisplayWaitVblankStart() + sceGuSwapBuffers()
         if (g_compat_mode != LPP_COMPAT_VITA) {
             SDL_RenderPresent(g_renderer);
         }
@@ -366,8 +371,9 @@ static int lua_clear(lua_State *L) {
 		
 		// Check if this is a 3DS screen constant (0=TOP_SCREEN, 1=BOTTOM_SCREEN)
 		if (arg == 0 || arg == 1) {
-			// Auto-enable dual screen mode when 3DS screen constants are used
-			if (!g_dual_screen_mode) {
+			// Auto-enable dual screen mode when 3DS screen constants are used (but not in PSP mode)
+			extern lpp_compat_mode_t g_compat_mode;
+			if (!g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
 				g_dual_screen_mode = true;
 				printf("Auto-enabling dual screen mode\n");
 				
@@ -649,6 +655,9 @@ static int lua_getScreenWidth(lua_State *L) {
         } else {
             lua_pushinteger(L, DUAL_SCREEN_WIDTH_H);
         }
+    } else if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP mode: return PSP screen width
+        lua_pushinteger(L, PSP_SCREEN_WIDTH);
     } else {
         // Native mode: return logical width for consistent coordinate system
         lua_pushinteger(L, NATIVE_LOGICAL_WIDTH);
@@ -667,6 +676,9 @@ static int lua_getScreenHeight(lua_State *L) {
         } else {
             lua_pushinteger(L, DUAL_SCREEN_HEIGHT_H);
         }
+    } else if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP mode: return PSP screen height
+        lua_pushinteger(L, PSP_SCREEN_HEIGHT);
     } else {
         // Native mode: return logical height for consistent coordinate system
         lua_pushinteger(L, NATIVE_LOGICAL_HEIGHT);
@@ -768,8 +780,9 @@ static int lua_screen_fillRect(lua_State *L) {
     // int eye = (argc == 7) ? luaL_checkinteger(L, 7) : 0; // 3D eye (ignored in SDL port)
     
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -849,8 +862,9 @@ static int lua_screen_fillEmptyRect(lua_State *L) {
     int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
     
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -930,8 +944,9 @@ static int lua_screen_drawLine(lua_State *L) {
     int screen = (argc >= 6) ? luaL_checkinteger(L, 6) : 0; // Default to TOP_SCREEN
     
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -1013,8 +1028,9 @@ static int lua_screen_drawImage(lua_State *L) {
         return luaL_error(L, "Invalid texture provided");
     }
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -1096,8 +1112,9 @@ static int lua_screen_drawPartialImage(lua_State *L) {
         return luaL_error(L, "Invalid texture provided");
     }
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -1122,11 +1139,12 @@ static int lua_screen_drawPartialImage(lua_State *L) {
     // Cast to lpp_texture
     lpp_texture* tex = (lpp_texture*)texture_ptr;
     
+    
     // Create source and destination rectangles - start with local coordinates
     SDL_Rect src_rect = {src_x, src_y, src_w, src_h};
     SDL_Rect dest_rect = {dest_x, dest_y, src_w, src_h};
     
-    // Apply screen positioning for dual screen mode
+    // Apply screen positioning and clipping
     if (g_compat_mode == LPP_COMPAT_3DS) {
         // In single-screen mode, still render both screens
         // Only the display shows one at a time, but both should be kept current
@@ -1141,6 +1159,12 @@ static int lua_screen_drawPartialImage(lua_State *L) {
         
         // Set viewport clipping for this screen
         setScreenViewport(screen);
+    } else if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP mode: Let SDL handle clipping naturally with logical rendering
+        // PSP mode: No coordinate clipping, let SDL handle boundaries naturally
+        
+        // No offset needed for PSP (single screen mode)
+        // Note: x_offset and y_offset should be 0 for PSP mode anyway
     } else {
         // Non-dual screen mode: just add the offset
         dest_rect.x += x_offset;
@@ -1263,8 +1287,9 @@ static int lua_screen_debugPrint(lua_State *L) {
     int screen = luaL_checkinteger(L, 5);
     // int eye = (argc == 6) ? luaL_checkinteger(L, 6) : 0; // 3D eye ignored in SDL port
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -1384,8 +1409,9 @@ static int lua_screen_drawPixel(lua_State *L) {
     // int eye = (argc == 5) ? luaL_checkinteger(L, 5) : 0; // 3D eye ignored in SDL port
     
     
-    // Auto-enable dual screen mode if using screen constants
-    if ((screen == 0 || screen == 1) && !g_dual_screen_mode) {
+    // Auto-enable dual screen mode if using screen constants (but not in PSP mode)
+    extern lpp_compat_mode_t g_compat_mode;
+    if ((screen == 0 || screen == 1) && !g_dual_screen_mode && g_compat_mode != LPP_COMPAT_PSP) {
         g_dual_screen_mode = true;
         printf("Auto-enabling dual screen mode\n");
         
@@ -1656,6 +1682,139 @@ void luaScreen_init(lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, Screen_functions, 0);
 	lua_setglobal(L, "Screen");
+	
+	// PSP compatibility: Always create lowercase 'screen' object for PSP games
+	// Check compatibility mode at runtime, not initialization time
+	{
+		// Create a metatable for PSP screen object
+		luaL_newmetatable(L, "PSP_Screen");
+		
+		// __index method - redirect method calls to Screen module or PSP-specific methods
+		lua_pushstring(L, "__index");
+		lua_pushcfunction(L, [](lua_State *L) -> int {
+			// Only work in PSP compatibility mode
+			extern lpp_compat_mode_t g_compat_mode;
+			if (g_compat_mode != LPP_COMPAT_PSP) {
+				return luaL_error(L, "screen object is only available in PSP compatibility mode. Use -pspcompat flag.");
+			}
+			
+			// Get method name
+			const char* method = lua_tostring(L, 2);
+			
+			// Special PSP-specific method handling
+			if (strcmp(method, "clear") == 0) {
+				// PSP screen:clear() wrapper - immediate clear for PSP compatibility
+				lua_pushcfunction(L, [](lua_State *L) -> int {
+					extern SDL_Renderer* g_renderer;
+					if (g_renderer) {
+						SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+						SDL_RenderClear(g_renderer);
+					}
+					return 0;
+				});
+				return 1;
+			} else if (strcmp(method, "slowClear") == 0) {
+				// PSP screen:slowClear() - immediate clear for PSP compatibility
+				lua_pushcfunction(L, [](lua_State *L) -> int {
+					extern SDL_Renderer* g_renderer;
+					if (g_renderer) {
+						SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+						SDL_RenderClear(g_renderer);
+					}
+					return 0;
+				});
+				return 1;
+			} else
+			if (strcmp(method, "blit") == 0) {
+				// PSP screen:blit() maps to Screen.drawImage() or similar
+				lua_pushcfunction(L, [](lua_State *L) -> int {
+					// PSP screen:blit() supports two formats:
+					// Format 1: screen:blit(dst_x, dst_y, image, alpha, src_x, src_y, src_w, src_h)
+					// Format 2: screen:blit(dst_x, dst_y, image, src_x, src_y, src_w, src_h)
+					int argc = lua_gettop(L);
+					if (argc < 4) { // self + 3 args minimum
+						return luaL_error(L, "PSP screen:blit() requires at least 3 arguments");
+					}
+					
+					int dst_x = luaL_checkinteger(L, 2); // Skip self parameter
+					int dst_y = luaL_checkinteger(L, 3); // Skip self parameter
+					// L, 4 is image
+					
+					// Extract texture pointer from PSP Image object if necessary
+					void* image_ptr = nullptr;
+					if (lua_istable(L, 4)) {
+						// PSP Image object - extract texture pointer
+						lua_getfield(L, 4, "_texture_ptr");
+						image_ptr = lua_touserdata(L, -1);
+						lua_pop(L, 1);
+					} else {
+						// Direct texture pointer
+						image_ptr = lua_touserdata(L, 4);
+					}
+					
+					// Determine format based on 5th parameter type (PSP uses number for alpha, not boolean)
+					bool has_alpha_param = (argc >= 9); // Full 8-param blit has alpha
+					int src_x_idx = has_alpha_param ? 6 : 5;
+					int src_y_idx = has_alpha_param ? 7 : 6;
+					int src_w_idx = has_alpha_param ? 8 : 7;
+					int src_h_idx = has_alpha_param ? 9 : 8;
+					
+					if (argc >= (has_alpha_param ? 9 : 8)) {
+						// Partial blit with source coordinates
+						int src_x = luaL_checkinteger(L, src_x_idx);
+						int src_y = luaL_checkinteger(L, src_y_idx);
+						int src_w = luaL_checkinteger(L, src_w_idx);
+						int src_h = luaL_checkinteger(L, src_h_idx);
+						
+						// PSP blit with correct parameters
+						
+						// Call Screen.drawPartialImage(dest_x, dest_y, src_x, src_y, src_w, src_h, texture_ptr)
+						lua_getglobal(L, "Screen");
+						lua_getfield(L, -1, "drawPartialImage");
+						lua_pushinteger(L, dst_x);
+						lua_pushinteger(L, dst_y);
+						lua_pushinteger(L, src_x);
+						lua_pushinteger(L, src_y);
+						lua_pushinteger(L, src_w);
+						lua_pushinteger(L, src_h);
+						lua_pushlightuserdata(L, image_ptr); // texture pointer
+						lua_call(L, 7, 0);
+						lua_pop(L, 1); // pop Screen table
+					} else {
+						// Full image blit
+						lua_getglobal(L, "Screen");
+						lua_getfield(L, -1, "drawImage");
+						lua_pushinteger(L, dst_x);
+						lua_pushinteger(L, dst_y);
+						lua_pushlightuserdata(L, image_ptr); // texture pointer
+						lua_call(L, 3, 0);
+						lua_pop(L, 1); // pop Screen table
+					}
+					
+					return 0;
+				});
+				return 1;
+			}
+			
+			// For other methods, delegate to Screen module
+			lua_getglobal(L, "Screen");
+			lua_getfield(L, -1, method);
+			
+			if (lua_isfunction(L, -1)) {
+				// Remove Screen module from stack, keep function
+				lua_remove(L, -2);
+				return 1;
+			} else {
+				return luaL_error(L, "PSP screen method '%s' not found", method);
+			}
+		});
+		lua_settable(L, -3);
+		
+		// Create screen object instance
+		lua_newtable(L);
+		luaL_setmetatable(L, "PSP_Screen");
+		lua_setglobal(L, "screen");
+	}
 	
 	// Add 3DS screen constants for compatibility
 	lua_pushinteger(L, 0);

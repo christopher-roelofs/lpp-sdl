@@ -26,8 +26,10 @@ namespace PathUtils {
     // Get filename part of a path
     std::string get_filename(const std::string& path);
     
-    // Translate Vita paths (app0:/, ux0:/) to standard paths
+    // Translate console-specific paths (Vita: app0:/, ux0:/ | PSP: ms0:/, flash0:/) to standard paths
     std::string translate_vita_path(const std::string& path);
+    std::string translate_psp_path(const std::string& path);
+    std::string translate_console_path(const std::string& path); // Auto-detect platform
 }
 
 #endif // PATH_UTILS_H

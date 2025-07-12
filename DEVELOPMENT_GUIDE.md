@@ -2,7 +2,7 @@
 
 ## Project Goals
 
-The primary goal of lpp-sdl is to **port Lua Player Plus to SDL** while maintaining **backwards compatibility** with existing Vita and 3DS homebrew applications. This allows desktop users to run PlayStation Vita and Nintendo 3DS lua player plus games without modification.
+The primary goal of lpp-sdl is to **port Lua Player Plus to SDL** while maintaining **backwards compatibility** with existing Vita, 3DS, and PSP homebrew applications. This allows desktop users to run PlayStation Vita, Nintendo 3DS, and PlayStation Portable lua player plus games without modification.
 
 ## Core Principles
 
@@ -23,19 +23,21 @@ The primary goal of lpp-sdl is to **port Lua Player Plus to SDL** while maintain
 
 ## Compatibility Modes
 
-The engine supports three primary compatibility modes:
+The engine supports four primary compatibility modes:
 
 ```cpp
 typedef enum {
     LPP_COMPAT_NATIVE,  // Desktop/SDL native behavior
     LPP_COMPAT_VITA,    // PlayStation Vita compatibility
-    LPP_COMPAT_3DS      // Nintendo 3DS compatibility
+    LPP_COMPAT_3DS,     // Nintendo 3DS compatibility
+    LPP_COMPAT_PSP      // PlayStation Portable compatibility
 } lpp_compat_mode_t;
 ```
 
 ### Mode Selection
 - `-vitacompat`: Enable Vita compatibility mode
-- `-3dscompat`: Enable 3DS compatibility mode  
+- `-3dscompat`: Enable 3DS compatibility mode
+- `-pspcompat`: Enable PSP compatibility mode (480x272 resolution)
 - No flag: Native SDL mode
 
 ## Platform-Specific Implementation Patterns
@@ -50,8 +52,8 @@ static int lua_term(lua_State *L) {
     // Common validation code...
     
     // Platform-specific presentation behavior
-    if (g_compat_mode == LPP_COMPAT_VITA && g_renderer) {
-        // Vita: termBlend() presents the frame
+    if ((g_compat_mode == LPP_COMPAT_VITA || g_compat_mode == LPP_COMPAT_PSP) && g_renderer) {
+        // Vita and PSP: termBlend() presents the frame
         SDL_RenderPresent(g_renderer);
     }
     // 3DS and Native: termBlend() only finishes rendering
@@ -65,7 +67,7 @@ static int lua_flip(lua_State *L) {
     
     // Platform-specific presentation behavior
     if (g_compat_mode != LPP_COMPAT_VITA) {
-        // 3DS and Native: flip() presents the frame
+        // PSP, 3DS and Native: flip() presents the frame
         SDL_RenderPresent(g_renderer);
     }
     // Vita: flip() skipped to prevent double presentation
@@ -75,6 +77,7 @@ static int lua_flip(lua_State *L) {
 ```
 
 **Why this difference exists:**
+- **Original lpp-psp**: `Graphics.termBlend()` → `sceGuFinish()` + `sceGuSwapBuffers()` (presents), `Screen.flip()` → `sceDisplayWaitVblankStart()` (may also present)
 - **Original lpp-3ds**: `Graphics.termBlend()` → `sf2d_end_frame()` (no presentation), `Screen.flip()` → `sf2d_swapbuffers()` (presents)
 - **Original lpp-vita**: `Graphics.termBlend()` → presentation expected, `Screen.flip()` → may be called early
 - **Games rely on these different behaviors** and cannot be modified
@@ -117,7 +120,7 @@ static int lua_wait(lua_State *L) {
         if (ms < 1) ms = 1; // Minimum 1ms delay
         SDL_Delay(ms);
     } else {
-        // 3DS and Native expect milliseconds directly
+        // PSP, 3DS and Native expect milliseconds directly
         SDL_Delay(time_value);
     }
     
@@ -133,7 +136,8 @@ static int lua_wait(lua_State *L) {
 2. **Check original source implementations:**
    - lpp-vita: https://github.com/Rinnegatamante/lpp-vita
    - lpp-3ds: https://github.com/Rinnegatamante/lpp-3ds
-   source should be available locally at lpp-vita and lpp-3ds directories above lpp-sdl directory
+   - lpp-psp: lua-player-plus (original PSP implementation)
+   source should be available locally at lpp-vita, lpp-3ds, and lua-player-plus directories above lpp-sdl directory
 3. **Document expected behavior** from original implementations
 4. **Identify if change affects existing games**
 
@@ -147,6 +151,8 @@ static int lua_wait(lua_State *L) {
        // Vita-specific implementation
    } else if (g_compat_mode == LPP_COMPAT_3DS) {
        // 3DS-specific implementation  
+   } else if (g_compat_mode == LPP_COMPAT_PSP) {
+       // PSP-specific implementation
    } else {
        // Native SDL implementation
    }
@@ -161,6 +167,7 @@ static int lua_wait(lua_State *L) {
 1. **Native mode games** (samples/sdl/)
 2. **Vita compatibility games** (tests/games/vita/)  
 3. **3DS compatibility games** (tests/games/3ds/)
+4. **PSP compatibility games** (tests/games/psp/)
 
 **Minimum test commands:**
 ```bash
@@ -173,6 +180,9 @@ static int lua_wait(lua_State *L) {
 
 # 3DS compatibility
 ./lpp_sdl -3dscompat tests/games/3ds/pixelroad_1.0/index.lua
+
+# PSP compatibility
+./lpp_sdl -pspcompat tests/games/psp/learnjp09/index.lua
 ```
 
 ## Common Pitfalls to Avoid
@@ -187,8 +197,8 @@ Graphics.termBlend() always calls SDL_RenderPresent()
 ✅ **Correct:**
 ```cpp
 // This respects platform differences
-if (g_compat_mode == LPP_COMPAT_VITA) {
-    SDL_RenderPresent(g_renderer); // Only Vita expects this
+if (g_compat_mode == LPP_COMPAT_VITA || g_compat_mode == LPP_COMPAT_PSP) {
+    SDL_RenderPresent(g_renderer); // Vita and PSP expect this
 }
 ```
 
@@ -204,6 +214,8 @@ Screen.flip() now has different timing
 // This isolates changes to specific platforms
 if (g_compat_mode == LPP_COMPAT_VITA) {
     // New Vita-specific behavior
+} else if (g_compat_mode == LPP_COMPAT_PSP) {
+    // New PSP-specific behavior
 } else {
     // Preserve original behavior for other platforms
 }
@@ -218,9 +230,10 @@ if (g_compat_mode == LPP_COMPAT_VITA) {
 
 ✅ **Correct:**
 ```cpp
-// Verified against lpp-vita source:
-// Graphics.termBlend() calls vita2d_end_drawing() + vita2d_swap_buffers()
-// Therefore: SDL port should call SDL_RenderPresent() in Vita mode
+// Verified against original sources:
+// lpp-vita: Graphics.termBlend() calls vita2d_end_drawing() + vita2d_swap_buffers()
+// lpp-psp: Graphics.termBlend() calls sceGuFinish() + sceGuSwapBuffers()
+// Therefore: SDL port should call SDL_RenderPresent() in Vita and PSP modes
 ```
 
 ## Code Comments Standards
@@ -228,9 +241,10 @@ if (g_compat_mode == LPP_COMPAT_VITA) {
 Always include comments explaining platform-specific behavior:
 
 ```cpp
-// Vita compatibility: Some games expect termBlend to present the frame
+// Vita and PSP compatibility: Some games expect termBlend to present the frame
 // Original lpp-vita: Graphics.termBlend() → vita2d_swap_buffers()
-if (g_compat_mode == LPP_COMPAT_VITA && g_renderer) {
+// Original lpp-psp: Graphics.termBlend() → sceGuFinish() + sceGuSwapBuffers()
+if ((g_compat_mode == LPP_COMPAT_VITA || g_compat_mode == LPP_COMPAT_PSP) && g_renderer) {
     SDL_RenderPresent(g_renderer);
 }
 
@@ -267,6 +281,13 @@ extern bool g_dual_screen_mode;          // Deprecated, use g_compat_mode
 - **Screen**: `source/luaScreen.cpp` 
 - **Key APIs**: sf2d library calls
 
+### lpp-psp
+- **Source**: lua-player-plus (original PSP implementation)
+- **Graphics**: `Lua/Graphics.c`
+- **System**: `Lua/System.cpp`
+- **Controls**: `Lua/Controls.c`
+- **Key APIs**: PSP GU (Graphics Utility) library calls
+
 ## Debugging Platform Issues
 
 ### 1. Identify Which Platform is Affected
@@ -275,6 +296,7 @@ extern bool g_dual_screen_mode;          // Deprecated, use g_compat_mode
 ./lpp_sdl game.lua                    # Native mode
 ./lpp_sdl -vitacompat game.lua        # Vita mode  
 ./lpp_sdl -3dscompat game.lua         # 3DS mode
+./lpp_sdl -pspcompat game.lua         # PSP mode
 ```
 
 ### 2. Compare with Original Behavior
@@ -293,10 +315,11 @@ The SDL port is successful when:
 
 ✅ **Vita games run without modification** in `-vitacompat` mode  
 ✅ **3DS games run without modification** in `-3dscompat` mode  
+✅ **PSP games run without modification** in `-pspcompat` mode  
 ✅ **Native SDL games** take advantage of desktop features  
-✅ **No cross-platform interference** - Vita fixes don't break 3DS games  
+✅ **No cross-platform interference** - platform fixes don't break other platform games  
 ✅ **Clear separation** between platform-specific code paths  
 
 ---
 
-**Remember**: The goal is not to create the "best" implementation, but to create the **most compatible** implementation that preserves the original gaming experience for vita and 3ds while allowing new development for sdl native games.
+**Remember**: The goal is not to create the "best" implementation, but to create the **most compatible** implementation that preserves the original gaming experience for PSP, Vita and 3DS while allowing new development for SDL native games.

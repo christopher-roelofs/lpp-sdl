@@ -90,4 +90,48 @@ namespace PathUtils {
         
         return result;
     }
+    
+    std::string translate_psp_path(const std::string& path) {
+        std::string result(path);
+        
+        // Replace ms0: (memory stick) with current directory (with or without slash)
+        size_t pos = result.find("ms0:");
+        if (pos != std::string::npos) {
+            if (pos + 4 < result.length() && result[pos + 4] == '/') {
+                result.replace(pos, 5, "");  // Remove "ms0:/"
+            } else {
+                result.replace(pos, 4, "");  // Remove "ms0:"
+            }
+        }
+        
+        // Replace flash0: (system flash) with current directory (with or without slash)
+        pos = result.find("flash0:");
+        if (pos != std::string::npos) {
+            if (pos + 7 < result.length() && result[pos + 7] == '/') {
+                result.replace(pos, 8, "");  // Remove "flash0:/"
+            } else {
+                result.replace(pos, 7, "");  // Remove "flash0:"
+            }
+        }
+        
+        // Replace ef0: (internal flash) with current directory (with or without slash)
+        pos = result.find("ef0:");
+        if (pos != std::string::npos) {
+            if (pos + 4 < result.length() && result[pos + 4] == '/') {
+                result.replace(pos, 5, "");  // Remove "ef0:/"
+            } else {
+                result.replace(pos, 4, "");  // Remove "ef0:"
+            }
+        }
+        
+        return result;
+    }
+    
+    std::string translate_console_path(const std::string& path) {
+        // Auto-detect and translate platform-specific paths
+        // Apply both Vita and PSP translations (they don't conflict)
+        std::string result = translate_vita_path(path);
+        result = translate_psp_path(result);
+        return result;
+    }
 }

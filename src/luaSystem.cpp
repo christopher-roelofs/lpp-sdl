@@ -799,13 +799,20 @@ static int lua_setBusSpeed(lua_State *L) {
     return 1;
 }
 
-// System.wait() - Sleep function for tetromino compatibility
+// System.wait() - Sleep function with platform-specific time units
 static int lua_wait(lua_State *L) {
-    int microseconds = luaL_checkinteger(L, 1);
-    // Convert microseconds to milliseconds for Vita compatibility
-    int ms = microseconds / 1000;
-    if (ms < 1) ms = 1; // Minimum 1ms delay
-    SDL_Delay(ms);
+    int time_value = luaL_checkinteger(L, 1);
+    
+    if (g_compat_mode == LPP_COMPAT_VITA) {
+        // Vita expects microseconds, convert to milliseconds
+        int ms = time_value / 1000;
+        if (ms < 1) ms = 1; // Minimum 1ms delay
+        SDL_Delay(ms);
+    } else {
+        // PSP, 3DS and Native expect milliseconds directly
+        // Original PSP: System.wait() expects milliseconds
+        SDL_Delay(time_value);
+    }
     return 0;
 }
 
@@ -2081,6 +2088,37 @@ static int lua_isGWMode(lua_State *L) {
     return 1;
 }
 
+// System.draw() - PSP compatibility: Start drawing frame
+static int lua_draw(lua_State *L) {
+    if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP compatibility: Begin rendering frame
+        // This function doesn't need to do much in SDL since SDL_RenderClear
+        // and drawing commands can be called directly
+        // Just return success to indicate drawing can begin
+        return 0;
+    }
+    
+    // For other modes, this function does nothing
+    return 0;
+}
+
+// System.endDraw() - PSP compatibility: End drawing frame and present
+static int lua_endDraw(lua_State *L) {
+    if (g_compat_mode == LPP_COMPAT_PSP) {
+        // PSP compatibility: End drawing and present frame
+        // Original PSP: calls sceGuFinish() + sceGuSync() + buffer swap
+        // SDL equivalent: present the rendered frame
+        extern SDL_Renderer* g_renderer;
+        if (g_renderer) {
+            SDL_RenderPresent(g_renderer);
+        }
+        return 0;
+    }
+    
+    // For other modes, this function does nothing
+    return 0;
+}
+
 // --- Module Registration ---
 
 static const luaL_Reg System_functions[] = {
@@ -2097,6 +2135,7 @@ static const luaL_Reg System_functions[] = {
     {"checkInput",         lua_checkInput},
     {"getBatteryLife",     lua_getBatteryPercentage},  // Alias for compatibility
     {"getBatteryPercentage", lua_getBatteryPercentage},
+    {"powerGetBatteryLifePercent", lua_getBatteryPercentage},  // PSP-specific function name
     {"getBatteryInfo",     lua_getBatteryInfo},
     {"isBatteryCharging",  lua_isBatteryCharging},
     {"deleteFile",         lua_deleteFile},
@@ -2138,6 +2177,8 @@ static const luaL_Reg System_functions[] = {
     {"setGamepadLayout",   lua_setGamepadLayout},
     {"getGamepadLayout",   lua_getGamepadLayout},
     {"isGWMode",           lua_isGWMode},
+    {"draw",               lua_draw},
+    {"endDraw",            lua_endDraw},
     {NULL, NULL}
 };
 
@@ -2147,6 +2188,7 @@ static const luaL_Reg FileHandle_methods[] = {
     {"read",  lua_readFile},
     {"write", lua_writeFile},
     {"stat",  lua_statOpenedFile},
+    {"close", lua_closeFile},  // Add close method for PSP compatibility
     {"__gc",  lua_closeFile},
     {NULL, NULL}
 };

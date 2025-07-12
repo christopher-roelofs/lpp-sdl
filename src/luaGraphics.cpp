@@ -754,7 +754,9 @@ static int lua_term(lua_State *L) {
 		draw_state = false;
 #endif
 	
-	// Vita compatibility: Some games expect termBlend to present the frame
+	// Vita compatibility: Some Vita games expect termBlend to present the frame
+	// Original Vita: Graphics.termBlend() calls vita2d_end_drawing() + vita2d_swap_buffers()
+	// PSP: Graphics.termBlend() only finishes rendering, Screen.flip() handles presentation
 	if (g_compat_mode == LPP_COMPAT_VITA && g_renderer) {
 		SDL_RenderPresent(g_renderer);
 	}
@@ -2146,6 +2148,80 @@ void luaGraphics_init(lua_State *L) {
     lua_newtable(L);
     luaL_setfuncs(L, Graphics_functions, 0);
     lua_setglobal(L, "Graphics");
+    
+    // PSP compatibility: Create global Image module (always create, check mode at runtime)
+    lua_newtable(L);
+    
+    // PSP Image.load() function that returns object with :free() method
+    lua_pushcfunction(L, [](lua_State *L) -> int {
+        extern lpp_compat_mode_t g_compat_mode;
+        
+        if (g_compat_mode == LPP_COMPAT_PSP) {
+            // Call Graphics.loadImage to get the texture
+            lua_getglobal(L, "Graphics");
+            lua_getfield(L, -1, "loadImage");
+            lua_pushvalue(L, 1); // push filename argument
+            lua_call(L, 1, 1); // call Graphics.loadImage(filename)
+            
+            // Get the texture pointer
+            lpp_texture* tex = (lpp_texture*)lua_touserdata(L, -1);
+            lua_pop(L, 2); // pop texture and Graphics table
+            
+            // Create PSP image object table
+            lua_newtable(L);
+            
+            // Store texture pointer
+            lua_pushlightuserdata(L, tex);
+            lua_setfield(L, -2, "_texture_ptr");
+            
+            // Create metatable for PSP Image object
+            luaL_newmetatable(L, "PSP_Image");
+            
+            // __index method for Image object methods
+            lua_pushstring(L, "__index");
+            lua_pushcfunction(L, [](lua_State *L) -> int {
+                const char* method = lua_tostring(L, 2);
+                
+                if (strcmp(method, "free") == 0) {
+                    lua_pushcfunction(L, [](lua_State *L) -> int {
+                        // Get the texture pointer from the table
+                        lua_getfield(L, 1, "_texture_ptr");
+                        lpp_texture* tex = (lpp_texture*)lua_touserdata(L, -1);
+                        lua_pop(L, 1);
+                        
+                        // Call Graphics.freeImage
+                        lua_getglobal(L, "Graphics");
+                        lua_getfield(L, -1, "freeImage");
+                        lua_pushlightuserdata(L, tex);
+                        lua_call(L, 1, 0);
+                        lua_pop(L, 1); // pop Graphics table
+                        
+                        return 0;
+                    });
+                    return 1;
+                }
+                
+                return 0;
+            });
+            lua_settable(L, -3);
+            
+            // Set the metatable
+            lua_setmetatable(L, -2);
+            
+            return 1;
+        } else {
+            // Non-PSP mode: just call Graphics.loadImage directly
+            lua_getglobal(L, "Graphics");
+            lua_getfield(L, -1, "loadImage");
+            lua_pushvalue(L, 1); // push filename argument
+            lua_call(L, 1, 1); // call Graphics.loadImage(filename)
+            lua_remove(L, -2); // remove Graphics table, leave result
+            return 1;
+        }
+    });
+    lua_setfield(L, -2, "load");
+    
+    lua_setglobal(L, "Image");
 
     // Create Font metatable ("LPP.Font")
     luaL_newmetatable(L, "LPP.Font");       // Stack: metatable
@@ -2168,6 +2244,80 @@ void luaGraphics_init(lua_State *L) {
     lua_newtable(L);
     luaL_setfuncs(L, Color_functions, 0);
     lua_setglobal(L, "Color");
+
+    // PSP compatibility: IntraFont API - always create, check mode at runtime
+    lua_newtable(L);
+    
+    // IntraFont.load(filename, flags) - returns font object
+    lua_pushcfunction(L, [](lua_State *L) -> int {
+        extern lpp_compat_mode_t g_compat_mode;
+        
+        if (g_compat_mode == LPP_COMPAT_PSP) {
+            const char* filename = luaL_checkstring(L, 1);
+            int flags = luaL_checkinteger(L, 2);
+            
+            printf("PSP IntraFont.load: %s with flags %d (stub)\n", filename, flags);
+            
+            // Create PSP font object table
+            lua_newtable(L);
+            
+            // Store font info for debugging
+            lua_pushstring(L, filename);
+            lua_setfield(L, -2, "_filename");
+            lua_pushinteger(L, flags);
+            lua_setfield(L, -2, "_flags");
+            
+            // Create metatable for PSP Font object
+            luaL_newmetatable(L, "PSP_IntraFont");
+            
+            // __index method for Font object methods
+            lua_pushstring(L, "__index");
+            lua_pushcfunction(L, [](lua_State *L) -> int {
+                const char* method = lua_tostring(L, 2);
+                
+                if (strcmp(method, "setStyle") == 0) {
+                    lua_pushcfunction(L, [](lua_State *L) -> int {
+                        // font:setStyle(size, color, shadow_color, alignment)
+                        // Just return success - stub implementation
+                        return 0;
+                    });
+                    return 1;
+                } else if (strcmp(method, "print") == 0) {
+                    lua_pushcfunction(L, [](lua_State *L) -> int {
+                        // font:print(x, y, text)
+                        // Just return success - stub implementation
+                        return 0;
+                    });
+                    return 1;
+                }
+                
+                return 0;
+            });
+            lua_settable(L, -3);
+            
+            // Set the metatable
+            lua_setmetatable(L, -2);
+            
+            return 1;
+        } else {
+            // Non-PSP mode: return nil
+            lua_pushnil(L);
+            return 1;
+        }
+    });
+    lua_setfield(L, -2, "load");
+    
+    // IntraFont constants
+    lua_pushinteger(L, 0);
+    lua_setfield(L, -2, "STRING_UTF8");
+    lua_pushinteger(L, 0);
+    lua_setfield(L, -2, "ALIGN_LEFT");
+    lua_pushinteger(L, 1);
+    lua_setfield(L, -2, "ALIGN_CENTER");
+    lua_pushinteger(L, 2);
+    lua_setfield(L, -2, "ALIGN_RIGHT");
+    
+    lua_setglobal(L, "IntraFont");
 
     // Initialize g_defaultFont (example, ensure font.ttf is accessible)
     // This should ideally be done after TTF_Init() in main.cpp
