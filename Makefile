@@ -6,8 +6,11 @@ USE_LIBARCHIVE ?= 1
 # Check if readline support is enabled
 USE_READLINE ?= 1
 
-# Check if ImGui support is enabled (default: enabled)
+# Check if ImGui support is enabled (default: disabled)
 USE_IMGUI ?= 0
+
+# Check if OpenCV support is enabled (default: disabled)
+USE_OPENCV ?= 0
 
 # OpenGL variant selection: GL (desktop OpenGL) or GLES (OpenGL ES)
 GL_VARIANT ?= GL
@@ -19,13 +22,13 @@ TARGET_PLATFORM ?= $(shell uname -s)
 IMGUI_DIR := src/include/imgui
 
 # Base compiler flags
-CXXFLAGS := -std=c++17 -Wall $(shell sdl2-config --cflags) $(shell pkg-config --cflags luajit) $(shell pkg-config --cflags opencv4) $(shell pkg-config --cflags libavformat libavcodec libavutil libswscale) $(shell pkg-config --cflags mpg123) -I./src/include -I/opt/homebrew/include -DWANT_FASTWAV -DWANT_FMMIDI
+CXXFLAGS := -std=c++17 -Wall $(shell sdl2-config --cflags) $(shell pkg-config --cflags luajit) $(shell pkg-config --cflags libavformat libavcodec libavutil libswscale) $(shell pkg-config --cflags mpg123) -I./src/include -I/opt/homebrew/include -DWANT_FASTWAV -DWANT_FMMIDI
 
 # Detect OS for platform-specific OpenGL linking
 UNAME_S := $(shell uname -s)
 
 # Base linker flags (without OpenGL)
-LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs opencv4) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz -lpng
+LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image -lSDL2_mixer $(shell pkg-config --libs luajit) $(shell pkg-config --libs libavformat libavcodec libavutil libswscale) -lsqlite3 -lcurl -lgsm -lmpg123 -lz -lpng
 
 # Only add OpenGL linking if ImGui is enabled
 ifeq ($(USE_IMGUI), 1)
@@ -105,9 +108,28 @@ ifeq ($(USE_READLINE), 1)
     endif
 endif
 
+# Add OpenCV support if enabled and available
+ifeq ($(USE_OPENCV), 1)
+    # Check if OpenCV is available
+    OPENCV_AVAILABLE := $(shell pkg-config --exists opencv4 && echo yes || echo no)
+    ifeq ($(OPENCV_AVAILABLE), yes)
+        CXXFLAGS += -DUSE_OPENCV $(shell pkg-config --cflags opencv4)
+        LDFLAGS += $(shell pkg-config --libs opencv4)
+        $(info Building with OpenCV support for camera functionality)
+        CAMERA_SOURCE := src/luaCamera.cpp
+    else
+        $(warning OpenCV not found - building without camera support)
+        $(warning Install libopencv-dev package to enable camera functionality)
+        CAMERA_SOURCE := src/luaCamera_stub.cpp
+    endif
+else
+    $(info Building without OpenCV support - camera functions will return stub values)
+    CAMERA_SOURCE := src/luaCamera_stub.cpp
+endif
+
 TARGET := lpp_sdl
 SOURCES := main.cpp \
-           src/luaCamera.cpp \
+           $(CAMERA_SOURCE) \
            src/luaControls.cpp \
            src/luaDatabase.cpp \
            src/luaGraphics.cpp \
